@@ -1,4 +1,4 @@
-# app.py — Adaptado para Hugging Face Spaces 🚀 com Login por senha + layout responsivo
+# app.py — com logs detalhados para debug no Render
 
 import os, re, time, json, shutil, random, asyncio, unicodedata
 from urllib.parse import urljoin, urlparse
@@ -14,14 +14,20 @@ from openai import AsyncOpenAI
 import platform
 
 # === Config ===
+print("🔧 Iniciando app.py...")
+
 with open("/etc/secrets/OPENAI_KEY") as f:
     api_key = f.read().strip()
+    print("🔑 OPENAI_KEY carregada:", api_key[:6], "... (ocultado)")
+
 if not api_key:
     raise ValueError("⚠️ Variável de ambiente 'OPENAI_KEY' não encontrada.")
 client = AsyncOpenAI(api_key=api_key)
 
 with open("/etc/secrets/SCRAPER_PASSWORD") as f:
     SENHA = f.read().strip()
+    print("🔐 SCRAPER_PASSWORD carregada com sucesso.")
+
 if not SENHA:
     raise ValueError("⚠️ Variável de ambiente 'SCRAPER_PASSWORD' não encontrada.")
 
@@ -38,21 +44,17 @@ def limpar_pasta_resultados(nome_pasta):
     if os.path.exists(nome_pasta):
         shutil.rmtree(nome_pasta)
     os.makedirs(nome_pasta)
+    print(f"📁 Pasta limpa/criada: {nome_pasta}")
 
 def clean_filename(s):
     return re.sub(r'[<>:"/\\|?*]', '', s)[:50].replace(' ', '_')
 
-def limpar_xml(texto):
-    if not isinstance(texto, str):
-        texto = str(texto)
-    return ''.join(c for c in texto if isinstance(c, str) and len(c) == 1 and (c in '\n\r\t' or 32 <= ord(c) <= 126 or ord(c) >= 160))
-
 def salvar_conteudo(title, content, pasta_pais):
+    print(f"💾 Salvando: {title[:60]}")
     base_name = clean_filename(title)
     filename = f"{base_name}.docx"
     path = os.path.join(pasta_pais, filename)
 
-    # 🔁 Se o nome já existe, adiciona número incremental
     contador = 1
     while os.path.exists(path):
         filename = f"{base_name}_{contador}.docx"
@@ -62,52 +64,17 @@ def salvar_conteudo(title, content, pasta_pais):
     doc = Document()
     doc.add_heading(title, level=1)
     for p in content:
-        texto = limpar_xml(p)
+        texto = p.strip()
         par = doc.add_paragraph(f"• {texto}")
         if len(texto.split()) < 12:
             par.runs[0].bold = True
     doc.save(path)
 
-# === Países e aliases ===
-URL_BASE = 'https://www.tennantco.com'
-ALIASES_PATH = "aliases.json"
-
-MAPA_PAISES = {
-    'pt_br': 'Brasil', 'en_us': 'Estados Unidos', 'en_ca': 'Canadá', 'en_au': 'Austrália e nova zelandia',
-    'en_za': 'África do Sul', 'en_gb': 'Reino Unido', 'es_es': 'Espanha', 'es_mx': 'México',
-    'fr_fr': 'França', 'nl_nl': 'Holanda', 'en_eu': 'Europa (outros paises)', 'en_ap': 'Ásia (outros paises)',
-    'en_la': 'america latina (outros paises)', 'es_la': 'america latina (outros paises)', 'de_de': 'Alemanha',
-    'it_it': 'Itália', 'ja_jp': 'Japão', 'zh_cn': 'China', 'pt_pt': 'Portugal',
-}
-
-ALIASES_PAISES = {
-    "canguru": "en_au", "boomerang": "en_au", "samba": "pt_br", "taco": "es_mx",
-    "eiffel": "fr_fr", "tulipa": "nl_nl", "shinkansen": "ja_jp", "dragao": "zh_cn",
-    "realeza": "en_gb", "snow": "en_ca", "bavaria": "de_de", "RJ": "pt_br", "SP": "pt_br"
-}
-
-if os.path.exists(ALIASES_PATH):
-    with open(ALIASES_PATH, "r", encoding="utf-8") as f:
-        ALIASES_PERSISTENTES = json.load(f)
-else:
-    ALIASES_PERSISTENTES = {}
-
-TODOS_ALIASES = {**ALIASES_PAISES, **ALIASES_PERSISTENTES}
-ALIASES_NORMALIZADOS = {normalizar(k): v for k, v in TODOS_ALIASES.items()}
-MAPA_NOMES = {normalizar(v): k for k, v in MAPA_PAISES.items()}
-
-# === Scraper ===
-def is_valid_url(url):
-    return urlparse(url).netloc == urlparse(URL_BASE).netloc
-
-def is_irrelevant_text(text):
-    lower = text.lower()
-    return any(p in lower for p in ["todos os direitos", "marca registrada", "saiba mais", "cnpj", "telefone", "email"]) or len(text.strip()) < 40
-
 def coletar_links_artigos(url):
+    print(f"🔗 Coletando artigos de: {url}")
     try:
         html = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}).text
-        tempo_espera(7, 8, contexto="esperando entre coletas de links")
+        tempo_espera(3, 5, "entre coletas")
         soup = BeautifulSoup(html, "html.parser")
         for tag in soup.select("footer, .footer, #footer, .legal"):
             tag.decompose()
@@ -115,26 +82,31 @@ def coletar_links_artigos(url):
         for a in soup.find_all("a", href=True, title=True):
             href = a['href']
             if not href.startswith('http'):
-                href = urljoin(URL_BASE, href)
-            if not is_valid_url(href): continue
-            if '/blog/' not in href: continue
-            links.append({'title': a['title'].strip(), 'href': href})
+                href = urljoin(url, href)
+            if '/blog/' in href:
+                links.append({'title': a['title'].strip(), 'href': href})
+        print(f"🔍 {len(links)} links encontrados.")
         return links
     except Exception as e:
+        print(f"❌ Erro ao coletar links: {e}")
         return []
 
 def get_article_content(article_url):
+    print(f"📄 Obtendo artigo: {article_url}")
     try:
         html = requests.get(article_url, headers={"User-Agent": "Mozilla/5.0"}).text
-        tempo_espera(4.5, 6, contexto="pausa entre artigos")
+        tempo_espera(2, 4, "entre artigos")
         soup = BeautifulSoup(html, "html.parser")
         title = soup.find("h1").get_text(strip=True)
-        paragraphs = [p.get_text(strip=True) for p in soup.find_all(['p', 'h2', 'h3']) if not is_irrelevant_text(p.get_text())]
+        paragraphs = [p.get_text(strip=True) for p in soup.find_all(['p', 'h2', 'h3'])]
+        print(f"✅ Título: {title[:40]}... ({len(paragraphs)} parágrafos)")
         return title, paragraphs
     except Exception as e:
+        print(f"⚠️ Erro ao obter artigo: {e}")
         return "Erro ao coletar título", []
 
 async def traduzir_e_formatar_gpt(textos):
+    print(f"🌐 Traduzindo bloco com {len(textos)} textos...")
     blocos, buffer, final = [], "", []
     total_prompt, total_completion = 0, 0
 
@@ -150,7 +122,7 @@ async def traduzir_e_formatar_gpt(textos):
             resp = await client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "Você é um tradutor profissional. Traduza para o português do Brasil, mantendo naturalidade e clareza. Remova trechos promocionais e preserve termos técnicos como i-mop, ec-H2O, T500, etc."},
+                    {"role": "system", "content": "Você é um tradutor profissional. Traduza para o português do Brasil."},
                     {"role": "user", "content": bloco}
                 ],
                 temperature=0.3, max_tokens=1500,
@@ -160,16 +132,18 @@ async def traduzir_e_formatar_gpt(textos):
             usage = resp.usage
             total_prompt += usage.prompt_tokens
             total_completion += usage.completion_tokens
+            print(f"✅ Tradução concluída ({usage.total_tokens} tokens)")
         except Exception as e:
-            print(f"[GPT Error] {e}")
+            print(f"⚠️ Erro na tradução GPT: {e}")
             final.append(bloco)
-        await asyncio.sleep(random.uniform(2, 3.5))
+        await asyncio.sleep(random.uniform(1, 2))
 
     return final, {
         "prompt_tokens": total_prompt,
         "completion_tokens": total_completion,
         "total_tokens": total_prompt + total_completion
     }
+
 
 def run(pais, alias, qtd_artigos):
     entrada = normalizar(pais)
