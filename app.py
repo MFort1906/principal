@@ -14,12 +14,14 @@ from openai import AsyncOpenAI
 import platform
 
 # === Config ===
-api_key = os.getenv("OPENAI_KEY")
+with open("/etc/secrets/OPENAI_KEY") as f:
+    api_key = f.read().strip()
 if not api_key:
     raise ValueError("⚠️ Variável de ambiente 'OPENAI_KEY' não encontrada.")
 client = AsyncOpenAI(api_key=api_key)
 
-SENHA = os.getenv("SCRAPER_PASSWORD")
+with open("/etc/secrets/SCRAPER_PASSWORD") as f:
+    SENHA = f.read().strip()
 if not SENHA:
     raise ValueError("⚠️ Variável de ambiente 'SCRAPER_PASSWORD' não encontrada.")
 
