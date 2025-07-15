@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: tennant-translator
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: OPENAI_KEY
+        sync: false
+      - key: SCRAPER_PASSWORD
+        sync: false
