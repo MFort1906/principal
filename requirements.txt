@@ -1,0 +1,6 @@
+gradio
+openai>=1.3.7
+requests
+beautifulsoup4
+python-docx
+nest_asyncio
