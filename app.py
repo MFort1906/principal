@@ -294,4 +294,7 @@ with gr.Blocks(title="Tennant Translator") as demo:
 
     btn_login.click(checar_senha, inputs=senha_input, outputs=[login_box, app_box])
 
-demo.launch()
+if __name__ == "__main__":
+    import sys
+    port = int(os.getenv("PORT", 7860))  # Porta definida pelo Render
+    demo.launch(server_name="0.0.0.0", server_port=port)
