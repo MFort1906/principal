@@ -298,3 +298,4 @@ if __name__ == "__main__":
     import sys
     port = int(os.getenv("PORT", 7860))  # Porta definida pelo Render
     demo.launch(server_name="0.0.0.0", server_port=port)
+
