@@ -12,6 +12,7 @@ from docx import Document
 import gradio as gr
 from openai import AsyncOpenAI
 import re
+import difflib
 
 HEADERS = {
     'User-Agent': (
@@ -328,12 +329,11 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
 
     # 🔄 Filtro final para remover traduções duplicadas
     final_resultados = []
-    vistos_finais = set()
     for r in resultados:
-        r_hash = hash(re.sub(r'\W+', '', r.lower()))
-        if r_hash not in vistos_finais:
-            final_resultados.append(r)
-            vistos_finais.add(r_hash)
+        r_normalizado = r.strip().lower()
+        if any(difflib.SequenceMatcher(None, r_normalizado, existente.lower()).ratio() > 0.92 for existente in final_resultados):
+            continue
+        final_resultados.append(r)
 
     num_topicos = sum(1 for p in final_resultados if re.match(r'^\d\.', p))
     if num_topicos < 5:
