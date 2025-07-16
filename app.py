@@ -255,17 +255,17 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
             textos_filtrados.append(t)
 
    for texto in textos_filtrados:
-    texto_limpo = texto.strip()
-    if not texto_limpo:
-        continue
-    if len(texto_limpo.split()) < 5:
-        continue  # ignora blocos muito curtos
+      texto_limpo = texto.strip()
+      if not texto_limpo:
+          continue
+      if len(texto_limpo.split()) < 5:
+          continue  # ignora blocos muito curtos
 
-    if len(buffer) + len(texto_limpo) + 1 < max_chars:
-        buffer += " " + texto_limpo
-    else:
-        blocos.append(buffer.strip())
-        buffer = texto_limpo
+      if len(buffer) + len(texto_limpo) + 1 < max_chars:
+          buffer += " " + texto_limpo
+      else:
+          blocos.append(buffer.strip())
+          buffer = texto_limpo
 
     for bloco in blocos:
         system_msg = {
