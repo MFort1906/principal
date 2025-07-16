@@ -116,22 +116,26 @@ def get_article_content(article_url):
         title_tag = soup.find('h1')
         title = title_tag.get_text(strip=True) if title_tag else "Título não encontrado"
 
-        paragraphs = [
-    para for para in soup.find_all(['p', 'h2', 'h3'])
-    if len(para.get_text(strip=True)) > 40  # ignora parágrafos curtos (ex: menus)
-]
-        raw_content = [para.get_text() for para in paragraphs if para.get_text(strip=True)]
-        raw_content = [c.strip() for c in raw_content if c.strip()]
+        content_blocks = []
+        for h2 in soup.find_all('h2'):
+            bloco = [h2.get_text(strip=True)]
+            for sib in h2.find_next_siblings():
+                if sib.name == 'h2':
+                    break
+                if sib.name in ['p', 'h3'] and len(sib.get_text(strip=True)) > 40:
+                    bloco.append(sib.get_text(strip=True))
+            if bloco:
+                content_blocks.append(" ".join(bloco))
 
-        filtered = []
+        # filtrar irrelevantes e duplicados
         seen = set()
-        for c in raw_content:
-            c_clean = c.strip()
-            if not is_irrelevant_text(c_clean) and c_clean.lower() not in seen:
-                filtered.append(c_clean)
-                seen.add(c_clean.lower())
+        filtrados = []
+        for bloco in content_blocks:
+            if not is_irrelevant_text(bloco) and bloco.lower() not in seen:
+                filtrados.append(bloco.strip())
+                seen.add(bloco.lower())
 
-        return title, filtered
+        return title, filtrados
 
     except Exception as e:
         print(f"[Erro Geral] {e}")
