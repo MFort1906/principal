@@ -249,24 +249,33 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
             texto = texto.replace(termo, f"{termo}")
         textos_corrigidos.append(texto)
 
+    # Pré-filtragem por relevância
     textos_filtrados = []
     for t in textos_corrigidos:
         if not any(termo in t.lower() for termo in termos_remover):
             textos_filtrados.append(t)
 
+    # Agrupamento de blocos com prevenção de duplicatas e curtos
+    vistos_hash = set()
     for texto in textos_filtrados:
-       texto_limpo = texto.strip()
-       if not texto_limpo:
-           continue
-       if len(texto_limpo.split()) < 5:
-           continue  # ignora blocos muito curtos
+        texto_limpo = texto.strip()
+        if not texto_limpo or len(texto_limpo.split()) < 5:
+            continue
 
-       if len(buffer) + len(texto_limpo) + 1 < max_chars:
-           buffer += " " + texto_limpo
-       else:
-           blocos.append(buffer.strip())
-           buffer = texto_limpo
+        hash_bloco = hash(re.sub(r'\W+', '', texto_limpo.lower()))
+        if hash_bloco in vistos_hash:
+            continue
+        vistos_hash.add(hash_bloco)
 
+        if len(buffer) + len(texto_limpo) + 1 < max_chars:
+            buffer += " " + texto_limpo
+        else:
+            blocos.append(buffer.strip())
+            buffer = texto_limpo
+    if buffer:
+        blocos.append(buffer.strip())
+
+    # Tradução de cada bloco
     for bloco in blocos:
         system_msg = {
             "role": "system",
@@ -278,8 +287,8 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
                 "3) Ignore rodapés, categorias e menus.\n"
                 "4) Use “esfregão” para mop e “lavadora de pisos” ou “esfregadora” para scrubber.\n"
                 "5) Evite repetições e frases soltas; traduza com naturalidade.\n"
-                "6) Não marque os termos preservados. \n"
-                "7)Se o conteúdo estiver vazio, irrelevante ou genérico, ignore sem responder com uma mensagem padrão. Apenas não gere nada."
+                "6) Não marque os termos preservados.\n"
+                "7) Se o conteúdo estiver vazio, irrelevante ou genérico, ignore sem responder com uma mensagem padrão. Apenas não gere nada."
             )
         }
         user_msg = {"role": "user", "content": bloco}
@@ -290,7 +299,8 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
                 messages=[system_msg, user_msg],
                 temperature=0.1,
                 max_tokens=2000,
-                n=1)
+                n=1
+            )
 
             texto_traduzido = resposta.choices[0].message.content.strip()
             usage = resposta.usage
@@ -316,11 +326,20 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
     print(f"  🔹 Completion tokens: {total_completion_tokens}")
     print(f"  🔹 Tokens totais: {total_prompt_tokens + total_completion_tokens}\n")
 
-    num_topicos = sum(1 for p in resultados if re.match(r'^\d\.', p))
+    # 🔄 Filtro final para remover traduções duplicadas
+    final_resultados = []
+    vistos_finais = set()
+    for r in resultados:
+        r_hash = hash(re.sub(r'\W+', '', r.lower()))
+        if r_hash not in vistos_finais:
+            final_resultados.append(r)
+            vistos_finais.add(r_hash)
+
+    num_topicos = sum(1 for p in final_resultados if re.match(r'^\d\.', p))
     if num_topicos < 5:
         print(f"⚠️ Alerta: apenas {num_topicos}/5 tópicos detectados na tradução.")
 
-    return resultados, {
+    return final_resultados, {
         "prompt_tokens": total_prompt_tokens,
         "completion_tokens": total_completion_tokens,
         "total_tokens": total_prompt_tokens + total_completion_tokens
