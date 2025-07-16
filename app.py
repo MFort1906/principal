@@ -104,10 +104,22 @@ def get_article_content(article_url):
 
         soup = BeautifulSoup(response.text, 'html.parser')
 
+        for seletor in [
+            'nav', '.nav', '#nav', '.navigation', '#navigation',
+            '.menu', '#menu', '.main-menu', '#main-menu',
+            '.breadcrumbs', '.category-list', '.product-nav',
+            '#product-list', '.product-list', '.filters', '.sidebar'
+        ]:
+            for el in soup.select(seletor):
+                el.decompose()
+
         title_tag = soup.find('h1')
         title = title_tag.get_text(strip=True) if title_tag else "Título não encontrado"
 
-        paragraphs = soup.find_all(['p', 'h2', 'h3'])
+        paragraphs = [
+    para for para in soup.find_all(['p', 'h2', 'h3'])
+    if len(para.get_text(strip=True)) > 40  # ignora parágrafos curtos (ex: menus)
+]
         raw_content = [para.get_text() for para in paragraphs if para.get_text(strip=True)]
         raw_content = [c.strip() for c in raw_content if c.strip()]
 
