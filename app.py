@@ -1,7 +1,7 @@
-# app.py — com logs detalhados para debug no Render
+# app.py — com melhorias para Render
 
 import os, re, time, json, shutil, random, asyncio, unicodedata
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 import nest_asyncio
 nest_asyncio.apply()
@@ -11,7 +11,6 @@ from bs4 import BeautifulSoup
 from docx import Document
 import gradio as gr
 from openai import AsyncOpenAI
-import platform
 
 # === Config ===
 print("🔧 Iniciando app.py...")
@@ -19,7 +18,6 @@ print("🔧 Iniciando app.py...")
 with open("/etc/secrets/OPENAI_KEY") as f:
     api_key = f.read().strip()
     print("🔑 OPENAI_KEY carregada:", api_key[:6], "... (ocultado)")
-
 if not api_key:
     raise ValueError("⚠️ Variável de ambiente 'OPENAI_KEY' não encontrada.")
 client = AsyncOpenAI(api_key=api_key)
@@ -27,9 +25,45 @@ client = AsyncOpenAI(api_key=api_key)
 with open("/etc/secrets/SCRAPER_PASSWORD") as f:
     SENHA = f.read().strip()
     print("🔐 SCRAPER_PASSWORD carregada com sucesso.")
-
 if not SENHA:
     raise ValueError("⚠️ Variável de ambiente 'SCRAPER_PASSWORD' não encontrada.")
+
+# === Variáveis Globais de Configuração ===
+URL_BASE = "https://www.tennantco.com"
+MAPA_PAISES = {
+    'pt_br': 'Brasil',
+    'en_us': 'Estados Unidos',
+    'en_ca': 'Canadá',
+    'en_au': 'Austrália e nova zelandia',
+    'en_za': 'África do Sul',
+    'en_gb': 'Reino Unido',
+    'es_es': 'Espanha',
+    'es_mx': 'México',
+    'fr_fr': 'França',
+    'nl_nl': 'Holanda',
+    'en_eu': 'Europa (outros paises)',
+    'en_ap': 'Ásia (outros paises)',
+    'en_la': 'america latina (outros paises)',
+    'es_la': 'america latina (outros paises)',
+    'de_de': 'Alemanha',
+    'it_it': 'Itália',
+    'ja_jp': 'Japão',
+    'zh_cn': 'China',
+    'pt_pt': 'Portugal',
+}
+MAPA_NOMES = {normalizar(nome): codigo for codigo, nome in MAPA_PAISES.items()}
+ALIASES_PAISES = {
+    "canguru": "en_au", "boomerang": "en_au", "sidney": "en_au", "aussie": "en_au", "kiwi": "en_au",
+    "samba": "pt_br", "carnaval": "pt_br",
+    "taco": "es_mx", "mariachi": "es_mx",
+    "eiffel": "fr_fr", "croissant": "fr_fr",
+    "molde": "nl_nl", "tulipa": "nl_nl",
+    "shinkansen": "ja_jp", "samurai": "ja_jp",
+    "dragao": "zh_cn", "mao": "zh_cn",
+    "realeza": "en_gb", "londres": "en_gb",
+    "snow": "en_ca", "hockey": "en_ca",
+    "bavaria": "de_de", "oktoberfest": "de_de", 'RJ': 'pt_br', 'SP': 'pt_br'
+}
 
 # === Utils ===
 def normalizar(texto):
@@ -97,7 +131,8 @@ def get_article_content(article_url):
         html = requests.get(article_url, headers={"User-Agent": "Mozilla/5.0"}).text
         tempo_espera(2, 4, "entre artigos")
         soup = BeautifulSoup(html, "html.parser")
-        title = soup.find("h1").get_text(strip=True)
+        title_tag = soup.find("h1")
+        title = title_tag.get_text(strip=True) if title_tag else "Sem título"
         paragraphs = [p.get_text(strip=True) for p in soup.find_all(['p', 'h2', 'h3'])]
         print(f"✅ Título: {title[:40]}... ({len(paragraphs)} parágrafos)")
         return title, paragraphs
@@ -144,19 +179,15 @@ async def traduzir_e_formatar_gpt(textos):
         "total_tokens": total_prompt + total_completion
     }
 
-
-def run(pais, alias, qtd_artigos):
+async def run(pais, alias, qtd_artigos):
     entrada = normalizar(pais)
     if entrada in MAPA_PAISES:
         codigo = entrada
     elif entrada in MAPA_NOMES:
         codigo = MAPA_NOMES[entrada]
-    elif entrada in ALIASES_NORMALIZADOS:
-        codigo = ALIASES_NORMALIZADOS[entrada]
+    elif entrada in ALIASES_PAISES:
+        codigo = ALIASES_PAISES[entrada]
     elif alias.strip() in MAPA_PAISES:
-        ALIASES_PERSISTENTES[pais] = alias.strip()
-        with open(ALIASES_PATH, "w", encoding="utf-8") as f:
-            json.dump(ALIASES_PERSISTENTES, f, indent=2, ensure_ascii=False)
         codigo = alias.strip()
     else:
         return f"❌ País inválido: {pais}", [], gr.update(visible=True)
@@ -172,7 +203,6 @@ def run(pais, alias, qtd_artigos):
     vistos_hashes = set()
     processados = 0
     falhas = []
-    
     token_totais = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
     for art in links:
@@ -180,21 +210,19 @@ def run(pais, alias, qtd_artigos):
             break
 
         title, content = get_article_content(art['href'])
-
         if not content:
             falhas.append(title)
             continue
 
         titulo_normalizado = normalizar(title)
         hash_artigo = hash(" ".join(content).strip().lower())
-
         if titulo_normalizado in vistos_titulos or hash_artigo in vistos_hashes:
             continue
 
         vistos_titulos.add(titulo_normalizado)
         vistos_hashes.add(hash_artigo)
 
-        traduzido, token_log = asyncio.run(traduzir_e_formatar_gpt(content))
+        traduzido, token_log = await traduzir_e_formatar_gpt(content)
         salvar_conteudo(title, traduzido, pasta)
         processados += 1
 
@@ -202,8 +230,6 @@ def run(pais, alias, qtd_artigos):
             token_totais[k] += token_log.get(k, 0)
 
     arquivos_docx = sorted([os.path.join(pasta, f) for f in os.listdir(pasta) if f.endswith(".docx")])
-
-    
 
     if falhas:
         print('easter egg')
@@ -219,34 +245,12 @@ def run(pais, alias, qtd_artigos):
 
     return "✅ Concluído!" + resumo_tokens, arquivos_docx, gr.update(visible=False)
 
-# === Login ===
 def checar_senha(senha_input):
     return (gr.update(visible=False), gr.update(visible=True)) if senha_input == SENHA else (gr.update(visible=True), gr.update(visible=False))
 
 # === Interface ===
 with gr.Blocks(title="Tennant Translator") as demo:
-    gr.HTML("""
-    <style>
-      #arquivos_box .wrap.svelte-1ipelgc {
-      max-height: 300px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      }
-      .gradio-container {
-        max-width: 95vw !important;
-        margin: auto !important;
-      }
-      .gr-textbox, .gr-number {
-        flex: 1 1 48%;
-        min-width: 300px;
-      }
-      .gr-button {
-        width: 100%;
-      }
-    </style>
-    """)
+    gr.HTML("""<style>#arquivos_box .wrap.svelte-1ipelgc { max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }.gradio-container { max-width: 95vw !important; margin: auto !important; }.gr-textbox, .gr-number { flex: 1 1 48%; min-width: 300px; }.gr-button { width: 100%; }</style>""")
 
     with gr.Row(visible=True) as login_box:
         senha_input = gr.Textbox(label="Digite a senha", type="password")
@@ -270,6 +274,5 @@ with gr.Blocks(title="Tennant Translator") as demo:
 
 if __name__ == "__main__":
     import sys
-    port = int(os.getenv("PORT", 7860))  # Porta definida pelo Render
+    port = int(os.getenv("PORT", 7860))
     demo.launch(server_name="0.0.0.0", server_port=port)
-
