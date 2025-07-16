@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 from docx import Document
 import gradio as gr
 from openai import AsyncOpenAI
+import re
 
 HEADERS = {
     'User-Agent': (
@@ -235,18 +236,18 @@ async def traduzir_e_formatar_gpt(textos):
 
     for bloco in blocos:
         system_msg = {
-            "role": "system",
-            "content": (
-                "Você é um tradutor profissional. Traduza para o português do Brasil com fidelidade, coesão, fluidez e tom editorial. "
-                "Regras: "
-                "1) Não adicione chamadas promocionais ou institucionais. "
-                "2) Preserve nomes técnicos e marcas (ex: i-mop, ec-H2O, CS5, T500). "
-                "3) Ignore rodapés, categorias e menus. "
-                "4) Use 'esfregão' para mop e 'lavadora de pisos' ou 'esfregadora' para scrubber. "
-                "5) Evite repetições e frases soltas; traduza com naturalidade. "
-                "6) Não marque os termos preservados."
-            )
-        }
+    "role": "system",
+    "content": (
+        "Você é um tradutor profissional. Traduza com fidelidade, coesão, fluidez e tom editorial para o português do Brasil."
+        "\n\nRegras obrigatórias:"
+        "\n1) Preserve listas numeradas e tópicos (ex: 1., 2., 3.) na mesma ordem."
+        "\n2) Não adicione chamadas promocionais ou frases institucionais extras."
+        "\n3) Mantenha termos técnicos e marcas exatamente como estão (ex: i-mop, ec-H2O, CS5, T500, AMR)."
+        "\n4) Ignore menus, rodapés ou elementos de navegação da página."
+        "\n5) Use 'esfregão' para mop e 'lavadora de pisos' ou 'esfregadora' para scrubber."
+        "\n6) Traduza de forma natural e sem repetições ou frases vagas."
+    )
+}
         user_msg = {"role": "user", "content": bloco}
 
         try:
@@ -266,7 +267,7 @@ async def traduzir_e_formatar_gpt(textos):
             resultados.extend(paragrafos)
             await asyncio.sleep(random.uniform(1.2, 2.0))
 
-        except Exception as e:
+         except Exception as e:
             print(f"[Erro GPT Tradução] {e}")
             resultados.append(bloco)
 
@@ -274,6 +275,10 @@ async def traduzir_e_formatar_gpt(textos):
     print(f"🔹 Prompt: {total_prompt_tokens}")
     print(f"🔹 Resposta: {total_completion_tokens}")
     print(f"🔹 Total: {total_prompt_tokens + total_completion_tokens}")
+
+    num_topicos = sum(1 for p in resultados if re.match(r'^\d\.', p))
+    if num_topicos < 5:
+        print(f"⚠️ Alerta: apenas {num_topicos}/5 tópicos detectados na tradução.")
 
     return resultados, {
         "prompt_tokens": total_prompt_tokens,
