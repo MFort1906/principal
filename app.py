@@ -236,27 +236,28 @@ async def traduzir_e_formatar_gpt(textos):
 
     for bloco in blocos:
         system_msg = {
-    "role": "system",
-    "content": (
-        "Você é um tradutor profissional. Traduza com fidelidade, coesão, fluidez e tom editorial para o português do Brasil."
-        "\n\nRegras obrigatórias:"
-        "\n1) Preserve listas numeradas e tópicos (ex: 1., 2., 3.) na mesma ordem."
-        "\n2) Não adicione chamadas promocionais ou frases institucionais extras."
-        "\n3) Mantenha termos técnicos e marcas exatamente como estão (ex: i-mop, ec-H2O, CS5, T500, AMR)."
-        "\n4) Ignore menus, rodapés ou elementos de navegação da página."
-        "\n5) Use 'esfregão' para mop e 'lavadora de pisos' ou 'esfregadora' para scrubber."
-        "\n6) Traduza de forma natural e sem repetições ou frases vagas."
-    )
-}
+            "role": "system",
+            "content": (
+                "Você é um tradutor profissional. Traduza com fidelidade, coesão, fluidez e tom editorial para o português do Brasil."
+                "\n\nRegras obrigatórias:"
+                "\n1) Preserve listas numeradas e tópicos (ex: 1., 2., 3.) na mesma ordem."
+                "\n2) Não adicione chamadas promocionais ou frases institucionais extras."
+                "\n3) Mantenha termos técnicos e marcas exatamente como estão (ex: i-mop, ec-H2O, CS5, T500, AMR)."
+                "\n4) Ignore menus, rodapés ou elementos de navegação da página."
+                "\n5) Use 'esfregão' para mop e 'lavadora de pisos' ou 'esfregadora' para scrubber."
+                "\n6) Traduza de forma natural e sem repetições ou frases vagas."
+            )
+        }
         user_msg = {"role": "user", "content": bloco}
 
         try:
             resposta = await client.chat.completions.create(
                 model=modelo,
                 messages=[system_msg, user_msg],
-                temperature=0.1,
+                temperature=0.3,
                 max_tokens=2000,
-                n=1)
+                n=1
+            )
 
             texto_traduzido = resposta.choices[0].message.content.strip()
             usage = resposta.usage
@@ -267,7 +268,7 @@ async def traduzir_e_formatar_gpt(textos):
             resultados.extend(paragrafos)
             await asyncio.sleep(random.uniform(1.2, 2.0))
 
-         except Exception as e:
+        except Exception as e:
             print(f"[Erro GPT Tradução] {e}")
             resultados.append(bloco)
 
@@ -285,7 +286,6 @@ async def traduzir_e_formatar_gpt(textos):
         "completion_tokens": total_completion_tokens,
         "total_tokens": total_prompt_tokens + total_completion_tokens
     }
-
 
 async def run(pais, alias, qtd_artigos):
     global PAIS
