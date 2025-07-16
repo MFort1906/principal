@@ -12,6 +12,143 @@ from docx import Document
 import gradio as gr
 from openai import AsyncOpenAI
 
+HEADERS = {
+    'User-Agent': (
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+        'AppleWebKit/537.36 (KHTML, like Gecko) '
+        'Chrome/91.0.4472.124 Safari/537.36'
+    )
+}
+
+# --- Funções auxiliares ---
+def tempo_espera(MIN_TIME=5, MAX_TIME=9, contexto="esperando..."):
+    frases = [
+        "⌛ Fazendo uma pausa pra não fritar os servidores...",
+    ]
+    tempo = random.uniform(MIN_TIME, MAX_TIME)
+    print(f"\n{random.choice(frases)} ({contexto})")
+    time.sleep(tempo)
+    print(f"...retomando após {tempo:.2f} segundos.\n")
+
+def is_valid_url(url):
+    return url.startswith("http") and ".html" in url
+
+def is_irrelevant_text(texto):
+    termos_ruins = [
+        "solicite um orçamento", "contate-nos", "compartilhe:", "siga-nos",
+        "nossa equipe", "serviço ao cliente", "entre em contato"
+    ]
+    texto_lower = texto.lower()
+    return any(t in texto_lower for t in termos_ruins)
+
+def coletar_links_artigos(pagina_url):
+    try:
+        response = requests.get(pagina_url, headers=HEADERS)
+        response.raise_for_status()
+    except Exception as e:
+        print(f"[Erro] Falha ao acessar {pagina_url}: {e}")
+        return []
+
+    sopa = BeautifulSoup(response.text, 'html.parser')
+
+    for seletor in ['footer', '.footer', '#footer', '.site-footer', '.rodape', '.legal', '.copyright']:
+        for el in sopa.select(seletor):
+            el.decompose()
+
+    keywords = [
+        "demonstração de produto", "solicite um orçamento", "representantes profissionais",
+        "valorizamos o seu negócio", "todas as marcas", "logotipos da Tennant", "propriedade da Tennant"
+    ]
+    paragraphs = sopa.find_all(['p', 'div', 'span'])
+    for p in paragraphs:
+        if any(k in p.get_text(strip=True).lower() for k in keywords):
+            p.decompose()
+
+    todos_a = sopa.find_all('a', href=True, title=True)
+    links = []
+
+    for a in todos_a:
+        href = a['href']
+        title = a['title'] or a.text.strip()
+
+        if not href.startswith('http'):
+            href = urljoin(URL_BASE, href)
+
+        if any(excl in href for excl in ['cart', 'contact', 'solicitud', 'linkedin', 'facebook', 'twitter']):
+            continue
+
+        if not is_valid_url(href):
+            continue
+
+        if '/blog/' not in href and PAIS not in ['ja_jp', 'zh_cn', 'ko_kr']:
+            continue
+
+        links.append({'title': title.strip(), 'href': href})
+
+    vistos = set()
+    links_unicos = []
+    for l in links:
+        if l['href'] not in vistos:
+            vistos.add(l['href'])
+            links_unicos.append(l)
+
+    print(f"🔗 {len(links_unicos)} links válidos extraídos da página.")
+    return links_unicos
+
+def get_article_content(article_url):
+    try:
+        tempo_espera(7.5, 9.5, contexto="esperando antes de coletar o artigo")
+        response = requests.get(article_url, headers=HEADERS, timeout=15)
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        title_tag = soup.find('h1')
+        title = title_tag.get_text(strip=True) if title_tag else "Título não encontrado"
+
+        paragraphs = soup.find_all(['p', 'h2', 'h3'])
+        raw_content = [para.get_text() for para in paragraphs if para.get_text(strip=True)]
+        raw_content = [c.strip() for c in raw_content if c.strip()]
+
+        filtered = []
+        seen = set()
+        for c in raw_content:
+            c_clean = c.strip()
+            if not is_irrelevant_text(c_clean) and c_clean.lower() not in seen:
+                filtered.append(c_clean)
+                seen.add(c_clean.lower())
+
+        return title, filtered
+
+    except Exception as e:
+        print(f"[Erro Geral] {e}")
+        return None, []
+
+def clean_filename(s):
+    proibidos = '<>:"/\\|?*'
+    for char in proibidos:
+        s = s.replace(char, '')
+    s = s.strip()
+    if len(s) > 50:
+        s = s[:50]
+    return s.replace(' ', '_')
+
+def limpar_xml(texto):
+    return ''.join(
+        c for c in texto
+        if c == '\n' or c == '\r' or c == '\t' or 32 <= ord(c) <= 126 or ord(c) >= 160
+    )
+
+def salvar_conteudo(title, content, pasta):
+    nome_arquivo = clean_filename(title)
+    path_docx = os.path.join(pasta, f"{nome_arquivo}.docx")
+    doc = Document()
+    doc.add_heading(limpar_xml(title), level=1)
+    for p in content:
+        doc.add_paragraph(f"• {p}")
+    doc.save(path_docx)
+    print(f"💾 Documento salvo: {path_docx}")
+
 # === Config ===
 print("🔧 Iniciando app.py...")
 
@@ -28,7 +165,6 @@ with open("/etc/secrets/SCRAPER_PASSWORD") as f:
 if not SENHA:
     raise ValueError("⚠️ Variável de ambiente 'SCRAPER_PASSWORD' não encontrada.")
 
-# === Variáveis Globais de Configuração ===
 URL_BASE = "https://www.tennantco.com"
 MAPA_PAISES = {
     'pt_br': 'Brasil', 'en_us': 'Estados Unidos', 'en_ca': 'Canadá',
@@ -41,6 +177,11 @@ MAPA_PAISES = {
 
 def normalizar(texto):
     return unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII').lower().strip()
+
+def limpar_pasta_resultados(caminho):
+    if os.path.exists(caminho):
+        shutil.rmtree(caminho)
+    os.makedirs(caminho)
 
 MAPA_NOMES = {normalizar(nome): codigo for codigo, nome in MAPA_PAISES.items()}
 ALIASES_PAISES = {
@@ -142,6 +283,7 @@ async def traduzir_e_formatar_gpt(textos):
 
 
 async def run(pais, alias, qtd_artigos):
+    global PAIS
     entrada = normalizar(pais)
     if entrada in MAPA_PAISES:
         codigo = entrada
@@ -153,6 +295,8 @@ async def run(pais, alias, qtd_artigos):
         codigo = alias.strip()
     else:
         return f"❌ País inválido: {pais}", [], gr.update(visible=True)
+
+    PAIS = codigo  # <- aqui, corretament
 
     nome_pais = MAPA_PAISES[codigo]
     url_blog = f"{URL_BASE}/{codigo}/blog.html"
