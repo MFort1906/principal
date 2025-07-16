@@ -141,12 +141,14 @@ def get_article_content(article_url):
                 content_blocks.append(" ".join(bloco))
 
         # 🔹 Filtro de irrelevantes e duplicados
-        seen = set()
+        seen_hashes = set()
         filtrados = []
         for bloco in content_blocks:
-            if not is_irrelevant_text(bloco) and bloco.lower() not in seen:
-                filtrados.append(bloco.strip())
-                seen.add(bloco.lower())
+           texto = bloco.strip()
+           hash_bloco = hash(texto.lower()[:80])  # compara os primeiros 80 caracteres
+           if not is_irrelevant_text(texto) and hash_bloco not in seen_hashes:
+              filtrados.append(texto)
+              seen_hashes.add(hash_bloco)
 
         return title, filtrados
 
@@ -252,17 +254,18 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
         if not any(termo in t.lower() for termo in termos_remover):
             textos_filtrados.append(t)
 
-    for texto in textos_filtrados:
-        texto_limpo = texto.strip()
-        if not texto_limpo:
-            continue
-        if len(buffer) + len(texto_limpo) + 1 < max_chars:
-            buffer += " " + texto_limpo
-        else:
-            blocos.append(buffer.strip())
-            buffer = texto_limpo
-    if buffer:
+   for texto in textos_filtrados:
+    texto_limpo = texto.strip()
+    if not texto_limpo:
+        continue
+    if len(texto_limpo.split()) < 5:
+        continue  # ignora blocos muito curtos
+
+    if len(buffer) + len(texto_limpo) + 1 < max_chars:
+        buffer += " " + texto_limpo
+    else:
         blocos.append(buffer.strip())
+        buffer = texto_limpo
 
     for bloco in blocos:
         system_msg = {
@@ -275,7 +278,8 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
                 "3) Ignore rodapés, categorias e menus.\n"
                 "4) Use “esfregão” para mop e “lavadora de pisos” ou “esfregadora” para scrubber.\n"
                 "5) Evite repetições e frases soltas; traduza com naturalidade.\n"
-                "6) Não marque os termos preservados."
+                "6) Não marque os termos preservados. \n"
+                "7)Se o conteúdo estiver vazio, irrelevante ou genérico, ignore sem responder com uma mensagem padrão. Apenas não gere nada."
             )
         }
         user_msg = {"role": "user", "content": bloco}
