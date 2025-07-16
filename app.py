@@ -51,7 +51,12 @@ MAPA_PAISES = {
     'zh_cn': 'China',
     'pt_pt': 'Portugal',
 }
+
+def normalizar(texto):
+    return unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII').lower().strip()
+    
 MAPA_NOMES = {normalizar(nome): codigo for codigo, nome in MAPA_PAISES.items()}
+
 ALIASES_PAISES = {
     "canguru": "en_au", "boomerang": "en_au", "sidney": "en_au", "aussie": "en_au", "kiwi": "en_au",
     "samba": "pt_br", "carnaval": "pt_br",
@@ -66,8 +71,7 @@ ALIASES_PAISES = {
 }
 
 # === Utils ===
-def normalizar(texto):
-    return unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII').lower().strip()
+
 
 def tempo_espera(min_time=5, max_time=9, contexto="esperando..."):
     tempo = random.uniform(min_time, max_time)
