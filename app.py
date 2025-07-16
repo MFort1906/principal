@@ -31,48 +31,28 @@ if not SENHA:
 # === Variáveis Globais de Configuração ===
 URL_BASE = "https://www.tennantco.com"
 MAPA_PAISES = {
-    'pt_br': 'Brasil',
-    'en_us': 'Estados Unidos',
-    'en_ca': 'Canadá',
-    'en_au': 'Austrália e nova zelandia',
-    'en_za': 'África do Sul',
-    'en_gb': 'Reino Unido',
-    'es_es': 'Espanha',
-    'es_mx': 'México',
-    'fr_fr': 'França',
-    'nl_nl': 'Holanda',
-    'en_eu': 'Europa (outros paises)',
-    'en_ap': 'Ásia (outros paises)',
-    'en_la': 'america latina (outros paises)',
-    'es_la': 'america latina (outros paises)',
-    'de_de': 'Alemanha',
-    'it_it': 'Itália',
-    'ja_jp': 'Japão',
-    'zh_cn': 'China',
-    'pt_pt': 'Portugal',
+    'pt_br': 'Brasil', 'en_us': 'Estados Unidos', 'en_ca': 'Canadá',
+    'en_au': 'Austrália e nova zelandia', 'en_za': 'África do Sul', 'en_gb': 'Reino Unido',
+    'es_es': 'Espanha', 'es_mx': 'México', 'fr_fr': 'França', 'nl_nl': 'Holanda',
+    'en_eu': 'Europa (outros paises)', 'en_ap': 'Ásia (outros paises)',
+    'en_la': 'america latina (outros paises)', 'es_la': 'america latina (outros paises)',
+    'de_de': 'Alemanha', 'it_it': 'Itália', 'ja_jp': 'Japão', 'zh_cn': 'China', 'pt_pt': 'Portugal'
 }
 
 def normalizar(texto):
     return unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII').lower().strip()
-    
-MAPA_NOMES = {normalizar(nome): codigo for codigo, nome in MAPA_PAISES.items()}
 
+MAPA_NOMES = {normalizar(nome): codigo for codigo, nome in MAPA_PAISES.items()}
 ALIASES_PAISES = {
     "canguru": "en_au", "boomerang": "en_au", "sidney": "en_au", "aussie": "en_au", "kiwi": "en_au",
-    "samba": "pt_br", "carnaval": "pt_br",
-    "taco": "es_mx", "mariachi": "es_mx",
-    "eiffel": "fr_fr", "croissant": "fr_fr",
-    "molde": "nl_nl", "tulipa": "nl_nl",
-    "shinkansen": "ja_jp", "samurai": "ja_jp",
-    "dragao": "zh_cn", "mao": "zh_cn",
-    "realeza": "en_gb", "londres": "en_gb",
-    "snow": "en_ca", "hockey": "en_ca",
+    "samba": "pt_br", "carnaval": "pt_br", "taco": "es_mx", "mariachi": "es_mx",
+    "eiffel": "fr_fr", "croissant": "fr_fr", "molde": "nl_nl", "tulipa": "nl_nl",
+    "shinkansen": "ja_jp", "samurai": "ja_jp", "dragao": "zh_cn", "mao": "zh_cn",
+    "realeza": "en_gb", "londres": "en_gb", "snow": "en_ca", "hockey": "en_ca",
     "bavaria": "de_de", "oktoberfest": "de_de", 'RJ': 'pt_br', 'SP': 'pt_br'
 }
 
 # === Utils ===
-
-
 def tempo_espera(min_time=5, max_time=9, contexto="esperando..."):
     tempo = random.uniform(min_time, max_time)
     print(f"\n⌛ {contexto}... ({tempo:.2f}s)")
@@ -103,10 +83,25 @@ def salvar_conteudo(title, content, pasta_pais):
     doc.add_heading(title, level=1)
     for p in content:
         texto = p.strip()
-        par = doc.add_paragraph(f"• {texto}")
-        if len(texto.split()) < 12:
-            par.runs[0].bold = True
+        if texto[:2] in ["1.", "2.", "3.", "4.", "5."]:
+            doc.add_heading(texto, level=2)
+        else:
+            par = doc.add_paragraph(f"• {texto}")
+            if len(texto.split()) < 12:
+                par.runs[0].bold = True
     doc.save(path)
+
+def filtrar_paragrafos(paragraphs):
+    clean = []
+    for p in paragraphs:
+        if len(p.strip()) < 15:
+            continue
+        if sum(1 for word in p.split() if p.count(word) > 3) > 5:
+            continue
+        if any(term in p.lower() for term in ["minha conta", "carrinho", "login", "ajuda", "localizações globais", "investidores"]):
+            continue
+        clean.append(p)
+    return clean
 
 def coletar_links_artigos(url):
     print(f"🔗 Coletando artigos de: {url}")
@@ -138,7 +133,8 @@ def get_article_content(article_url):
         title_tag = soup.find("h1")
         title = title_tag.get_text(strip=True) if title_tag else "Sem título"
         paragraphs = [p.get_text(strip=True) for p in soup.find_all(['p', 'h2', 'h3'])]
-        print(f"✅ Título: {title[:40]}... ({len(paragraphs)} parágrafos)")
+        paragraphs = filtrar_paragrafos(paragraphs)
+        print(f"✅ Título: {title[:40]}... ({len(paragraphs)} parágrafos limpos)")
         return title, paragraphs
     except Exception as e:
         print(f"⚠️ Erro ao obter artigo: {e}")
