@@ -104,6 +104,7 @@ def get_article_content(article_url):
 
         soup = BeautifulSoup(response.text, 'html.parser')
 
+        # Remover elementos desnecessários
         for seletor in [
             'nav', '.nav', '#nav', '.navigation', '#navigation',
             '.menu', '#menu', '.main-menu', '#main-menu',
@@ -117,6 +118,18 @@ def get_article_content(article_url):
         title = title_tag.get_text(strip=True) if title_tag else "Título não encontrado"
 
         content_blocks = []
+
+        # 🔹 NOVO: adicionar parágrafos introdutórios antes do primeiro <h2>
+        first_h2 = soup.find('h2')
+        if first_h2:
+            intro_paragraphs = []
+            for tag in first_h2.find_all_previous():
+                if tag.name in ['p', 'div'] and len(tag.get_text(strip=True)) > 40:
+                    intro_paragraphs.insert(0, tag.get_text(strip=True))  # mantém ordem original
+            if intro_paragraphs:
+                content_blocks.append(" ".join(intro_paragraphs))
+
+        # 🔹 Mantém blocos por <h2> como antes
         for h2 in soup.find_all('h2'):
             bloco = [h2.get_text(strip=True)]
             for sib in h2.find_next_siblings():
@@ -127,7 +140,7 @@ def get_article_content(article_url):
             if bloco:
                 content_blocks.append(" ".join(bloco))
 
-        # filtrar irrelevantes e duplicados
+        # 🔹 Filtro de irrelevantes e duplicados
         seen = set()
         filtrados = []
         for bloco in content_blocks:
