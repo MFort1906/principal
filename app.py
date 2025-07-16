@@ -195,10 +195,11 @@ ALIASES_PAISES = {
 }
 
 # === Tradução GPT refinada ===
-async def traduzir_e_formatar_gpt(textos):
+async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
     resultados = []
     modelo = "gpt-4o-mini"
-    blocos, buffer = [], ""
+    blocos = []
+    buffer = ""
     max_chars = 1200
     total_prompt_tokens = 0
     total_completion_tokens = 0
@@ -238,14 +239,14 @@ async def traduzir_e_formatar_gpt(textos):
         system_msg = {
             "role": "system",
             "content": (
-                "Você é um tradutor profissional. Traduza com fidelidade, coesão, fluidez e tom editorial para o português do Brasil."
-                "\n\nRegras obrigatórias:"
-                "\n1) Preserve listas numeradas e tópicos (ex: 1., 2., 3.) na mesma ordem."
-                "\n2) Não adicione chamadas promocionais ou frases institucionais extras."
-                "\n3) Mantenha termos técnicos e marcas exatamente como estão (ex: i-mop, ec-H2O, CS5, T500, AMR)."
-                "\n4) Ignore menus, rodapés ou elementos de navegação da página."
-                "\n5) Use 'esfregão' para mop e 'lavadora de pisos' ou 'esfregadora' para scrubber."
-                "\n6) Traduza de forma natural e sem repetições ou frases vagas."
+                "Você é um tradutor profissional. Traduza para o português do Brasil com fidelidade, coesão, fluidez e tom editorial.\n\n"
+                "Regras:\n"
+                "1) Não adicione chamadas promocionais ou institucionais.\n"
+                "2) Preserve nomes técnicos e marcas (ex: i-mop, ec-H2O, CS5, T500).\n"
+                "3) Ignore rodapés, categorias e menus.\n"
+                "4) Use “esfregão” para mop e “lavadora de pisos” ou “esfregadora” para scrubber.\n"
+                "5) Evite repetições e frases soltas; traduza com naturalidade.\n"
+                "6) Não marque os termos preservados."
             )
         }
         user_msg = {"role": "user", "content": bloco}
@@ -254,15 +255,20 @@ async def traduzir_e_formatar_gpt(textos):
             resposta = await client.chat.completions.create(
                 model=modelo,
                 messages=[system_msg, user_msg],
-                temperature=0.3,
+                temperature=0.1,
                 max_tokens=2000,
-                n=1
-            )
+                n=1)
 
             texto_traduzido = resposta.choices[0].message.content.strip()
             usage = resposta.usage
-            total_prompt_tokens += usage.prompt_tokens
-            total_completion_tokens += usage.completion_tokens
+            prompt_tokens = usage.prompt_tokens
+            completion_tokens = usage.completion_tokens
+            total_tokens = usage.total_tokens
+
+            print(f"\U0001F4CA Tokens usados neste bloco → Prompt: {prompt_tokens}, Resposta: {completion_tokens}, Total: {total_tokens}")
+
+            total_prompt_tokens += prompt_tokens
+            total_completion_tokens += completion_tokens
 
             paragrafos = [p.strip() for p in texto_traduzido.split('\n') if p.strip()]
             resultados.extend(paragrafos)
@@ -272,10 +278,10 @@ async def traduzir_e_formatar_gpt(textos):
             print(f"[Erro GPT Tradução] {e}")
             resultados.append(bloco)
 
-    print(f"\n📊 Tokens:")
-    print(f"🔹 Prompt: {total_prompt_tokens}")
-    print(f"🔹 Resposta: {total_completion_tokens}")
-    print(f"🔹 Total: {total_prompt_tokens + total_completion_tokens}")
+    print(f"\n\U0001F4C8 Token log total:")
+    print(f"  🔹 Prompt tokens: {total_prompt_tokens}")
+    print(f"  🔹 Completion tokens: {total_completion_tokens}")
+    print(f"  🔹 Tokens totais: {total_prompt_tokens + total_completion_tokens}\n")
 
     num_topicos = sum(1 for p in resultados if re.match(r'^\d\.', p))
     if num_topicos < 5:
@@ -286,7 +292,7 @@ async def traduzir_e_formatar_gpt(textos):
         "completion_tokens": total_completion_tokens,
         "total_tokens": total_prompt_tokens + total_completion_tokens
     }
-
+    
 async def run(pais, alias, qtd_artigos):
     global PAIS
     entrada = normalizar(pais)
