@@ -1,4 +1,4 @@
-# app.py — com melhorias para Render
+# app.py — com melhorias finais refinadas para Render
 
 import os, re, time, json, shutil, random, asyncio, unicodedata
 from urllib.parse import urljoin
@@ -52,132 +52,94 @@ ALIASES_PAISES = {
     "bavaria": "de_de", "oktoberfest": "de_de", 'RJ': 'pt_br', 'SP': 'pt_br'
 }
 
-# === Utils ===
-def tempo_espera(min_time=5, max_time=9, contexto="esperando..."):
-    tempo = random.uniform(min_time, max_time)
-    print(f"\n⌛ {contexto}... ({tempo:.2f}s)")
-    time.sleep(tempo)
-
-def limpar_pasta_resultados(nome_pasta):
-    if os.path.exists(nome_pasta):
-        shutil.rmtree(nome_pasta)
-    os.makedirs(nome_pasta)
-    print(f"📁 Pasta limpa/criada: {nome_pasta}")
-
-def clean_filename(s):
-    return re.sub(r'[<>:"/\\|?*]', '', s)[:50].replace(' ', '_')
-
-def salvar_conteudo(title, content, pasta_pais):
-    print(f"💾 Salvando: {title[:60]}")
-    base_name = clean_filename(title)
-    filename = f"{base_name}.docx"
-    path = os.path.join(pasta_pais, filename)
-
-    contador = 1
-    while os.path.exists(path):
-        filename = f"{base_name}_{contador}.docx"
-        path = os.path.join(pasta_pais, filename)
-        contador += 1
-
-    doc = Document()
-    doc.add_heading(title, level=1)
-    for p in content:
-        texto = p.strip()
-        if texto[:2] in ["1.", "2.", "3.", "4.", "5."]:
-            doc.add_heading(texto, level=2)
-        else:
-            par = doc.add_paragraph(f"• {texto}")
-            if len(texto.split()) < 12:
-                par.runs[0].bold = True
-    doc.save(path)
-
-def filtrar_paragrafos(paragraphs):
-    clean = []
-    for p in paragraphs:
-        if len(p.strip()) < 15:
-            continue
-        if sum(1 for word in p.split() if p.count(word) > 3) > 5:
-            continue
-        if any(term in p.lower() for term in ["minha conta", "carrinho", "login", "ajuda", "localizações globais", "investidores"]):
-            continue
-        clean.append(p)
-    return clean
-
-def coletar_links_artigos(url):
-    print(f"🔗 Coletando artigos de: {url}")
-    try:
-        html = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}).text
-        tempo_espera(3, 5, "entre coletas")
-        soup = BeautifulSoup(html, "html.parser")
-        for tag in soup.select("footer, .footer, #footer, .legal"):
-            tag.decompose()
-        links = []
-        for a in soup.find_all("a", href=True, title=True):
-            href = a['href']
-            if not href.startswith('http'):
-                href = urljoin(url, href)
-            if '/blog/' in href:
-                links.append({'title': a['title'].strip(), 'href': href})
-        print(f"🔍 {len(links)} links encontrados.")
-        return links
-    except Exception as e:
-        print(f"❌ Erro ao coletar links: {e}")
-        return []
-
-def get_article_content(article_url):
-    print(f"📄 Obtendo artigo: {article_url}")
-    try:
-        html = requests.get(article_url, headers={"User-Agent": "Mozilla/5.0"}).text
-        tempo_espera(2, 4, "entre artigos")
-        soup = BeautifulSoup(html, "html.parser")
-        title_tag = soup.find("h1")
-        title = title_tag.get_text(strip=True) if title_tag else "Sem título"
-        paragraphs = [p.get_text(strip=True) for p in soup.find_all(['p', 'h2', 'h3'])]
-        paragraphs = filtrar_paragrafos(paragraphs)
-        print(f"✅ Título: {title[:40]}... ({len(paragraphs)} parágrafos limpos)")
-        return title, paragraphs
-    except Exception as e:
-        print(f"⚠️ Erro ao obter artigo: {e}")
-        return "Erro ao coletar título", []
-
+# === Tradução GPT refinada ===
 async def traduzir_e_formatar_gpt(textos):
-    print(f"🌐 Traduzindo bloco com {len(textos)} textos...")
-    blocos, buffer, final = [], "", []
-    total_prompt, total_completion = 0, 0
+    resultados = []
+    modelo = "gpt-4o-mini"
+    blocos, buffer = [], ""
+    max_chars = 1200
+    total_prompt_tokens = 0
+    total_completion_tokens = 0
 
-    for t in textos:
-        if len(buffer) + len(t) + 1 < 1200:
-            buffer += " " + t
+    termos_remover = [
+        "entre em contato", "descubra como", "solicite um orçamento", "fale conosco",
+        "nossa equipe de vendas", "está pronta para ajudar", "demonstração de produto",
+        "visite nosso site", "nos siga nas redes", "cnpj:", "telefone:", "email:", "diretores da empresa"
+    ]
+
+    termos_preservar = ["BrainOS", "ec-H2O NanoClean", "T16AMR", "i-mop", "LiDAR", "3D", "AMR"]
+
+    textos_corrigidos = []
+    for texto in textos:
+        for termo in termos_preservar:
+            texto = texto.replace(termo, f"{termo}")
+        textos_corrigidos.append(texto)
+
+    textos_filtrados = []
+    for t in textos_corrigidos:
+        if not any(termo in t.lower() for termo in termos_remover):
+            textos_filtrados.append(t)
+
+    for texto in textos_filtrados:
+        texto_limpo = texto.strip()
+        if not texto_limpo:
+            continue
+        if len(buffer) + len(texto_limpo) + 1 < max_chars:
+            buffer += " " + texto_limpo
         else:
-            blocos.append(buffer.strip()); buffer = t
-    if buffer: blocos.append(buffer.strip())
+            blocos.append(buffer.strip())
+            buffer = texto_limpo
+    if buffer:
+        blocos.append(buffer.strip())
 
     for bloco in blocos:
-        try:
-            resp = await client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "Você é um tradutor profissional. Traduza para o português do Brasil."},
-                    {"role": "user", "content": bloco}
-                ],
-                temperature=0.3, max_tokens=1500,
+        system_msg = {
+            "role": "system",
+            "content": (
+                "Você é um tradutor profissional. Traduza para o português do Brasil com fidelidade, coesão, fluidez e tom editorial. "
+                "Regras: "
+                "1) Não adicione chamadas promocionais ou institucionais. "
+                "2) Preserve nomes técnicos e marcas (ex: i-mop, ec-H2O, CS5, T500). "
+                "3) Ignore rodapés, categorias e menus. "
+                "4) Use 'esfregão' para mop e 'lavadora de pisos' ou 'esfregadora' para scrubber. "
+                "5) Evite repetições e frases soltas; traduza com naturalidade. "
+                "6) Não marque os termos preservados."
             )
-            txt = resp.choices[0].message.content
-            final.extend([p.strip() for p in txt.split('\n') if p.strip()])
-            usage = resp.usage
-            total_prompt += usage.prompt_tokens
-            total_completion += usage.completion_tokens
-            print(f"✅ Tradução concluída ({usage.total_tokens} tokens)")
-        except Exception as e:
-            print(f"⚠️ Erro na tradução GPT: {e}")
-            final.append(bloco)
-        await asyncio.sleep(random.uniform(1, 2))
+        }
+        user_msg = {"role": "user", "content": bloco}
 
-    return final, {
-        "prompt_tokens": total_prompt,
-        "completion_tokens": total_completion,
-        "total_tokens": total_prompt + total_completion
+        try:
+            resposta = await client.chat.completions.create(
+                model=modelo,
+                messages=[system_msg, user_msg],
+                temperature=0.1,
+                max_tokens=2000,
+                n=1)
+
+            texto_traduzido = resposta.choices[0].message.content.strip()
+            usage = resposta.usage
+            total_prompt_tokens += usage.prompt_tokens
+            total_completion_tokens += usage.completion_tokens
+
+            paragrafos = [p.strip() for p in texto_traduzido.split('\n') if p.strip()]
+            resultados.extend(paragrafos)
+            await asyncio.sleep(random.uniform(1.2, 2.0))
+
+        except Exception as e:
+            print(f"[Erro GPT Tradução] {e}")
+            resultados.append(bloco)
+
+    print(f"\n📊 Tokens:")
+    print(f"🔹 Prompt: {total_prompt_tokens}")
+    print(f"🔹 Resposta: {total_completion_tokens}")
+    print(f"🔹 Total: {total_prompt_tokens + total_completion_tokens}")
+
+    return resultados, {
+        "prompt_tokens": total_prompt_tokens,
+        "completion_tokens": total_completion_tokens,
+        "total_tokens": total_prompt_tokens + total_completion_tokens
     }
+
 
 async def run(pais, alias, qtd_artigos):
     entrada = normalizar(pais)
