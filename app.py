@@ -327,9 +327,21 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
     print(f"  🔹 Completion tokens: {total_completion_tokens}")
     print(f"  🔹 Tokens totais: {total_prompt_tokens + total_completion_tokens}\n")
 
-    # 🔄 Filtro final para remover traduções duplicadas
+# 🔄 Filtro final para remover seções duplicadas com mesmo título (ex: "1.", "2.", etc.)
+    secoes_vistas = set()
+    secoes_filtradas = []
+    for paragrafo in resultados:
+        titulo_match = re.match(r'^(\d\.\s?[\w\s\-]+)', paragrafo)
+        if titulo_match:
+            titulo_normalizado = titulo_match.group(1).strip().lower()
+            if titulo_normalizado in secoes_vistas:
+                continue  # ignora duplicata
+            secoes_vistas.add(titulo_normalizado)
+        secoes_filtradas.append(paragrafo)
+
+    # Substitui a lista de resultados finais
     final_resultados = []
-    for r in resultados:
+    for r in secoes_filtradas:
         r_normalizado = r.strip().lower()
         if any(difflib.SequenceMatcher(None, r_normalizado, existente.lower()).ratio() > 0.92 for existente in final_resultados):
             continue
