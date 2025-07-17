@@ -33,7 +33,7 @@ async def executar_pipeline(pais_input, qtd_artigos):
         if hash_artigo in vistos_hash:
             continue
 
-        traducao, _ = await traduzir_artigo(parags)
+        traducao, _ = await traduzir_e_formatar_gpt(parags)
         caminho = salvar_conteudo_em_docx(titulo, traducao, pasta_saida)
         arquivos_gerados.append(caminho)
 
