@@ -1,3 +1,5 @@
+# scraper.py
+
 import time
 import random
 import requests
@@ -41,12 +43,12 @@ def coletar_links_artigos(pagina_url, pais):
 
     sopa = BeautifulSoup(response.text, 'html.parser')
 
-    # Remove rodapés e seções inúteis
+    # Remove rodapés e seções irrelevantes
     for seletor in ['footer', '.footer', '#footer', '.site-footer', '.rodape', '.legal', '.copyright']:
         for el in sopa.select(seletor):
             el.decompose()
 
-    # Coleta de links válidos
+    # Coleta os links de artigos válidos
     todos_a = sopa.find_all('a', href=True, title=True)
     links = []
 
@@ -65,7 +67,7 @@ def coletar_links_artigos(pagina_url, pais):
 
         links.append({'title': title, 'href': href})
 
-    # Remove duplicados
+    # Remover duplicações
     vistos = set()
     links_unicos = []
     for link in links:
@@ -75,3 +77,43 @@ def coletar_links_artigos(pagina_url, pais):
 
     print(f"🔗 {len(links_unicos)} links válidos extraídos.")
     return links_unicos
+
+# === Função para extrair conteúdo de um artigo ===
+def get_article_content(article_url):
+    try:
+        tempo_espera(7.5, 9.5, contexto="esperando antes de coletar o artigo")
+        response = requests.get(article_url, headers=HEADERS, timeout=15)
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # Remover seções irrelevantes
+        for seletor in ['nav', '.nav', '#nav', '.breadcrumbs', '.category-list']:
+            for el in soup.select(seletor):
+                el.decompose()
+
+        title_tag = soup.find('h1')
+        title = title_tag.get_text(strip=True) if title_tag else "Título não encontrado"
+
+        # Captura os blocos de conteúdo
+        raw_content = []
+        vistos = set()
+
+        for el in soup.find_all(['p', 'h2', 'h3']):
+            texto = el.get_text(strip=True)
+            if not texto:
+                continue
+            if el.name == 'h2':
+                texto = f"## {texto}"
+            elif len(texto) < 20:
+                continue
+            texto_lower = texto.lower()
+            if texto_lower not in vistos:
+                raw_content.append(texto)
+                vistos.add(texto_lower)
+
+        return title, raw_content
+
+    except Exception as e:
+        print(f"[Erro ao coletar artigo] {e}")
+        return None, []
