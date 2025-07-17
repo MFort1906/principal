@@ -5,6 +5,25 @@ import unicodedata
 import os
 import shutil
 
+# === Mapas de países e aliases ===
+MAPA_PAISES = {
+    'pt_br': 'Brasil', 'en_us': 'Estados Unidos', 'en_ca': 'Canadá',
+    'en_au': 'Austrália e Nova Zelândia', 'en_za': 'África do Sul', 'en_gb': 'Reino Unido',
+    'es_es': 'Espanha', 'es_mx': 'México', 'fr_fr': 'França', 'nl_nl': 'Holanda',
+    'en_eu': 'Europa (outros países)', 'en_ap': 'Ásia (outros países)',
+    'en_la': 'América Latina (outros países)', 'es_la': 'América Latina (outros países)',
+    'de_de': 'Alemanha', 'it_it': 'Itália', 'ja_jp': 'Japão', 'zh_cn': 'China', 'pt_pt': 'Portugal'
+}
+
+ALIASES_PAISES = {
+    "canguru": "en_au", "boomerang": "en_au", "sidney": "en_au", "aussie": "en_au", "kiwi": "en_au",
+    "samba": "pt_br", "carnaval": "pt_br", "taco": "es_mx", "mariachi": "es_mx",
+    "eiffel": "fr_fr", "croissant": "fr_fr", "molde": "nl_nl", "tulipa": "nl_nl",
+    "shinkansen": "ja_jp", "samurai": "ja_jp", "dragao": "zh_cn", "mao": "zh_cn",
+    "realeza": "en_gb", "londres": "en_gb", "snow": "en_ca", "hockey": "en_ca",
+    "bavaria": "de_de", "oktoberfest": "de_de", 'RJ': 'pt_br', 'SP': 'pt_br'
+}
+
 def limpar_pasta_resultados(path):
     if os.path.exists(path):
         shutil.rmtree(path)  # apaga a pasta inteira
