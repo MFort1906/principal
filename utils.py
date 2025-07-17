@@ -2,6 +2,13 @@ import time
 import random
 import re
 import unicodedata
+import os
+import shutil
+
+def limpar_pasta_resultados(path):
+    if os.path.exists(path):
+        shutil.rmtree(path)  # apaga a pasta inteira
+    os.makedirs(path)        # cria a pasta novamente
 
 def tempo_espera(min_time=5, max_time=9, contexto="aguardando..."):
     tempo = random.uniform(min_time, max_time)
