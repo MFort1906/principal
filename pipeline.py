@@ -1,18 +1,17 @@
-# pipeline.py
 import os
 from scraper import coletar_links_artigos, get_article_content
 from tradução import traduzir_e_formatar_gpt
 from exporter import salvar_conteudo_em_docx
-from utils import normalizar, limpar_pasta_resultados, MAPA_PAISES, ALIASES_PAISES
+from utils import normalizar, limpar_pasta_resultados
+from paises import resolver_pais, MAPA_PAISES
 
 URL_BASE = "https://www.tennantco.com"
 
-async def executar_pipeline(pais_input, qtd_artigos):
-    entrada = normalizar(pais_input)
-    codigo = (
-        entrada if entrada in MAPA_PAISES else
-        ALIASES_PAISES.get(entrada) or 'pt_br'
-    )
+async def executar_pipeline(pais_input, alias_input, qtd_artigos):
+    try:
+        codigo = resolver_pais(pais_input, alias_input)
+    except ValueError as e:
+        return str(e), [], None  # o terceiro retorno é para gr.update()
 
     nome_pais = MAPA_PAISES.get(codigo, "Desconhecido")
     pasta_saida = os.path.abspath(f"resultados/{nome_pais}")
@@ -39,4 +38,4 @@ async def executar_pipeline(pais_input, qtd_artigos):
 
         vistos_hash.add(hash_artigo)
 
-    return arquivos_gerados
+    return "✅ Concluído!", arquivos_gerados, None
