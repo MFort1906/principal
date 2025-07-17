@@ -38,9 +38,11 @@ def is_valid_url(url):
 def is_irrelevant_text(texto):
     termos_ruins = [
         "solicite um orçamento", "contate-nos", "compartilhe:", "siga-nos",
-        "nossa equipe", "serviço ao cliente", "entre em contato"
+        "nossa equipe", "serviço ao cliente", "entre em contato",
+        "política de privacidade", "fale conosco", "acesse nosso site",
+        "atendimento ao cliente", "cnpj:", "telefone:", "email:"
     ]
-    texto_lower = texto.lower()
+    texto_lower = texto.lower().strip()
     return any(t in texto_lower for t in termos_ruins)
 
 def coletar_links_artigos(pagina_url):
@@ -105,7 +107,7 @@ def get_article_content(article_url):
 
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # Remover elementos desnecessários
+        # 🔹 Remover elementos desnecessários do HTML
         for seletor in [
             'nav', '.nav', '#nav', '.navigation', '#navigation',
             '.menu', '#menu', '.main-menu', '#main-menu',
@@ -115,41 +117,52 @@ def get_article_content(article_url):
             for el in soup.select(seletor):
                 el.decompose()
 
+        # 🔹 Obter título principal do artigo
         title_tag = soup.find('h1')
         title = title_tag.get_text(strip=True) if title_tag else "Título não encontrado"
 
         content_blocks = []
 
-        # 🔹 NOVO: adicionar parágrafos introdutórios antes do primeiro <h2>
-        first_h2 = soup.find('h2')
-        if first_h2:
-            intro_paragraphs = []
-            for tag in first_h2.find_all_previous():
-                if tag.name in ['p', 'div'] and len(tag.get_text(strip=True)) > 40:
-                    intro_paragraphs.insert(0, tag.get_text(strip=True))  # mantém ordem original
-            if intro_paragraphs:
-                content_blocks.append(" ".join(intro_paragraphs))
+        # 🔹 Capturar conteúdo entre o <h1> e o primeiro <h2>
+        intro_paragraphs = []
+        coletando = False
 
-        # 🔹 Mantém blocos por <h2> como antes
+        for tag in soup.find_all():
+            if tag.name == 'h1':
+                coletando = True
+                continue
+            if tag.name == 'h2':
+                break
+            if coletando and tag.name in ['p', 'div']:
+                texto = tag.get_text(strip=True)
+                if len(texto) > 40:
+                    intro_paragraphs.append(texto)
+
+        if intro_paragraphs:
+            content_blocks.append(" ".join(intro_paragraphs))
+
+        # 🔹 Capturar blocos de conteúdo a partir de <h2> e seus parágrafos
         for h2 in soup.find_all('h2'):
             bloco = [h2.get_text(strip=True)]
             for sib in h2.find_next_siblings():
                 if sib.name == 'h2':
                     break
-                if sib.name in ['p', 'h3'] and len(sib.get_text(strip=True)) > 40:
-                    bloco.append(sib.get_text(strip=True))
+                if sib.name in ['p', 'h3']:
+                    texto = sib.get_text(strip=True)
+                    if len(texto) > 40:
+                        bloco.append(texto)
             if bloco:
                 content_blocks.append(" ".join(bloco))
 
-        # 🔹 Filtro de irrelevantes e duplicados
+        # 🔹 Filtrar blocos irrelevantes e duplicados
         seen_hashes = set()
         filtrados = []
         for bloco in content_blocks:
-           texto = bloco.strip()
-           hash_bloco = hash(texto.lower()[:80])  # compara os primeiros 80 caracteres
-           if not is_irrelevant_text(texto) and hash_bloco not in seen_hashes:
-              filtrados.append(texto)
-              seen_hashes.add(hash_bloco)
+            texto = bloco.strip()
+            hash_bloco = hash(texto.lower()[:80])  # comparação parcial para detectar duplicatas
+            if not is_irrelevant_text(texto) and hash_bloco not in seen_hashes:
+                filtrados.append(texto)
+                seen_hashes.add(hash_bloco)
 
         return title, filtrados
 
@@ -314,7 +327,17 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
             total_prompt_tokens += prompt_tokens
             total_completion_tokens += completion_tokens
 
-            paragrafos = [p.strip() for p in texto_traduzido.split('\n') if p.strip()]
+            paragrafos = []
+            linhas_vistas = set()
+            for linha in texto_traduzido.split('\n'):
+                linha_limpa = linha.strip()
+                if not linha_limpa:
+                    continue
+                if linha_limpa.lower() in linhas_vistas:
+                    continue
+                linhas_vistas.add(linha_limpa.lower())
+                paragrafos.append(linha_limpa)
+
             resultados.extend(paragrafos)
             await asyncio.sleep(random.uniform(1.2, 2.0))
 
@@ -327,11 +350,11 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
     print(f"  🔹 Completion tokens: {total_completion_tokens}")
     print(f"  🔹 Tokens totais: {total_prompt_tokens + total_completion_tokens}\n")
 
-# 🔄 Filtro final para remover seções duplicadas com mesmo título (ex: "1.", "2.", etc.)
+    # 🔄 Filtro final para remover seções duplicadas com mesmo título (ex: "1. Eficiência...", "2. ...")
     secoes_vistas = set()
     secoes_filtradas = []
     for paragrafo in resultados:
-        titulo_match = re.match(r'^(\d\.\s?[\w\s\-]+)', paragrafo)
+        titulo_match = re.match(r'^(\d\.\s?.+?)(?=[\:\.\-–])', paragrafo)
         if titulo_match:
             titulo_normalizado = titulo_match.group(1).strip().lower()
             if titulo_normalizado in secoes_vistas:
@@ -339,14 +362,15 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
             secoes_vistas.add(titulo_normalizado)
         secoes_filtradas.append(paragrafo)
 
-    # Substitui a lista de resultados finais
+    # Remoção de parágrafos altamente semelhantes
     final_resultados = []
     for r in secoes_filtradas:
         r_normalizado = r.strip().lower()
-        if any(difflib.SequenceMatcher(None, r_normalizado, existente.lower()).ratio() > 0.92 for existente in final_resultados):
+        if any(difflib.SequenceMatcher(None, r_normalizado, existente.lower()).ratio() > 0.96 for existente in final_resultados):
             continue
         final_resultados.append(r)
 
+    # Checagem mínima de tópicos
     num_topicos = sum(1 for p in final_resultados if re.match(r'^\d\.', p))
     if num_topicos < 5:
         print(f"⚠️ Alerta: apenas {num_topicos}/5 tópicos detectados na tradução.")
@@ -356,7 +380,6 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
         "completion_tokens": total_completion_tokens,
         "total_tokens": total_prompt_tokens + total_completion_tokens
     }
-    
 async def run(pais, alias, qtd_artigos):
     global PAIS
     entrada = normalizar(pais)
