@@ -342,7 +342,7 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
     final_resultados = []
     for p in secoes_filtradas:
         p_normalizado = p.strip().lower()
-        if not any(difflib.SequenceMatcher(None, p_normalizado, existente.lower()).ratio() > 0.85 for existente in final_resultados):
+        if not any(difflib.SequenceMatcher(None, p_normalizado, existente.lower()).ratio() > 0.94 for existente in final_resultados):
             final_resultados.append(p)
 
     # Checagem mínima de tópicos
