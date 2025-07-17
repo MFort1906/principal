@@ -311,7 +311,7 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
             resposta = await client.chat.completions.create(
                 model=modelo,
                 messages=[system_msg, user_msg],
-                temperature=0.1,
+                temperature=0.3,
                 max_tokens=2000,
                 n=1
             )
@@ -366,7 +366,7 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
     final_resultados = []
     for r in secoes_filtradas:
         r_normalizado = r.strip().lower()
-        if any(difflib.SequenceMatcher(None, r_normalizado, existente.lower()).ratio() > 0.96 for existente in final_resultados):
+        if any(difflib.SequenceMatcher(None, r_normalizado, existente.lower()).ratio() > 0.87 for existente in final_resultados):
             continue
         final_resultados.append(r)
 
