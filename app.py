@@ -14,7 +14,7 @@ def checar_senha(senha_input):
 
 async def rodar_interface(pais, qtd):
     status = f"🔄 Coletando artigos de: {pais}"
-    arquivos = await executar_pipeline(pais, alias, qtd)
+    arquivos = await executar_pipeline(pais, qtd)
     return "✅ Tradução concluída!", arquivos, gr.update(visible=False)
 
 with gr.Blocks(title="Tradutor de Artigos Tennant") as demo:
