@@ -208,26 +208,22 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
     resultados = []
     modelo = "gpt-4o-mini"
     def agrupar_paragrafos(paragrafos, max_chars=800):
-    """
-    Agrupa os parágrafos em blocos de tamanho definido, dando preferência por títulos <h2>.
-    Reduz o número de tokens e evita blocos excessivamente longos.
-    """
-    blocos = []
-    buffer = ""
+        blocos = []
+        buffer = ""
     
-    for par in paragrafos:
-        # Se o buffer atual mais o próximo parágrafo exceder o tamanho, salva o buffer atual.
-        if len(buffer) + len(par) + 1 <= max_chars:
-            buffer += par + "\n"
-        else:
-            if buffer.strip():
-                blocos.append(buffer.strip())
-            buffer = par + "\n"  # Começa novo bloco
+        for par in paragrafos:
+            # Se o buffer atual mais o próximo parágrafo exceder o tamanho, salva o buffer atual.
+            if len(buffer) + len(par) + 1 <= max_chars:
+                buffer += par + "\n"
+            else:
+                if buffer.strip():
+                    blocos.append(buffer.strip())
+                buffer = par + "\n"  # Começa novo bloco
 
-    if buffer.strip():
-        blocos.append(buffer.strip())
+        if buffer.strip():
+            blocos.append(buffer.strip())
 
-    return blocos
+        return blocos
     total_prompt_tokens = 0
     total_completion_tokens = 0
 
