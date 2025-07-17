@@ -117,25 +117,33 @@ def get_article_content(article_url):
         title_tag = soup.find('h1')
         title = title_tag.get_text(strip=True) if title_tag else "Título não encontrado"
 
-        paragraphs = soup.find_all(['p', 'h2', 'h3'])
-        raw_content = [para.get_text() for para in paragraphs if para.get_text(strip=True)]
-        raw_content = [c.strip() for c in raw_content if c.strip()]
+        # Captura e marca os títulos <h2> com prefixo "##" para facilitar a identificação
+        raw_content = []
+        vistos = set()
 
-        # Filtro de conteúdo irrelevante
-        filtered = []
-        seen = set()
-        for c in raw_content:
-            c_clean = c.strip()
-            if len(c_clean) > 40 and not is_irrelevant_text(c_clean) and c_clean.lower() not in seen:
-                filtered.append(c_clean)
-                seen.add(c_clean.lower())
+        for el in soup.find_all(['p', 'h2', 'h3']):
+            texto = el.get_text(strip=True)
 
-        return title, filtered
+            if not texto:
+                continue
+
+            if el.name == 'h2':
+                texto = f"## {texto}"  # Marca o título de seção
+                # Não aplica filtro de len() para h2
+            elif len(texto) < 40:
+                continue  # Aplica filtro de comprimento apenas em <p> ou <h3>
+
+            texto_lower = texto.lower()
+            if texto_lower not in vistos and not is_irrelevant_text(texto):
+                raw_content.append(texto)
+                vistos.add(texto_lower)
+
+        return title, raw_content
 
     except Exception as e:
         print(f"[Erro Geral] {e}")
         return None, []
-
+        
 def clean_filename(s):
     proibidos = '<>:"/\\|?*'
     for char in proibidos:
