@@ -130,7 +130,7 @@ def get_article_content(article_url):
             if el.name == 'h2':
                 texto = f"## {texto}"  # Marca o título de seção
                 # Não aplica filtro de len() para h2
-            elif len(texto) < 40:
+            elif len(texto) < 20:
                 continue  # Aplica filtro de comprimento apenas em <p> ou <h3>
 
             texto_lower = texto.lower()
@@ -290,7 +290,7 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
                 "4) Use “esfregão” para mop e “lavadora de pisos” ou “esfregadora” para scrubber.\n"
                 "5) Evite repetições e frases soltas; traduza com naturalidade.\n"
                 "6) Não marque os termos preservados.\n"
-                "7) Se o conteúdo estiver vazio, irrelevante ou genérico, ignore sem responder com uma mensagem padrão. Apenas não gere nada."
+                "7) Se o conteúdo for claramente irrelevante (ex: rodapés, botões, links institucionais), ignore. Mas preserve perguntas, tópicos curtos e parágrafos que tenham sentido no contexto do artigo."
             )
         }
         user_msg = {"role": "user", "content": bloco}
