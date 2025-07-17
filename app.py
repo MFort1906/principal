@@ -219,7 +219,7 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
     modelo = "gpt-4o-mini"
     blocos = []
     buffer = ""  # Inicializa o buffer corretamente
-    max_chars = 1000 # Limite de caracteres por bloco de tradução
+    max_chars = 1500 # Limite de caracteres por bloco de tradução
     total_prompt_tokens = 0
     total_completion_tokens = 0
 
@@ -244,7 +244,7 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
             textos_filtrados.append(t)
 
     # Função para agrupar parágrafos de forma inteligente
-    def agrupar_paragrafos(paragrafos, max_chars=1000):
+    def agrupar_paragrafos(paragrafos, max_chars=1200):
         blocos = []
         buffer = ""
         for par in paragrafos:
@@ -299,7 +299,7 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
             resposta = await client.chat.completions.create(
                 model=modelo,
                 messages=[system_msg, user_msg],
-                temperature=0.3,
+                temperature=0.5,
                 max_tokens=2000,
                 n=1
             )
@@ -355,7 +355,7 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
     final_resultados = []
     for p in secoes_filtradas:
         p_normalizado = p.strip().lower()
-        if not any(difflib.SequenceMatcher(None, p_normalizado, existente.lower()).ratio() > 0.95 for existente in final_resultados):
+        if not any(difflib.SequenceMatcher(None, p_normalizado, existente.lower()).ratio() > 0.97 for existente in final_resultados):
             final_resultados.append(p)
 
     # Checagem mínima de tópicos
