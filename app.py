@@ -207,23 +207,9 @@ ALIASES_PAISES = {
 async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
     resultados = []
     modelo = "gpt-4o-mini"
-    def agrupar_paragrafos(paragrafos, max_chars=800):
-        blocos = []
-        buffer = ""
-    
-        for par in paragrafos:
-            # Se o buffer atual mais o próximo parágrafo exceder o tamanho, salva o buffer atual.
-            if len(buffer) + len(par) + 1 <= max_chars:
-                buffer += par + "\n"
-            else:
-                if buffer.strip():
-                    blocos.append(buffer.strip())
-                buffer = par + "\n"  # Começa novo bloco
-
-        if buffer.strip():
-            blocos.append(buffer.strip())
-
-        return blocos
+    blocos = []
+    buffer = ""  # Inicializa o buffer corretamente
+    max_chars = 800 # Limite de caracteres por bloco de tradução
     total_prompt_tokens = 0
     total_completion_tokens = 0
 
@@ -241,34 +227,45 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
             texto = texto.replace(termo, f"{termo}")
         textos_corrigidos.append(texto)
 
-    # Pré-filtragem por relevância
+    # Pré-filtragem de textos para remover termos irrelevantes
     textos_filtrados = []
     for t in textos_corrigidos:
         if not any(termo in t.lower() for termo in termos_remover):
             textos_filtrados.append(t)
 
-    # Agrupamento de blocos com prevenção de duplicatas e curtos
-    vistos_hash = set()
-    for texto in textos_filtrados:
-        texto_limpo = texto.strip()
-        if not texto_limpo or len(texto_limpo.split()) < 5:
-            continue
+    # Função para agrupar parágrafos de forma inteligente
+    def agrupar_paragrafos(paragrafos, max_chars=800):
+        blocos = []
+        buffer = ""
 
-        hash_bloco = hash(re.sub(r'\W+', '', texto_limpo.lower()))
-        if hash_bloco in vistos_hash:
-            continue
-        vistos_hash.add(hash_bloco)
+        for par in paragrafos:
+            # Se o buffer atual mais o próximo parágrafo exceder o tamanho, salva o buffer atual.
+            if len(buffer) + len(par) + 1 <= max_chars:
+                buffer += par + "\n"
+            else:
+                if buffer.strip():
+                    blocos.append(buffer.strip())
+                buffer = par + "\n"  # Começa novo bloco
 
-        if len(buffer) + len(texto_limpo) + 1 < max_chars:
-            buffer += " " + texto_limpo
-        else:
+        if buffer.strip():
             blocos.append(buffer.strip())
-            buffer = texto_limpo
-    if buffer:
-        blocos.append(buffer.strip())
+
+        return blocos
+
+    # Agrupar os textos filtrados
+    blocos = agrupar_paragrafos(textos_filtrados)
+
+    # Remover parágrafos duplicados antes da tradução
+    vistos_hash = set()
+    blocos_filtrados = []
+    for bloco in blocos:
+        hash_bloco = hash(re.sub(r'\W+', '', bloco.lower()))  # Hashing para evitar duplicações
+        if hash_bloco not in vistos_hash:
+            vistos_hash.add(hash_bloco)
+            blocos_filtrados.append(bloco)
 
     # Tradução de cada bloco
-    for bloco in blocos:
+    for bloco in blocos_filtrados:
         system_msg = {
             "role": "system",
             "content": (
@@ -305,6 +302,7 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
             total_prompt_tokens += prompt_tokens
             total_completion_tokens += completion_tokens
 
+            # Remover duplicatas após a tradução, utilizando difflib para comparar similaridades
             paragrafos = []
             linhas_vistas = set()
             for linha in texto_traduzido.split('\n'):
@@ -328,7 +326,7 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
     print(f"  🔹 Completion tokens: {total_completion_tokens}")
     print(f"  🔹 Tokens totais: {total_prompt_tokens + total_completion_tokens}\n")
 
-    # 🔄 Filtro final para remover seções duplicadas com mesmo título (ex: "1. Eficiência...", "2. ...")
+    # 🔄 Filtro final para remover seções duplicadas com o mesmo título (ex: "1. Eficiência...", "2. ...")
     secoes_vistas = set()
     secoes_filtradas = []
     for paragrafo in resultados:
@@ -342,7 +340,7 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
 
     # Remoção de parágrafos altamente semelhantes
     final_resultados = []
-    for p in paragrafos:
+    for p in secoes_filtradas:
         p_normalizado = p.strip().lower()
         if not any(difflib.SequenceMatcher(None, p_normalizado, existente.lower()).ratio() > 0.85 for existente in final_resultados):
             final_resultados.append(p)
