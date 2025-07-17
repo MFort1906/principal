@@ -43,6 +43,8 @@ def is_irrelevant_text(texto):
         "atendimento ao cliente", "cnpj:", "telefone:", "email:"
     ]
     texto_lower = texto.lower().strip()
+    if len(texto_lower) < 40:  # Não remover parágrafos pequenos
+        return True
     return any(t in texto_lower for t in termos_ruins)
 
 def coletar_links_artigos(pagina_url):
@@ -237,10 +239,13 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
     def agrupar_paragrafos(paragrafos, max_chars=800):
         blocos = []
         buffer = ""
-
         for par in paragrafos:
-            # Se o buffer atual mais o próximo parágrafo exceder o tamanho, salva o buffer atual.
-            if len(buffer) + len(par) + 1 <= max_chars:
+            # Se o parágrafo começar com um número de tópico, garantimos que ele seja tratado separadamente
+            if re.match(r'^\d+\.', par):
+                if buffer:
+                    blocos.append(buffer.strip())
+                buffer = par  # Inicia um novo bloco com o tópico
+            elif len(buffer) + len(par) + 1 <= max_chars:
                 buffer += par + "\n"
             else:
                 if buffer.strip():
