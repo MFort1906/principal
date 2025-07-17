@@ -4,8 +4,13 @@ import asyncio
 from pipeline import executar_pipeline
 
 def checar_senha(senha_input):
-    senha_correta = os.getenv("SCRAPER_PASSWORD")  # ou leia de /etc/secrets
-    return (gr.update(visible=False), gr.update(visible=True)) if senha_input == senha_correta else (gr.update(visible=True), gr.update(visible=False))
+    with open("/etc/secrets/SCRAPER_PASSWORD") as f:
+        senha_correta = f.read().strip()
+    return (
+        gr.update(visible=False), gr.update(visible=True)
+    ) if senha_input == senha_correta else (
+        gr.update(visible=True), gr.update(visible=False)
+    )
 
 async def rodar_interface(pais, qtd):
     status = f"🔄 Coletando artigos de: {pais}"
