@@ -1,7 +1,7 @@
 # pipeline.py
 import os
 from scraper import coletar_links_artigos, get_article_content
-from tradução import traduzir_artigo
+from tradução import traduzir_e_formatar_gpt
 from exporter import salvar_conteudo_em_docx
 from utils import normalizar, limpar_pasta_resultados, MAPA_PAISES, ALIASES_PAISES
 
