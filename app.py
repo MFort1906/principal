@@ -127,11 +127,11 @@ def get_article_content(article_url):
             if not texto:
                 continue
 
-            if el.name == 'h2':
+            if el.name in ['h2', 'h3']:
                 texto = f"## {texto}"  # Marca o título de seção
                 # Não aplica filtro de len() para h2
-            elif len(texto) < 20:
-                continue  # Aplica filtro de comprimento apenas em <p> ou <h3>
+            elif len(texto) < 20 and not texto.endswith("?") and not texto.endswith("."):
+                continue
 
             texto_lower = texto.lower()
             if texto_lower not in vistos and not is_irrelevant_text(texto):
