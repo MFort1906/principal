@@ -19,10 +19,10 @@ OPCOES_PAISES = [
     ("🌏 Ásia (Outros)", "en_ap"),
     ("🌎 América Latina (Outros)", "en_la"),
     ("🇩🇪 Alemanha (Cerveja)", "de_de"),
-    ("🇮🇹 Itália (Macarrão)", "it_it"),
-    ("🇯🇵 Japão (Samurai)", "ja_jp"),
-    ("🇨🇳 China (Dragão)", "zh_cn"),
-    ("🇵🇹 Portugal (🪙 Barra de Ouro)", "pt_pt"),
+    ("🇮🇹 Itália 🍝", "it_it"),
+    ("🇯🇵 Japão 🤺", "ja_jp"),
+    ("🇨🇳 China 🐉", "zh_cn"),
+    ("🇵🇹 Portugal 🪙 ", "pt_pt"),
 ]
 
 # Dicionário para mapear nome exibido para alias
@@ -85,7 +85,7 @@ with gr.Blocks(title="W.S.T.B.R 2000", theme=gr.themes.Soft()) as demo:
             status = gr.Textbox(label="📌 Status do processo", interactive=False)
             arquivos = gr.File(label="📎 Arquivos traduzidos (.docx)", file_types=[".docx"], file_count="multiple")
 
-            btn.click(fn=rodar_interface, inputs=[pais_dropdown, qtd], outputs=[status, arquivos, pais_dropdown])
+            btn.click(fn=rodar_interface, inputs=[pais_dropdown, qtd], outputs=[status, arquivos])
 
     btn_login.click(fn=checar_senha, inputs=senha, outputs=[login_box, app_box])
 
