@@ -1,5 +1,3 @@
-# scraper.py
-
 import time
 import random
 import requests
@@ -55,7 +53,6 @@ def coletar_links_artigos(pagina_url, pais):
     for a in todos_a:
         href = a['href']
         title = a['title'].strip() or a.text.strip()
-
         href = limpar_url(href, pais)
 
         if any(excl in href for excl in ['cart', 'contact', 'solicitud', 'linkedin', 'facebook', 'twitter']):
@@ -87,8 +84,18 @@ def get_article_content(article_url):
 
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # Remover seções irrelevantes
-        for seletor in ['nav', '.nav', '#nav', '.breadcrumbs', '.category-list']:
+        # Remover elementos irrelevantes
+        SELETORES_IRRELEVANTES = [
+            'nav', '.nav', '#nav',
+            'footer', '.footer', '#footer', '.site-footer',
+            '.breadcrumbs', '.category-list',
+            '.cart-empty', '.form', 'form', 'aside',
+            '.related-links', '.site-utility', '.newsletter-signup',
+            '.social', '.contact', '#comments', '.share', '.sidebar',
+            '.global-footer', '.utility-bar', '.login', '.register'
+        ]
+
+        for seletor in SELETORES_IRRELEVANTES:
             for el in soup.select(seletor):
                 el.decompose()
 
@@ -99,9 +106,18 @@ def get_article_content(article_url):
         raw_content = []
         vistos = set()
 
+        PADROES_EXCLUIR = [
+            "sign me up", "first name", "last name", "phone*", "email*",
+            "ready to take", "let's talk", "requesting a product",
+            "you’ve come to the right place", "required fields",
+            "contact us", "customer service", "©", "privacy notice"
+        ]
+
         for el in soup.find_all(['p', 'h2', 'h3']):
             texto = el.get_text(strip=True)
             if not texto:
+                continue
+            if any(pad in texto.lower() for pad in PADROES_EXCLUIR):
                 continue
             if el.name == 'h2':
                 texto = f"## {texto}"
