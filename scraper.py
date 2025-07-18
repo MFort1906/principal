@@ -92,17 +92,24 @@ def get_article_content(article_url):
             '.cart-empty', '.form', 'form', 'aside',
             '.related-links', '.site-utility', '.newsletter-signup',
             '.social', '.contact', '#comments', '.share', '.sidebar',
-            '.global-footer', '.utility-bar', '.login', '.register'
+            '.global-footer', '.utility-bar', '.login', '.register',
+            '.minicart-content', '.minicart', '#minicart'
         ]
 
         for seletor in SELETORES_IRRELEVANTES:
             for el in soup.select(seletor):
                 el.decompose()
 
+        # Captura o título principal
         title_tag = soup.find('h1')
         title = title_tag.get_text(strip=True) if title_tag else "Título não encontrado"
 
-        # Captura os blocos de conteúdo
+        # Captura os blocos reais de conteúdo dentro das divs do artigo
+        blocos = soup.select('div.richtext.text.parbase')
+        if not blocos:
+            print("[Aviso] Nenhuma seção de conteúdo encontrada.")
+            return title, []
+
         raw_content = []
         vistos = set()
 
@@ -110,23 +117,25 @@ def get_article_content(article_url):
             "sign me up", "first name", "last name", "phone*", "email*",
             "ready to take", "let's talk", "requesting a product",
             "you’ve come to the right place", "required fields",
-            "contact us", "customer service", "©", "privacy notice"
+            "contact us", "customer service", "©", "privacy notice",
+            "seu carrinho de compras está vazio"
         ]
 
-        for el in soup.find_all(['p', 'h2', 'h3']):
-            texto = el.get_text(strip=True)
-            if not texto:
-                continue
-            if any(pad in texto.lower() for pad in PADROES_EXCLUIR):
-                continue
-            if el.name == 'h2':
-                texto = f"## {texto}"
-            elif len(texto) < 20:
-                continue
-            texto_lower = texto.lower()
-            if texto_lower not in vistos:
-                raw_content.append(texto)
-                vistos.add(texto_lower)
+        for bloco in blocos:
+            for el in bloco.find_all(['p', 'h2', 'h3', 'li']):
+                texto = el.get_text(strip=True)
+                if not texto:
+                    continue
+                if any(pad in texto.lower() for pad in PADROES_EXCLUIR):
+                    continue
+                if el.name == 'h2':
+                    texto = f"## {texto}"
+                elif len(texto) < 20:
+                    continue
+                texto_lower = texto.lower()
+                if texto_lower not in vistos:
+                    raw_content.append(texto)
+                    vistos.add(texto_lower)
 
         return title, raw_content
 
