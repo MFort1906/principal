@@ -38,4 +38,4 @@ async def executar_pipeline(pais_input, alias_input, qtd_artigos):
 
         vistos_hash.add(hash_artigo)
 
-    return "✅ Concluído!", arquivos_gerados, None
+    return arquivos_gerados
