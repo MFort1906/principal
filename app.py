@@ -14,10 +14,13 @@ def checar_senha(senha_input):
     )
 
 # === Função principal da interface ===
-async def rodar_interface(pais_input, alias_input, qtd_artigos):
-    status_msg = f"🔄 Coletando artigos de: {pais_input}"
-    arquivos = await executar_pipeline(pais_input, alias_input, qtd_artigos)
-    return "✅ Tradução concluída!", arquivos, gr.update(visible=False)
+async def rodar_interface(pais, alias, qtd):
+    status_msg = f"🔄 Coletando artigos de: {pais}"
+    try:
+        arquivos = await executar_pipeline(pais, alias, qtd)
+        return "✅ Tradução concluída!", arquivos, gr.update(visible=False)
+    except Exception as e:
+        return f"❌ Erro: {str(e)}", [], gr.update(visible=True)
 
 # === Interface Gradio ===
 with gr.Blocks(title="Tradutor de Artigos Tennant") as demo:
