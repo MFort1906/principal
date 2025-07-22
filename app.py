@@ -5,7 +5,7 @@ from pipeline import executar_pipeline
 
 # === Mapa visual com países e emojis ===
 OPCOES_PAISES = [
-    ("🇧🇷 Brasil ⚽🥅", "pt_br"),
+    ("🇧🇷 Brasil (👑⚽🥅)", "pt_br"),
     ("🇺🇸 Estados Unidos 🏈", "en_us"),
     ("🇨🇦 Canadá ❄️", "en_ca"),
     ("🇦🇺 Austrália e Nova Zelândia 🦘", "en_au"),
@@ -43,10 +43,10 @@ async def rodar_interface(pais_nome, qtd):
     alias = NOMES_TO_ALIAS.get(pais_nome, "")
     pais_formatado = pais_nome.split("(", 1)[0].strip()
     try:
-        arquivos = await executar_pipeline(pais_formatado, alias, qtd)
-        return "✅ Tradução concluída!", arquivos
+        mensagem, arquivos, visibilidade = await executar_pipeline(pais_formatado, alias, qtd)
+        return mensagem, arquivos, visibilidade
     except Exception as e:
-        return f"❌ Erro: {str(e)}", []
+        return f"❌ Erro: {str(e)}", [], gr.update(visible=True)
 
 # === Interface Gradio ===
 with gr.Blocks(title="W.S.T.B.R 2000", theme=gr.themes.Soft()) as demo:
@@ -77,7 +77,7 @@ with gr.Blocks(title="W.S.T.B.R 2000", theme=gr.themes.Soft()) as demo:
                 pais_dropdown = gr.Dropdown(
                     label="🌍 Selecione o país",
                     choices=[nome for nome, _ in OPCOES_PAISES],
-                    value="🇧🇷 Brasil (Carnaval)"
+                    value="🇧🇷 Brasil (👑⚽🥅)"
                 )
                 qtd = gr.Number(label="🗞️ Número de artigos", value=3, minimum=1)
 
@@ -85,7 +85,7 @@ with gr.Blocks(title="W.S.T.B.R 2000", theme=gr.themes.Soft()) as demo:
             status = gr.Textbox(label="📌 Status do processo", interactive=False)
             arquivos = gr.File(label="📎 Arquivos traduzidos (.docx)", file_types=[".docx"], file_count="multiple")
 
-            btn.click(fn=rodar_interface, inputs=[pais_dropdown, qtd], outputs=[status, arquivos])
+            btn.click(fn=rodar_interface, inputs=[pais_dropdown, qtd], outputs=[status, arquivos, app_box])
 
     btn_login.click(fn=checar_senha, inputs=senha, outputs=[login_box, app_box])
 
