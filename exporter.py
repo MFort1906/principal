@@ -1,23 +1,38 @@
 import os
 import requests
+import mimetypes
+from urllib.parse import urlparse
 from docx import Document
 from docx.shared import Inches
 from utils import clean_filename, limpar_xml
 
 def baixar_imagem(url, pasta_destino):
     try:
+        print(f"🔽 Baixando imagem: {url}")
         response = requests.get(url, stream=True, timeout=10)
         response.raise_for_status()
 
-        nome_arquivo = os.path.basename(url.split("?")[0])
+        # Tenta obter a extensão correta
+        content_type = response.headers.get('Content-Type')
+        ext = mimetypes.guess_extension(content_type) or '.jpg'
+
+        # Gera nome seguro
+        nome_url = os.path.basename(urlparse(url).path).split("?")[0]
+        if not nome_url:
+            nome_url = f"img_{hash(url)}"
+        if not os.path.splitext(nome_url)[1]:
+            nome_url += ext
+
+        nome_arquivo = clean_filename(nome_url)
         caminho = os.path.join(pasta_destino, nome_arquivo)
 
         with open(caminho, 'wb') as f:
             f.write(response.content)
 
+        print(f"✅ Imagem salva em: {caminho}")
         return caminho
     except Exception as e:
-        print(f"[Erro ao baixar imagem] {url} - {e}")
+        print(f"[Erro ao baixar imagem] {url}: {e}")
         return None
 
 def salvar_conteudo_em_docx(titulo, elementos, pasta_saida):
@@ -44,7 +59,8 @@ def salvar_conteudo_em_docx(titulo, elementos, pasta_saida):
             img_path = baixar_imagem(conteudo, pasta_saida)
             if img_path:
                 try:
-                    doc.add_picture(img_path, width=Inches(4.5))
+                    print(f"🖼️ Inserindo imagem: {img_path}")
+                    doc.add_picture(img_path, width=Inches(5.5))  # pode ajustar para 6.0 se quiser maior
                 except Exception as e:
                     print(f"[Erro ao inserir imagem] {img_path}: {e}")
 
