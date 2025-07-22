@@ -57,7 +57,7 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
             await asyncio.sleep(random.uniform(1.2, 2.0))
 
         except Exception as e:
-            print(f"[Erro GPT] {e}")
+            print(f"[Erro GPT] {e}", flush=True)
             resultados.append(bloco)
 
     return resultados, {
