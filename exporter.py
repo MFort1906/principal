@@ -16,14 +16,14 @@ HEADERS = {
 
 def baixar_imagem(url, pasta_destino):
     try:
-        print(f"\n🔽 Tentando baixar imagem: {url}")
+        print(f"\n🔽 Tentando baixar imagem: {url}", flush=True)
         response = requests.get(url, headers=HEADERS, stream=True, timeout=10)
         response.raise_for_status()
 
         # Detectar extensão correta
         content_type = response.headers.get('Content-Type')
         ext = mimetypes.guess_extension(content_type) or '.jpg'
-        print(f"📦 Tipo de conteúdo: {content_type} | Extensão detectada: {ext}")
+        print(f"📦 Tipo de conteúdo: {content_type} | Extensão detectada: {ext}", flush=True)
 
         # Criar nome seguro de arquivo
         nome_url = os.path.basename(urlparse(url).path).split("?")[0]
@@ -38,10 +38,10 @@ def baixar_imagem(url, pasta_destino):
         with open(caminho, 'wb') as f:
             f.write(response.content)
 
-        print(f"✅ Imagem salva em: {caminho}")
+        print(f"✅ Imagem salva em: {caminho}", flush=True)
         return caminho
     except Exception as e:
-        print(f"[❌ Erro ao baixar imagem] {url}: {e}")
+        print(f"[❌ Erro ao baixar imagem] {url}: {e}", flush=True)
         return None
 
 def salvar_conteudo_em_docx(titulo, elementos, pasta_saida):
@@ -53,7 +53,7 @@ def salvar_conteudo_em_docx(titulo, elementos, pasta_saida):
     doc = Document()
     doc.add_heading(limpar_xml(titulo), level=1)
 
-    print(f"\n📝 Iniciando documento: {nome_arquivo}")
+    print(f"\n📝 Iniciando documento: {nome_arquivo}", flush=True)
     total_imgs = 0
     total_paragrafos = 0
 
@@ -63,10 +63,10 @@ def salvar_conteudo_em_docx(titulo, elementos, pasta_saida):
 
         if tipo == 'h2':
             doc.add_paragraph(conteudo, style='Heading 2')
-            print(f"🔹 H2: {conteudo[:50]}...")
+            print(f"🔹 H2: {conteudo[:50]}...", flush=True)
         elif tipo == 'h3':
             doc.add_paragraph(conteudo, style='Heading 3')
-            print(f"🔸 H3: {conteudo[:50]}...")
+            print(f"🔸 H3: {conteudo[:50]}...", flush=True)
         elif tipo == 'p':
             doc.add_paragraph(f"• {conteudo}")
             total_paragrafos += 1
@@ -75,13 +75,13 @@ def salvar_conteudo_em_docx(titulo, elementos, pasta_saida):
             img_path = baixar_imagem(conteudo, pasta_saida)
             if img_path:
                 try:
-                    print(f"🖼️ Inserindo imagem: {img_path}")
+                    print(f"🖼️ Inserindo imagem: {img_path}", flush=True)
                     doc.add_picture(img_path, width=Inches(5.5))
                     total_imgs += 1
                 except Exception as e:
-                    print(f"[❌ Erro ao inserir imagem] {img_path}: {e}")
+                    print(f"[❌ Erro ao inserir imagem] {img_path}: {e}", flush=True)
 
     doc.save(caminho)
-    print(f"\n💾 Arquivo salvo com sucesso: {caminho}")
-    print(f"📊 Estatísticas: {total_paragrafos} parágrafos | {total_imgs} imagens\n")
+    print(f"\n💾 Arquivo salvo com sucesso: {caminho}", flush=True)
+    print(f"📊 Estatísticas: {total_paragrafos} parágrafos | {total_imgs} imagens\n", flush=True)
     return caminho
