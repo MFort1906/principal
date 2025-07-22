@@ -103,6 +103,7 @@ def get_article_content(article_url):
         # Captura o título principal
         title_tag = soup.find('h1')
         title = title_tag.get_text(strip=True) if title_tag else "Título não encontrado"
+        print(f"\n📄 Coletando conteúdo do artigo: {title}")
 
         # Captura os blocos reais de conteúdo dentro das divs do artigo
         blocos = soup.select('div.richtext.text.parbase')
@@ -120,6 +121,7 @@ def get_article_content(article_url):
 
         conteudo_ordenado = []
         vistos_texto = set()
+        imagens_encontradas = []
 
         for bloco in blocos:
             for el in bloco.find_all(['h2', 'h3', 'p', 'li', 'img']):
@@ -146,6 +148,12 @@ def get_article_content(article_url):
                     if src:
                         img_url = urljoin(article_url, src)
                         conteudo_ordenado.append({'tipo': 'img', 'conteudo': img_url})
+                        imagens_encontradas.append(img_url)
+
+        print(f"✅ Total de blocos de texto: {len(vistos_texto)}")
+        print(f"🖼️ Total de imagens encontradas: {len(imagens_encontradas)}")
+        for idx, img in enumerate(imagens_encontradas, 1):
+            print(f"   {idx}. {img}")
 
         return title, conteudo_ordenado
 
