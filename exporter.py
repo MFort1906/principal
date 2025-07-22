@@ -20,12 +20,10 @@ def baixar_imagem(url, pasta_destino):
         response = requests.get(url, headers=HEADERS, stream=True, timeout=10)
         response.raise_for_status()
 
-        # Detectar extensão correta
         content_type = response.headers.get('Content-Type')
         ext = mimetypes.guess_extension(content_type) or '.jpg'
         print(f"📦 Tipo de conteúdo: {content_type} | Extensão detectada: {ext}", flush=True)
 
-        # Criar nome seguro de arquivo
         nome_url = os.path.basename(urlparse(url).path).split("?")[0]
         if not nome_url:
             nome_url = f"img_{hash(url)}"
@@ -44,13 +42,19 @@ def baixar_imagem(url, pasta_destino):
         print(f"[❌ Erro ao baixar imagem] {url}: {e}", flush=True)
         return None
 
-def salvar_conteudo_em_docx(titulo, elementos, pasta_saida):
+def salvar_conteudo_em_docx(titulo, elementos, pasta_saida, url_origem=None):
     """Salva o conteúdo traduzido em um arquivo .docx com texto e imagens"""
     nome_arquivo = clean_filename(titulo)
     caminho = os.path.join(pasta_saida, f"{nome_arquivo}.docx")
     os.makedirs(pasta_saida, exist_ok=True)
 
     doc = Document()
+
+    # 🔗 Link do artigo original
+    if url_origem:
+        doc.add_paragraph(f"🔗 Artigo original: {url_origem}", style="Intense Quote")
+
+    # 📝 Título
     doc.add_heading(limpar_xml(titulo), level=1)
 
     print(f"\n📝 Iniciando documento: {nome_arquivo}", flush=True)
