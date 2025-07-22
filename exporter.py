@@ -6,10 +6,18 @@ from docx import Document
 from docx.shared import Inches
 from utils import clean_filename, limpar_xml
 
+HEADERS = {
+    'User-Agent': (
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+        'AppleWebKit/537.36 (KHTML, like Gecko) '
+        'Chrome/91.0.4472.124 Safari/537.36'
+    )
+}
+
 def baixar_imagem(url, pasta_destino):
     try:
         print(f"\n🔽 Tentando baixar imagem: {url}")
-        response = requests.get(url, stream=True, timeout=10)
+        response = requests.get(url, headers=HEADERS, stream=True, timeout=10)
         response.raise_for_status()
 
         # Detectar extensão correta
@@ -63,6 +71,7 @@ def salvar_conteudo_em_docx(titulo, elementos, pasta_saida):
             doc.add_paragraph(f"• {conteudo}")
             total_paragrafos += 1
         elif tipo == 'img':
+            doc.add_paragraph(f"[Imagem detectada] {conteudo}")  # para debug no docx
             img_path = baixar_imagem(conteudo, pasta_saida)
             if img_path:
                 try:
