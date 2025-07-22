@@ -44,7 +44,7 @@ async def rodar_interface(pais_nome, qtd):
     pais_formatado = pais_nome.split("(", 1)[0].strip()
     try:
         mensagem, arquivos = await executar_pipeline(pais_formatado, alias, qtd)
-        return mensagem, arquivos, visibilidade
+        return mensagem, arquivos
     except Exception as e:
         return f"❌ Erro: {str(e)}", [], gr.update(visible=True)
 
