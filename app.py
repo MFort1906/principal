@@ -79,7 +79,7 @@ with gr.Blocks(title="W.S.T.B.R 2000", theme=gr.themes.Soft()) as demo:
                     choices=[nome for nome, _ in OPCOES_PAISES],
                     value="🇧🇷 Brasil (Carnaval)"
                 )
-                qtd = gr.Number(label="🗞️ Número de artigos", value=3)
+                qtd = gr.Number(label="🗞️ Número de artigos", value=3, minimum=1)
 
             btn = gr.Button("🚀 Iniciar Tradução", variant="primary")
             status = gr.Textbox(label="📌 Status do processo", interactive=False)
