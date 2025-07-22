@@ -11,7 +11,7 @@ async def executar_pipeline(pais_input, alias_input, qtd_artigos):
     try:
         codigo = resolver_pais(pais_input, alias_input)
     except ValueError as e:
-        return str(e), [], None
+        return str(e), [], None  # Retorna 3 valores em caso de erro
 
     nome_pais = MAPA_PAISES.get(codigo, "Desconhecido")
     pasta_saida = os.path.abspath(f"resultados/{nome_pais}")
@@ -49,15 +49,14 @@ async def executar_pipeline(pais_input, alias_input, qtd_artigos):
             else:
                 traduzido_formatado.append(item)
 
-        # ✅ Agora inclui o link do artigo original no início do .docx
         caminho = salvar_conteudo_em_docx(
             titulo=titulo,
             elementos=traduzido_formatado,
             pasta_saida=pasta_saida,
-            url_origem=artigo['href']  # <== Aqui é o novo argumento
+            url_origem=artigo['href']  # Agora salva o link no início
         )
 
         arquivos_gerados.append(caminho)
         vistos_hash.add(hash_artigo)
 
-    return arquivos_gerados
+    return "✅ Tradução concluída!", arquivos_gerados, None  # ✅ Retorno correto de 3 valores
