@@ -11,7 +11,7 @@ async def executar_pipeline(pais_input, alias_input, qtd_artigos):
     try:
         codigo = resolver_pais(pais_input, alias_input)
     except ValueError as e:
-        return str(e), [], None  # o terceiro retorno é para gr.update()
+        return str(e), [], None
 
     nome_pais = MAPA_PAISES.get(codigo, "Desconhecido")
     pasta_saida = os.path.abspath(f"resultados/{nome_pais}")
@@ -24,18 +24,33 @@ async def executar_pipeline(pais_input, alias_input, qtd_artigos):
     arquivos_gerados = []
 
     for artigo in links[:int(qtd_artigos)]:
-        titulo, parags = get_article_content(artigo['href'])
-        if not parags:
+        titulo, conteudo = get_article_content(artigo['href'])
+        if not conteudo:
             continue
 
-        hash_artigo = hash(" ".join(parags).strip().lower())
+        # Hash apenas do conteúdo textual
+        texto_bruto = " ".join([item['conteudo'] for item in conteudo if item['tipo'] in ['p', 'h2', 'h3']])
+        hash_artigo = hash(texto_bruto.strip().lower())
         if hash_artigo in vistos_hash:
             continue
 
-        traducao, _ = await traduzir_e_formatar_gpt(parags)
-        caminho = salvar_conteudo_em_docx(titulo, traducao, pasta_saida)
-        arquivos_gerados.append(caminho)
+        # Tradução apenas do texto
+        texto_para_traduzir = [item['conteudo'] for item in conteudo if item['tipo'] in ['p', 'h2', 'h3']]
+        traducao, _ = await traduzir_e_formatar_gpt(texto_para_traduzir)
 
+        # Recombinar texto traduzido + imagens
+        traduzido_formatado = []
+        i = 0
+        for item in conteudo:
+            if item['tipo'] in ['p', 'h2', 'h3']:
+                if i < len(traducao):
+                    traduzido_formatado.append({'tipo': item['tipo'], 'conteudo': traducao[i]})
+                    i += 1
+            else:
+                traduzido_formatado.append(item)
+
+        caminho = salvar_conteudo_em_docx(titulo, traduzido_formatado, pasta_saida)
+        arquivos_gerados.append(caminho)
         vistos_hash.add(hash_artigo)
 
     return arquivos_gerados
