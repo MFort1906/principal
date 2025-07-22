@@ -22,7 +22,7 @@ OPCOES_PAISES = [
     ("🇮🇹 Itália 🍝", "it_it"),
     ("🇯🇵 Japão 🤺", "ja_jp"),
     ("🇨🇳 China 🐉", "zh_cn"),
-    ("🇵🇹 Portugal 🛎️ ", "pt_pt"),
+    ("🇵🇹 Portugal 🛎️", "pt_pt"),
 ]
 
 # Dicionário para mapear nome exibido para alias
@@ -44,9 +44,9 @@ async def rodar_interface(pais_nome, qtd):
     pais_formatado = pais_nome.split("(", 1)[0].strip()
     try:
         arquivos = await executar_pipeline(pais_formatado, alias, qtd)
-        return "✅ Tradução concluída!", arquivos, gr.update(visible=False)
+        return "✅ Tradução concluída!", arquivos
     except Exception as e:
-        return f"❌ Erro: {str(e)}", [], gr.update(visible=True)
+        return f"❌ Erro: {str(e)}", []
 
 # === Interface Gradio ===
 with gr.Blocks(title="W.S.T.B.R 2000", theme=gr.themes.Soft()) as demo:
@@ -85,7 +85,7 @@ with gr.Blocks(title="W.S.T.B.R 2000", theme=gr.themes.Soft()) as demo:
             status = gr.Textbox(label="📌 Status do processo", interactive=False)
             arquivos = gr.File(label="📎 Arquivos traduzidos (.docx)", file_types=[".docx"], file_count="multiple")
 
-            btn.click(fn=rodar_interface, inputs=[pais_dropdown, qtd], outputs=[status, arquivos, app_box])
+            btn.click(fn=rodar_interface, inputs=[pais_dropdown, qtd], outputs=[status, arquivos])
 
     btn_login.click(fn=checar_senha, inputs=senha, outputs=[login_box, app_box])
 
