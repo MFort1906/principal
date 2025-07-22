@@ -76,7 +76,6 @@ def coletar_links_artigos(pagina_url, pais):
     print(f"🔗 {len(links_unicos)} links válidos extraídos.")
     return links_unicos
 
-# === Função para extrair conteúdo de um artigo ===
 def get_article_content(article_url):
     try:
         tempo_espera(7.5, 9.5, contexto="esperando antes de coletar o artigo")
@@ -143,7 +142,7 @@ def get_article_content(article_url):
                     vistos_texto.add(texto.lower())
 
                 elif el.name == 'img':
-                    src = el.get("src")
+                    src = el.get("src") or el.get("data-src")
                     if src:
                         img_url = urljoin(article_url, src)
                         conteudo_ordenado.append({'tipo': 'img', 'conteudo': img_url})
