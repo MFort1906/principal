@@ -11,7 +11,7 @@ async def executar_pipeline(pais_input, alias_input, qtd_artigos):
     try:
         codigo = resolver_pais(pais_input, alias_input)
     except ValueError as e:
-        return str(e), [], None  # Retorna 3 valores em caso de erro
+        raise RuntimeError(str(e))
 
     nome_pais = MAPA_PAISES.get(codigo, "Desconhecido")
     pasta_saida = os.path.abspath(f"resultados/{nome_pais}")
