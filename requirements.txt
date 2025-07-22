@@ -1,6 +1,7 @@
-openai
-gradio
-nest_asyncio
-beautifulsoup4
 requests
+beautifulsoup4
 python-docx
+pillow
+gradio
+openai
+nest_asyncio
