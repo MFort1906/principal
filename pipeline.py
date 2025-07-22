@@ -11,7 +11,7 @@ async def executar_pipeline(pais_input, alias_input, qtd_artigos):
     try:
         codigo = resolver_pais(pais_input, alias_input)
     except ValueError as e:
-        raise RuntimeError(str(e))
+        return f"❌ Erro: {str(e)}", []
 
     nome_pais = MAPA_PAISES.get(codigo, "Desconhecido")
     pasta_saida = os.path.abspath(f"resultados/{nome_pais}")
@@ -53,11 +53,10 @@ async def executar_pipeline(pais_input, alias_input, qtd_artigos):
             titulo=titulo,
             elementos=traduzido_formatado,
             pasta_saida=pasta_saida,
-            url_origem=artigo['href']  # Agora salva o link no início
+            url_origem=artigo['href']
         )
 
         arquivos_gerados.append(caminho)
         vistos_hash.add(hash_artigo)
 
-    return arquivos_gerados
-
+    return "✅ Tradução concluída!", arquivos_gerados  # ✅ Somente 2 valores retornados!
