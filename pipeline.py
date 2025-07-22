@@ -24,7 +24,7 @@ async def executar_pipeline(pais_input, alias_input, qtd_artigos):
     arquivos_gerados = []
 
     for artigo in links[:int(qtd_artigos)]:
-        titulo, conteudo = get_article_content(artigo['href'])
+        titulo, conteudo, _ = get_article_content(artigo['href'])
         if not conteudo:
             continue
 
