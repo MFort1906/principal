@@ -3,7 +3,6 @@ import random
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
-from bs4 import Tag
 
 # === Constantes ===
 HEADERS = {
@@ -26,12 +25,10 @@ def is_valid_url(url):
     return url.startswith("http") and ".html" in url
 
 def limpar_url(href, pais):
-    """Garante que a URL seja absoluta e válida para scraping"""
     if not href.startswith("http"):
         href = urljoin(f"{URL_BASE}/{pais}/", href)
     return href
 
-# === Função principal para extrair links de artigos ===
 def coletar_links_artigos(pagina_url, pais):
     try:
         response = requests.get(pagina_url, headers=HEADERS)
@@ -42,12 +39,10 @@ def coletar_links_artigos(pagina_url, pais):
 
     sopa = BeautifulSoup(response.text, 'html.parser')
 
-    # Remove rodapés e seções irrelevantes
     for seletor in ['footer', '.footer', '#footer', '.site-footer', '.rodape', '.legal', '.copyright']:
         for el in sopa.select(seletor):
             el.decompose()
 
-    # Coleta os links de artigos válidos
     todos_a = sopa.find_all('a', href=True, title=True)
     links = []
 
@@ -65,7 +60,6 @@ def coletar_links_artigos(pagina_url, pais):
 
         links.append({'title': title, 'href': href})
 
-    # Remover duplicações
     vistos = set()
     links_unicos = []
     for link in links:
@@ -73,7 +67,7 @@ def coletar_links_artigos(pagina_url, pais):
             vistos.add(link['href'])
             links_unicos.append(link)
 
-    print(f"🔗 {len(links_unicos)} links válidos extraídos.")
+    print(f"🔗 {len(links_unicos)} links válidos extraídos.", flush=True)
     return links_unicos
 
 def get_article_content(article_url):
@@ -84,7 +78,6 @@ def get_article_content(article_url):
 
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # Remover elementos irrelevantes
         SELETORES_IRRELEVANTES = [
             'nav', '.nav', '#nav',
             'footer', '.footer', '#footer', '.site-footer',
@@ -100,16 +93,14 @@ def get_article_content(article_url):
             for el in soup.select(seletor):
                 el.decompose()
 
-        # Captura o título principal
         title_tag = soup.find('h1')
         title = title_tag.get_text(strip=True) if title_tag else "Título não encontrado"
-        print(f"\n📄 Coletando conteúdo do artigo: {title}")
+        print(f"\n📄 Coletando conteúdo do artigo: {title}", flush=True)
 
-        # Captura os blocos reais de conteúdo dentro das divs do artigo
         blocos = soup.select('div.richtext.text.parbase')
-        if not blocos:
-            print("[Aviso] Nenhuma seção de conteúdo encontrada.")
-            return title, []
+        conteudo_ordenado = []
+        vistos_texto = set()
+        imagens_encontradas = []
 
         PADROES_EXCLUIR = [
             "sign me up", "first name", "last name", "phone*", "email*",
@@ -118,10 +109,6 @@ def get_article_content(article_url):
             "contact us", "customer service", "©", "privacy notice",
             "seu carrinho de compras está vazio"
         ]
-
-        conteudo_ordenado = []
-        vistos_texto = set()
-        imagens_encontradas = []
 
         for bloco in blocos:
             for el in bloco.find_all(['h2', 'h3', 'p', 'li', 'img']):
@@ -150,13 +137,23 @@ def get_article_content(article_url):
                         conteudo_ordenado.append({'tipo': 'img', 'conteudo': img_url})
                         imagens_encontradas.append(img_url)
 
-        print(f"✅ Total de blocos de texto: {len(vistos_texto)}")
-        print(f"🖼️ Total de imagens encontradas: {len(imagens_encontradas)}")
+        # Imagens adicionais fora da .richtext.text.parbase
+        imagens_extras = soup.select("div.cmp-image img")
+        for el in imagens_extras:
+            src = el.get("src") or el.get("data-src")
+            if src:
+                img_url = urljoin(article_url, src)
+                if img_url not in [i['conteudo'] for i in conteudo_ordenado if i['tipo'] == 'img']:
+                    conteudo_ordenado.append({'tipo': 'img', 'conteudo': img_url})
+                    imagens_encontradas.append(img_url)
+
+        print(f"✅ Total de blocos de texto: {len(vistos_texto)}", flush=True)
+        print(f"🖼️ Total de imagens encontradas: {len(imagens_encontradas)}", flush=True)
         for idx, img in enumerate(imagens_encontradas, 1):
             print(f"   {idx}. {img}")
 
         return title, conteudo_ordenado
 
     except Exception as e:
-        print(f"[Erro ao coletar artigo] {e}")
+        print(f"[Erro ao coletar artigo] {e}", flush=True)
         return None, []
