@@ -3,6 +3,7 @@ import random
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
+from bs4 import Tag
 
 # === Constantes ===
 HEADERS = {
@@ -110,9 +111,6 @@ def get_article_content(article_url):
             print("[Aviso] Nenhuma seção de conteúdo encontrada.")
             return title, []
 
-        raw_content = []
-        vistos = set()
-
         PADROES_EXCLUIR = [
             "sign me up", "first name", "last name", "phone*", "email*",
             "ready to take", "let's talk", "requesting a product",
@@ -121,23 +119,36 @@ def get_article_content(article_url):
             "seu carrinho de compras está vazio"
         ]
 
-        for bloco in blocos:
-            for el in bloco.find_all(['p', 'h2', 'h3', 'li']):
-                texto = el.get_text(strip=True)
-                if not texto:
-                    continue
-                if any(pad in texto.lower() for pad in PADROES_EXCLUIR):
-                    continue
-                if el.name == 'h2':
-                    texto = f"## {texto}"
-                elif len(texto) < 20:
-                    continue
-                texto_lower = texto.lower()
-                if texto_lower not in vistos:
-                    raw_content.append(texto)
-                    vistos.add(texto_lower)
+        conteudo_ordenado = []
+        vistos_texto = set()
 
-        return title, raw_content
+        for bloco in blocos:
+            for el in bloco.find_all(['h2', 'h3', 'p', 'li', 'img']):
+                if el.name in ['p', 'li', 'h2', 'h3']:
+                    texto = el.get_text(strip=True)
+                    if not texto or any(pad in texto.lower() for pad in PADROES_EXCLUIR):
+                        continue
+                    if len(texto) < 20 and el.name not in ['h2', 'h3']:
+                        continue
+                    if texto.lower() in vistos_texto:
+                        continue
+
+                    tipo = 'p'
+                    if el.name == 'h2':
+                        tipo = 'h2'
+                    elif el.name == 'h3':
+                        tipo = 'h3'
+
+                    conteudo_ordenado.append({'tipo': tipo, 'conteudo': texto})
+                    vistos_texto.add(texto.lower())
+
+                elif el.name == 'img':
+                    src = el.get("src")
+                    if src:
+                        img_url = urljoin(article_url, src)
+                        conteudo_ordenado.append({'tipo': 'img', 'conteudo': img_url})
+
+        return title, conteudo_ordenado
 
     except Exception as e:
         print(f"[Erro ao coletar artigo] {e}")
