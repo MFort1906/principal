@@ -59,4 +59,4 @@ async def executar_pipeline(pais_input, alias_input, qtd_artigos):
         arquivos_gerados.append(caminho)
         vistos_hash.add(hash_artigo)
 
-    return "✅ Tradução concluída!", arquivos_gerados, None  # ✅ Somente 2 valores retornados!
+    return "✅ Tradução concluída!", arquivos_gerados  # ✅ Somente 2 valores retornados!
