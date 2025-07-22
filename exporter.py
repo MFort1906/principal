@@ -71,13 +71,14 @@ def salvar_conteudo_em_docx(titulo, elementos, pasta_saida):
             doc.add_paragraph(f"• {conteudo}")
             total_paragrafos += 1
         elif tipo == 'img':
-            doc.add_paragraph(f"[Imagem detectada] {conteudo}")  # para debug no docx
             img_path = baixar_imagem(conteudo, pasta_saida)
             if img_path:
                 try:
-                    print(f"🖼️ Inserindo imagem: {img_path}", flush=True)
-                    doc.add_picture(img_path, width=Inches(5.5))
+                    paragraph = doc.add_paragraph()
+                    run = paragraph.add_run()
+                    run.add_picture(img_path, width=Inches(5.5))
                     total_imgs += 1
+                    print(f"🖼️ Imagem inserida: {img_path}", flush=True)
                 except Exception as e:
                     print(f"[❌ Erro ao inserir imagem] {img_path}: {e}", flush=True)
 
