@@ -152,7 +152,7 @@ def get_article_content(article_url):
         for idx, img in enumerate(imagens_encontradas, 1):
             print(f"   {idx}. {img}")
 
-        return title, conteudo_ordenado
+        return title, conteudo_ordenado, article_url
 
     except Exception as e:
         print(f"[Erro ao coletar artigo] {e}", flush=True)
