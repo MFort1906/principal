@@ -49,7 +49,14 @@ async def executar_pipeline(pais_input, alias_input, qtd_artigos):
             else:
                 traduzido_formatado.append(item)
 
-        caminho = salvar_conteudo_em_docx(titulo, traduzido_formatado, pasta_saida)
+        # ✅ Agora inclui o link do artigo original no início do .docx
+        caminho = salvar_conteudo_em_docx(
+            titulo=titulo,
+            elementos=traduzido_formatado,
+            pasta_saida=pasta_saida,
+            url_origem=artigo['href']  # <== Aqui é o novo argumento
+        )
+
         arquivos_gerados.append(caminho)
         vistos_hash.add(hash_artigo)
 
