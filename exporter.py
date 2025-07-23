@@ -4,6 +4,7 @@ import mimetypes
 from urllib.parse import urlparse
 from docx import Document
 from docx.shared import Inches
+from PIL import Image  # ✅ NOVO
 from utils import clean_filename, limpar_xml
 
 HEADERS = {
@@ -21,7 +22,11 @@ def baixar_imagem(url, pasta_destino):
         response.raise_for_status()
 
         content_type = response.headers.get('Content-Type')
-        ext = mimetypes.guess_extension(content_type) or '.jpg'
+        if not content_type or not content_type.lower().startswith("image/"):
+            print(f"[⚠️ Tipo de conteúdo inválido ou ausente] {url}")
+            return None
+
+        ext = mimetypes.guess_extension(content_type.lower()) or '.jpg'
         print(f"📦 Tipo de conteúdo: {content_type} | Extensão detectada: {ext}", flush=True)
 
         nome_url = os.path.basename(urlparse(url).path).split("?")[0]
@@ -36,8 +41,17 @@ def baixar_imagem(url, pasta_destino):
         with open(caminho, 'wb') as f:
             f.write(response.content)
 
+        # ✅ Verifica se a imagem é válida com Pillow
+        try:
+            with Image.open(caminho) as img:
+                img.verify()
+        except Exception as e:
+            print(f"[⚠️ Imagem corrompida ou inválida] {url}: {e}")
+            return None
+
         print(f"✅ Imagem salva em: {caminho}", flush=True)
         return caminho
+
     except Exception as e:
         print(f"[❌ Erro ao baixar imagem] {url}: {e}", flush=True)
         return None
