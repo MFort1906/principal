@@ -4,7 +4,7 @@ import mimetypes
 from urllib.parse import urlparse
 from docx import Document
 from docx.shared import Inches
-from PIL import Image  # ✅ NOVO
+from PIL import Image
 from utils import clean_filename, limpar_xml
 
 HEADERS = {
@@ -41,7 +41,7 @@ def baixar_imagem(url, pasta_destino):
         with open(caminho, 'wb') as f:
             f.write(response.content)
 
-        # ✅ Verifica se a imagem é válida com Pillow
+        # Verifica se a imagem é válida com Pillow
         try:
             with Image.open(caminho) as img:
                 img.verify()
@@ -54,6 +54,18 @@ def baixar_imagem(url, pasta_destino):
 
     except Exception as e:
         print(f"[❌ Erro ao baixar imagem] {url}: {e}", flush=True)
+        return None
+
+def reparar_imagem(caminho_original):
+    try:
+        with Image.open(caminho_original) as img:
+            rgb = img.convert('RGB')  # modo seguro para Word
+            caminho_corrigido = caminho_original.replace(".", "_reparada.", 1)
+            rgb.save(caminho_corrigido, format="JPEG")
+            print(f"[🛠️ Imagem reparada e salva como] {caminho_corrigido}", flush=True)
+            return caminho_corrigido
+    except Exception as e:
+        print(f"[⚠️ Erro ao reparar imagem] {caminho_original}: {e}", flush=True)
         return None
 
 def salvar_conteudo_em_docx(titulo, elementos, pasta_saida, url_origem=None):
@@ -97,8 +109,18 @@ def salvar_conteudo_em_docx(titulo, elementos, pasta_saida, url_origem=None):
                     run.add_picture(img_path, width=Inches(5.5))
                     total_imgs += 1
                     print(f"🖼️ Imagem inserida: {img_path}", flush=True)
-                except Exception as e:
-                    print(f"[❌ Erro ao inserir imagem] {img_path}: {e}", flush=True)
+                except Exception as e1:
+                    print(f"[⚠️ Falha ao inserir imagem original] {img_path}: {e1}", flush=True)
+                    img_corrigida = reparar_imagem(img_path)
+                    if img_corrigida:
+                        try:
+                            paragraph = doc.add_paragraph()
+                            run = paragraph.add_run()
+                            run.add_picture(img_corrigida, width=Inches(5.5))
+                            total_imgs += 1
+                            print(f"🖼️ Imagem reparada inserida: {img_corrigida}", flush=True)
+                        except Exception as e2:
+                            print(f"[❌ Erro ao inserir imagem reparada] {img_corrigida}: {e2}", flush=True)
 
     doc.save(caminho)
     print(f"\n💾 Arquivo salvo com sucesso: {caminho}", flush=True)
