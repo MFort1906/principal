@@ -9,7 +9,6 @@ OPCOES_PAISES = [
     ("🇺🇸 Estados Unidos 🏈", "en_us"),
     ("🇨🇦 Canadá ❄️", "en_ca"),
     ("🇦🇺 Austrália e Nova Zelândia 🦘", "en_au"),
-    ("🇿🇦 África do Sul 🦁", "en_za"),
     ("🇬🇧 Reino Unido 👑", "en_gb"),
     ("🇪🇸 Espanha 🦩", "es_es"),
     ("🇲🇽 México 🌮", "es_mx"),
