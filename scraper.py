@@ -78,6 +78,7 @@ def get_article_content(article_url):
 
         soup = BeautifulSoup(response.text, 'html.parser')
 
+        # Limpa elementos irrelevantes
         SELETORES_IRRELEVANTES = [
             'nav', '.nav', '#nav',
             'footer', '.footer', '#footer', '.site-footer',
@@ -88,20 +89,21 @@ def get_article_content(article_url):
             '.global-footer', '.utility-bar', '.login', '.register',
             '.minicart-content', '.minicart', '#minicart'
         ]
-
         for seletor in SELETORES_IRRELEVANTES:
             for el in soup.select(seletor):
                 el.decompose()
 
+        # Título
         title_tag = soup.find('h1')
         title = title_tag.get_text(strip=True) if title_tag else "Título não encontrado"
         print(f"\n📄 Coletando conteúdo do artigo: {title}", flush=True)
 
-        blocos = soup.select('div.richtext.text.parbase')
         conteudo_ordenado = []
         vistos_texto = set()
-        imagens_encontradas = []
+        imagens_encontradas = set()
 
+        # Texto principal dentro de .richtext
+        blocos = soup.select('div.richtext.text.parbase')
         PADROES_EXCLUIR = [
             "sign me up", "first name", "last name", "phone*", "email*",
             "ready to take", "let's talk", "requesting a product",
@@ -121,12 +123,7 @@ def get_article_content(article_url):
                     if texto.lower() in vistos_texto:
                         continue
 
-                    tipo = 'p'
-                    if el.name == 'h2':
-                        tipo = 'h2'
-                    elif el.name == 'h3':
-                        tipo = 'h3'
-
+                    tipo = el.name if el.name in ['h2', 'h3'] else 'p'
                     conteudo_ordenado.append({'tipo': tipo, 'conteudo': texto})
                     vistos_texto.add(texto.lower())
 
@@ -134,18 +131,19 @@ def get_article_content(article_url):
                     src = el.get("src") or el.get("data-src")
                     if src:
                         img_url = urljoin(article_url, src)
-                        conteudo_ordenado.append({'tipo': 'img', 'conteudo': img_url})
-                        imagens_encontradas.append(img_url)
+                        if img_url not in imagens_encontradas:
+                            conteudo_ordenado.append({'tipo': 'img', 'conteudo': img_url})
+                            imagens_encontradas.add(img_url)
 
-        # Imagens adicionais fora da .richtext.text.parbase
-        imagens_extras = soup.select("div.cmp-image img")
-        for el in imagens_extras:
-            src = el.get("src") or el.get("data-src")
-            if src:
-                img_url = urljoin(article_url, src)
-                if img_url not in [i['conteudo'] for i in conteudo_ordenado if i['tipo'] == 'img']:
-                    conteudo_ordenado.append({'tipo': 'img', 'conteudo': img_url})
-                    imagens_encontradas.append(img_url)
+        # Imagens fora da richtext — captura global
+        for img in soup.select("img"):
+            src = img.get("src") or img.get("data-src")
+            if not src or "tracking" in src.lower():
+                continue
+            img_url = urljoin(article_url, src)
+            if img_url not in imagens_encontradas:
+                conteudo_ordenado.append({'tipo': 'img', 'conteudo': img_url})
+                imagens_encontradas.add(img_url)
 
         print(f"✅ Total de blocos de texto: {len(vistos_texto)}", flush=True)
         print(f"🖼️ Total de imagens encontradas: {len(imagens_encontradas)}", flush=True)
