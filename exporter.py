@@ -3,7 +3,7 @@ import requests
 import mimetypes
 from urllib.parse import urlparse
 from docx import Document
-from docx.shared import Inches, RGBColor
+from docx.shared import Inches
 from PIL import Image
 from utils import clean_filename, limpar_xml
 
@@ -14,24 +14,6 @@ HEADERS = {
         'Chrome/91.0.4472.124 Safari/537.36'
     )
 }
-
-DESTAQUES = [
-    "Um dos maiores receios",
-    "A expectativa é que",
-    "Eficiência por meio da colaboração",
-    "3. Comprovação da limpeza",
-    "4. Capacidade dos funcionários",
-    "5. Uso otimizado de recursos"
-]
-
-def aplicar_destaque_manual(paragraph, texto):
-    for frase in DESTAQUES:
-        if texto.startswith(frase):
-            run = paragraph.add_run(texto)
-            run.font.bold = True
-            run.font.color.rgb = RGBColor(0, 102, 204)  # Azul
-            return True
-    return False
 
 def baixar_imagem(url, pasta_destino):
     try:
@@ -77,7 +59,7 @@ def baixar_imagem(url, pasta_destino):
 def reparar_imagem(caminho_original):
     try:
         with Image.open(caminho_original) as img:
-            rgb = img.convert('RGB')
+            rgb = img.convert('RGB')  # modo seguro para Word
             caminho_corrigido = caminho_original.replace(".", "_reparada.", 1)
             rgb.save(caminho_corrigido, format="JPEG")
             print(f"[🛠️ Imagem reparada e salva como] {caminho_corrigido}", flush=True)
@@ -94,9 +76,11 @@ def salvar_conteudo_em_docx(titulo, elementos, pasta_saida, url_origem=None):
 
     doc = Document()
 
+    # 🔗 Link do artigo original
     if url_origem:
         doc.add_paragraph(f"🔗 Artigo original: {url_origem}", style="Intense Quote")
 
+    # 📝 Título
     doc.add_heading(limpar_xml(titulo), level=1)
 
     print(f"\n📝 Iniciando documento: {nome_arquivo}", flush=True)
@@ -105,22 +89,17 @@ def salvar_conteudo_em_docx(titulo, elementos, pasta_saida, url_origem=None):
 
     for item in elementos:
         tipo = item['tipo']
-        conteudo = item['conteudo'].strip()
+        conteudo = item['conteudo']
 
         if tipo == 'h2':
             doc.add_paragraph(conteudo, style='Heading 2')
             print(f"🔹 H2: {conteudo[:50]}...", flush=True)
-
         elif tipo == 'h3':
             doc.add_paragraph(conteudo, style='Heading 3')
             print(f"🔸 H3: {conteudo[:50]}...", flush=True)
-
         elif tipo == 'p':
-            paragraph = doc.add_paragraph()
-            if not aplicar_destaque_manual(paragraph, conteudo):
-                paragraph.add_run(conteudo)
+            doc.add_paragraph(f"• {conteudo}")
             total_paragrafos += 1
-
         elif tipo == 'img':
             img_path = baixar_imagem(conteudo, pasta_saida)
             if img_path:
