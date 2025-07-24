@@ -15,24 +15,23 @@ HEADERS = {
     )
 }
 
-def log(msg):
-    print(msg, flush=True)
-
 def baixar_imagem(url, pasta_destino):
     try:
-        log(f"\n🔽 Tentando baixar imagem: {url}")
+        print(f"\n🔽 Tentando baixar imagem: {url}", flush=True)
         response = requests.get(url, headers=HEADERS, stream=True, timeout=10)
         response.raise_for_status()
 
         content_type = response.headers.get('Content-Type')
         if not content_type or not content_type.lower().startswith("image/"):
-            log(f"[⚠️ Tipo de conteúdo inválido ou ausente] {url}")
+            print(f"[⚠️ Tipo de conteúdo inválido ou ausente] {url}")
             return None
 
         ext = mimetypes.guess_extension(content_type.lower()) or '.jpg'
-        log(f"📦 Tipo de conteúdo: {content_type} | Extensão detectada: {ext}")
+        print(f"📦 Tipo de conteúdo: {content_type} | Extensão detectada: {ext}", flush=True)
 
-        nome_url = os.path.basename(urlparse(url).path).split("?")[0] or f"img_{hash(url)}"
+        nome_url = os.path.basename(urlparse(url).path).split("?")[0]
+        if not nome_url:
+            nome_url = f"img_{hash(url)}"
         if not os.path.splitext(nome_url)[1]:
             nome_url += ext
 
@@ -42,19 +41,19 @@ def baixar_imagem(url, pasta_destino):
         with open(caminho, 'wb') as f:
             f.write(response.content)
 
-        # Validação da imagem
+        # Verifica se a imagem é válida com Pillow
         try:
             with Image.open(caminho) as img:
                 img.verify()
         except Exception as e:
-            log(f"[⚠️ Imagem corrompida ou inválida] {url}: {e}")
+            print(f"[⚠️ Imagem corrompida ou inválida] {url}: {e}")
             return None
 
-        log(f"✅ Imagem salva em: {caminho}")
+        print(f"✅ Imagem salva em: {caminho}", flush=True)
         return caminho
 
     except Exception as e:
-        log(f"[❌ Erro ao baixar imagem] {url}: {e}")
+        print(f"[❌ Erro ao baixar imagem] {url}: {e}", flush=True)
         return None
 
 def reparar_imagem(caminho_original):
@@ -63,65 +62,74 @@ def reparar_imagem(caminho_original):
             rgb = img.convert('RGB')
             caminho_corrigido = caminho_original.replace(".", "_reparada.", 1)
             rgb.save(caminho_corrigido, format="JPEG")
-            log(f"[🛠️ Imagem reparada e salva como] {caminho_corrigido}")
+            print(f"[🛠️ Imagem reparada e salva como] {caminho_corrigido}", flush=True)
             return caminho_corrigido
     except Exception as e:
-        log(f"[⚠️ Erro ao reparar imagem] {caminho_original}: {e}")
+        print(f"[⚠️ Erro ao reparar imagem] {caminho_original}: {e}", flush=True)
         return None
 
 def salvar_conteudo_em_docx(titulo, elementos, pasta_saida, url_origem=None):
+    """Salva o conteúdo traduzido em um arquivo .docx com texto e imagens"""
     nome_arquivo = clean_filename(titulo)
     caminho = os.path.join(pasta_saida, f"{nome_arquivo}.docx")
-
-    try:
-        os.makedirs(pasta_saida, exist_ok=True)
-    except Exception as e:
-        log(f"[❌ Erro ao criar pasta de saída] {pasta_saida}: {e}")
-        return None
+    os.makedirs(pasta_saida, exist_ok=True)
 
     doc = Document()
 
+    # 🔗 Link do artigo original
     if url_origem:
         doc.add_paragraph(f"🔗 Artigo original: {url_origem}", style="Intense Quote")
 
+    # 📝 Título
     doc.add_heading(limpar_xml(titulo), level=1)
 
-    log(f"\n📝 Iniciando documento: {nome_arquivo}")
+    print(f"\n📝 Iniciando documento: {nome_arquivo}", flush=True)
     total_imgs = 0
     total_paragrafos = 0
 
-    for bloco in elementos:
-        tipo = bloco['tipo']
-        conteudo = bloco['conteudo']
+    for item in elementos:
+        tipo = item['tipo']
+        conteudo = item['conteudo'].strip()
 
         if tipo == 'h2':
             doc.add_paragraph(conteudo, style='Heading 2')
-            log(f"🔹 H2: {conteudo[:60]}...")
+            print(f"🔹 H2: {conteudo[:50]}...", flush=True)
+
         elif tipo == 'h3':
             doc.add_paragraph(conteudo, style='Heading 3')
-            log(f"🔸 H3: {conteudo[:60]}...")
+            print(f"🔸 H3: {conteudo[:50]}...", flush=True)
+
         elif tipo == 'p':
-            doc.add_paragraph(f"• {conteudo}", style='List Bullet')
+            # Verifica se é uma lista pelo conteúdo (já começa com marcador)
+            if conteudo.startswith(("•", "-", "*", "1.", "2.", "3.")):
+                doc.add_paragraph(conteudo)
+            else:
+                doc.add_paragraph(conteudo, style="Normal")
             total_paragrafos += 1
+
         elif tipo == 'img':
             img_path = baixar_imagem(conteudo, pasta_saida)
             if img_path:
                 try:
-                    doc.add_picture(img_path, width=Inches(5.5))
+                    paragraph = doc.add_paragraph()
+                    run = paragraph.add_run()
+                    run.add_picture(img_path, width=Inches(5.5))
                     total_imgs += 1
-                    log(f"🖼️ Imagem inserida: {img_path}")
+                    print(f"🖼️ Imagem inserida: {img_path}", flush=True)
                 except Exception as e1:
-                    log(f"[⚠️ Falha ao inserir imagem original] {img_path}: {e1}")
+                    print(f"[⚠️ Falha ao inserir imagem original] {img_path}: {e1}", flush=True)
                     img_corrigida = reparar_imagem(img_path)
                     if img_corrigida:
                         try:
-                            doc.add_picture(img_corrigida, width=Inches(5.5))
+                            paragraph = doc.add_paragraph()
+                            run = paragraph.add_run()
+                            run.add_picture(img_corrigida, width=Inches(5.5))
                             total_imgs += 1
-                            log(f"🖼️ Imagem reparada inserida: {img_corrigida}")
+                            print(f"🖼️ Imagem reparada inserida: {img_corrigida}", flush=True)
                         except Exception as e2:
-                            log(f"[❌ Erro ao inserir imagem reparada] {img_corrigida}: {e2}")
+                            print(f"[❌ Erro ao inserir imagem reparada] {img_corrigida}: {e2}", flush=True)
 
     doc.save(caminho)
-    log(f"\n✅ Documento salvo: {caminho}")
-    log(f"📊 Estatísticas: {total_paragrafos} parágrafos | {total_imgs} imagens\n")
+    print(f"\n💾 Arquivo salvo com sucesso: {caminho}", flush=True)
+    print(f"📊 Estatísticas: {total_paragrafos} parágrafos | {total_imgs} imagens\n", flush=True)
     return caminho
