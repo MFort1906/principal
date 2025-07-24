@@ -1,12 +1,10 @@
-import os
+import time
+import random
 import requests
-import mimetypes
-from urllib.parse import urlparse
-from docx import Document
-from docx.shared import Inches
-from PIL import Image
-from utils import clean_filename, limpar_xml
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 
+# === Constantes ===
 HEADERS = {
     'User-Agent': (
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
@@ -15,114 +13,145 @@ HEADERS = {
     )
 }
 
-def baixar_imagem(url, pasta_destino):
+URL_BASE = "https://www.tennantco.com"
+
+# === Funções Auxiliares ===
+def tempo_espera(min_time=5, max_time=9, contexto="aguardando..."):
+    tempo = random.uniform(min_time, max_time)
+    print(f"⌛ {contexto} ({tempo:.2f}s)")
+    time.sleep(tempo)
+
+def is_valid_url(url):
+    return url.startswith("http") and ".html" in url
+
+def limpar_url(href, pais):
+    if not href.startswith("http"):
+        href = urljoin(f"{URL_BASE}/{pais}/", href)
+    return href
+
+def coletar_links_artigos(pagina_url, pais):
     try:
-        print(f"\n🔽 Tentando baixar imagem: {url}", flush=True)
-        response = requests.get(url, headers=HEADERS, stream=True, timeout=10)
+        response = requests.get(pagina_url, headers=HEADERS)
+        response.raise_for_status()
+    except Exception as e:
+        print(f"[Erro] Falha ao acessar {pagina_url}: {e}")
+        return []
+
+    sopa = BeautifulSoup(response.text, 'html.parser')
+
+    for seletor in ['footer', '.footer', '#footer', '.site-footer', '.rodape', '.legal', '.copyright']:
+        for el in sopa.select(seletor):
+            el.decompose()
+
+    todos_a = sopa.find_all('a', href=True, title=True)
+    links = []
+
+    for a in todos_a:
+        href = a['href']
+        title = a['title'].strip() or a.text.strip()
+        href = limpar_url(href, pais)
+
+        if any(excl in href for excl in ['cart', 'contact', 'solicitud', 'linkedin', 'facebook', 'twitter']):
+            continue
+        if not is_valid_url(href):
+            continue
+        if '/blog/' not in href and pais not in ['ja_jp', 'zh_cn', 'ko_kr']:
+            continue
+
+        links.append({'title': title, 'href': href})
+
+    vistos = set()
+    links_unicos = []
+    for link in links:
+        if link['href'] not in vistos:
+            vistos.add(link['href'])
+            links_unicos.append(link)
+
+    print(f"🔗 {len(links_unicos)} links válidos extraídos.", flush=True)
+    return links_unicos
+
+def get_article_content(article_url):
+    try:
+        tempo_espera(7.5, 9.5, contexto="esperando antes de coletar o artigo")
+        response = requests.get(article_url, headers=HEADERS, timeout=15)
         response.raise_for_status()
 
-        content_type = response.headers.get('Content-Type')
-        if not content_type or not content_type.lower().startswith("image/"):
-            print(f"[⚠️ Tipo de conteúdo inválido ou ausente] {url}")
-            return None
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-        ext = mimetypes.guess_extension(content_type.lower()) or '.jpg'
-        print(f"📦 Tipo de conteúdo: {content_type} | Extensão detectada: {ext}", flush=True)
+        # Limpa elementos irrelevantes
+        SELETORES_IRRELEVANTES = [
+            'nav', '.nav', '#nav',
+            'footer', '.footer', '#footer', '.site-footer',
+            '.breadcrumbs', '.category-list',
+            '.cart-empty', '.form', 'form', 'aside',
+            '.related-links', '.site-utility', '.newsletter-signup',
+            '.social', '.contact', '#comments', '.share', '.sidebar',
+            '.global-footer', '.utility-bar', '.login', '.register',
+            '.minicart-content', '.minicart', '#minicart'
+        ]
+        for seletor in SELETORES_IRRELEVANTES:
+            for el in soup.select(seletor):
+                el.decompose()
 
-        nome_url = os.path.basename(urlparse(url).path).split("?")[0]
-        if not nome_url:
-            nome_url = f"img_{hash(url)}"
-        if not os.path.splitext(nome_url)[1]:
-            nome_url += ext
+        # Título
+        title_tag = soup.find('h1')
+        title = title_tag.get_text(strip=True) if title_tag else "Título não encontrado"
+        print(f"\n📄 Coletando conteúdo do artigo: {title}", flush=True)
 
-        nome_arquivo = clean_filename(nome_url)
-        caminho = os.path.join(pasta_destino, nome_arquivo)
+        conteudo_ordenado = []
+        vistos_texto = set()
+        imagens_encontradas = set()
 
-        with open(caminho, 'wb') as f:
-            f.write(response.content)
+        # Texto principal dentro de .richtext
+        blocos = soup.select('div.richtext.text.parbase')
+        PADROES_EXCLUIR = [
+            "sign me up", "first name", "last name", "phone*", "email*",
+            "ready to take", "let's talk", "requesting a product",
+            "you’ve come to the right place", "required fields",
+            "contact us", "customer service", "©", "privacy notice",
+            "seu carrinho de compras está vazio"
+        ]
 
-        # Verifica se a imagem é válida com Pillow
-        try:
-            with Image.open(caminho) as img:
-                img.verify()
-        except Exception as e:
-            print(f"[⚠️ Imagem corrompida ou inválida] {url}: {e}")
-            return None
+        for bloco in blocos:
+            for el in bloco.find_all(['h2', 'h3', 'p', 'li', 'img']):
+                if el.name in ['p', 'li', 'h2', 'h3']:
+                    texto = el.get_text(strip=True)
+                    if not texto or any(pad in texto.lower() for pad in PADROES_EXCLUIR):
+                        continue
+                    if len(texto) < 20 and el.name not in ['h2', 'h3']:
+                        continue
+                    if texto.lower() in vistos_texto:
+                        continue
 
-        print(f"✅ Imagem salva em: {caminho}", flush=True)
-        return caminho
+                    tipo = el.name if el.name in ['h2', 'h3'] else 'p'
+                    conteudo_ordenado.append({'tipo': tipo, 'conteudo': texto})
+                    vistos_texto.add(texto.lower())
+
+                elif el.name == 'img':
+                    src = el.get("src") or el.get("data-src")
+                    if src:
+                        img_url = urljoin(article_url, src)
+                        if img_url not in imagens_encontradas:
+                            conteudo_ordenado.append({'tipo': 'img', 'conteudo': img_url})
+                            imagens_encontradas.add(img_url)
+
+        # Imagens fora da richtext — captura global
+        for img in soup.select("img"):
+            src = img.get("src") or img.get("data-src")
+            if not src or "tracking" in src.lower():
+                continue
+            img_url = urljoin(article_url, src)
+            if img_url not in imagens_encontradas:
+                conteudo_ordenado.append({'tipo': 'img', 'conteudo': img_url})
+                imagens_encontradas.add(img_url)
+
+        print(f"✅ Total de blocos de texto: {len(vistos_texto)}", flush=True)
+        print(f"🖼️ Total de imagens encontradas: {len(imagens_encontradas)}", flush=True)
+        for idx, img in enumerate(imagens_encontradas, 1):
+            print(f"   {idx}. {img}")
+
+        return title, conteudo_ordenado, article_url
 
     except Exception as e:
-        print(f"[❌ Erro ao baixar imagem] {url}: {e}", flush=True)
-        return None
-
-def reparar_imagem(caminho_original):
-    try:
-        with Image.open(caminho_original) as img:
-            rgb = img.convert('RGB')  # modo seguro para Word
-            caminho_corrigido = caminho_original.replace(".", "_reparada.", 1)
-            rgb.save(caminho_corrigido, format="JPEG")
-            print(f"[🛠️ Imagem reparada e salva como] {caminho_corrigido}", flush=True)
-            return caminho_corrigido
-    except Exception as e:
-        print(f"[⚠️ Erro ao reparar imagem] {caminho_original}: {e}", flush=True)
-        return None
-
-def salvar_conteudo_em_docx(titulo, elementos, pasta_saida, url_origem=None):
-    """Salva o conteúdo traduzido em um arquivo .docx com texto e imagens"""
-    nome_arquivo = clean_filename(titulo)
-    caminho = os.path.join(pasta_saida, f"{nome_arquivo}.docx")
-    os.makedirs(pasta_saida, exist_ok=True)
-
-    doc = Document()
-
-    # 🔗 Link do artigo original
-    if url_origem:
-        doc.add_paragraph(f"🔗 Artigo original: {url_origem}", style="Intense Quote")
-
-    # 📝 Título
-    doc.add_heading(limpar_xml(titulo), level=1)
-
-    print(f"\n📝 Iniciando documento: {nome_arquivo}", flush=True)
-    total_imgs = 0
-    total_paragrafos = 0
-
-    for item in elementos:
-        tipo = item['tipo']
-        conteudo = item['conteudo']
-
-        if tipo == 'h2':
-            doc.add_paragraph(conteudo, style='Heading 2')
-            print(f"🔹 H2: {conteudo[:50]}...", flush=True)
-        elif tipo == 'h3':
-            doc.add_paragraph(conteudo, style='Heading 3')
-            print(f"🔸 H3: {conteudo[:50]}...", flush=True)
-        elif tipo == 'p':
-            doc.add_paragraph(f"• {conteudo}")
-            total_paragrafos += 1
-        elif tipo == 'img':
-            img_path = baixar_imagem(conteudo, pasta_saida)
-            if img_path:
-                try:
-                    paragraph = doc.add_paragraph()
-                    run = paragraph.add_run()
-                    run.add_picture(img_path, width=Inches(5.5))
-                    total_imgs += 1
-                    print(f"🖼️ Imagem inserida: {img_path}", flush=True)
-                except Exception as e1:
-                    print(f"[⚠️ Falha ao inserir imagem original] {img_path}: {e1}", flush=True)
-                    img_corrigida = reparar_imagem(img_path)
-                    if img_corrigida:
-                        try:
-                            paragraph = doc.add_paragraph()
-                            run = paragraph.add_run()
-                            run.add_picture(img_corrigida, width=Inches(5.5))
-                            total_imgs += 1
-                            print(f"🖼️ Imagem reparada inserida: {img_corrigida}", flush=True)
-                        except Exception as e2:
-                            print(f"[❌ Erro ao inserir imagem reparada] {img_corrigida}: {e2}", flush=True)
-
-    doc.save(caminho)
-    print(f"\n💾 Arquivo salvo com sucesso: {caminho}", flush=True)
-    print(f"📊 Estatísticas: {total_paragrafos} parágrafos | {total_imgs} imagens\n", flush=True)
-    return caminho
+        print(f"[Erro ao coletar artigo] {e}", flush=True)
+        return None, []
