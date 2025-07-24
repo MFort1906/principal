@@ -3,7 +3,7 @@ import requests
 import mimetypes
 from urllib.parse import urlparse
 from docx import Document
-from docx.shared import Inches
+from docx.shared import Inches, RGBColor
 from PIL import Image
 from utils import clean_filename, limpar_xml
 
@@ -14,6 +14,24 @@ HEADERS = {
         'Chrome/91.0.4472.124 Safari/537.36'
     )
 }
+
+DESTAQUES = [
+    "Um dos maiores receios",
+    "A expectativa é que",
+    "Eficiência por meio da colaboração",
+    "3. Comprovação da limpeza",
+    "4. Capacidade dos funcionários",
+    "5. Uso otimizado de recursos"
+]
+
+def aplicar_destaque_manual(paragraph, texto):
+    for frase in DESTAQUES:
+        if texto.startswith(frase):
+            run = paragraph.add_run(texto)
+            run.font.bold = True
+            run.font.color.rgb = RGBColor(0, 102, 204)  # Azul
+            return True
+    return False
 
 def baixar_imagem(url, pasta_destino):
     try:
@@ -76,11 +94,9 @@ def salvar_conteudo_em_docx(titulo, elementos, pasta_saida, url_origem=None):
 
     doc = Document()
 
-    # 🔗 Link do artigo original
     if url_origem:
         doc.add_paragraph(f"🔗 Artigo original: {url_origem}", style="Intense Quote")
 
-    # 📝 Título
     doc.add_heading(limpar_xml(titulo), level=1)
 
     print(f"\n📝 Iniciando documento: {nome_arquivo}", flush=True)
@@ -100,11 +116,9 @@ def salvar_conteudo_em_docx(titulo, elementos, pasta_saida, url_origem=None):
             print(f"🔸 H3: {conteudo[:50]}...", flush=True)
 
         elif tipo == 'p':
-            # Verifica se é uma lista pelo conteúdo (já começa com marcador)
-            if conteudo.startswith(("•", "-", "*", "1.", "2.", "3.")):
-                doc.add_paragraph(conteudo)
-            else:
-                doc.add_paragraph(conteudo, style="Normal")
+            paragraph = doc.add_paragraph()
+            if not aplicar_destaque_manual(paragraph, conteudo):
+                paragraph.add_run(conteudo)
             total_paragrafos += 1
 
         elif tipo == 'img':
