@@ -24,39 +24,51 @@ OPCOES_PAISES = [
     ("🇵🇹 Portugal 🛎️", "pt_pt"),
 ]
 
-# Dicionário para mapear nome exibido para alias
 NOMES_TO_ALIAS = {nome: alias for nome, alias in OPCOES_PAISES}
 
-# === Função de checagem de senha ===
+# === Checagem de senha ===
 def checar_senha(senha_input):
     with open("/etc/secrets/SCRAPER_PASSWORD") as f:
         senha_correta = f.read().strip()
     if senha_input == senha_correta:
-        return gr.update(visible=False), gr.update(visible=True), gr.update(visible=False)
+        return (
+            gr.update(visible=False),    # login_box
+            gr.update(visible=True),     # app_box
+            gr.update(visible=False),    # erro_senha
+            gr.update(visible=True, value="✅ Login bem-sucedido! Bem-vindo 😄"),  # boas_vindas
+            gr.update(value="")          # limpar campo senha
+        )
     else:
         return (
-            gr.update(visible=True),          # login_box permanece
-            gr.update(visible=False),         # app_box continua oculto
-            gr.update(visible=True, value="❌ Senha incorreta. Tente novamente.")  # mostra aviso
+            gr.update(visible=True),
+            gr.update(visible=False),
+            gr.update(visible=True, value="❌ Senha incorreta. Tente novamente."),
+            gr.update(visible=False),
+            gr.update(value="")
         )
 
-# === Função principal da interface ===
+# === Execução principal ===
 async def rodar_interface(pais_nome, qtd):
     alias = NOMES_TO_ALIAS.get(pais_nome, "")
     pais_formatado = pais_nome.split("(", 1)[0].strip()
     try:
-        mensagem, arquivos = await executar_pipeline(pais_formatado, alias, qtd)
-        return mensagem, arquivos
+        return await executar_pipeline(pais_formatado, alias, qtd)
     except Exception as e:
         return f"❌ Erro: {str(e)}", [], gr.update(visible=True)
 
-# === Interface Gradio ===
-with gr.Blocks(title="W.S.T.B.R 2000", theme=gr.themes.Soft()) as demo:
+# === Interface ===
+with gr.Blocks(title="W.S.T.B.R 2000 🧠🌍", theme=gr.themes.Soft()) as demo:
     with gr.Row(visible=True) as login_box:
         with gr.Column():
-            senha = gr.Textbox(label="🔐 Senha de acesso", type="password")
+            senha = gr.Textbox(
+                label="🔐 Senha de acesso",
+                type="password",
+                placeholder="Digite a senha para acessar"
+            )
             btn_login = gr.Button("Entrar", variant="primary")
             erro_senha = gr.Markdown("", visible=False)
+
+    boas_vindas = gr.Markdown("", visible=False)
 
     with gr.Row(visible=False) as app_box:
         with gr.Column():
@@ -87,11 +99,23 @@ with gr.Blocks(title="W.S.T.B.R 2000", theme=gr.themes.Soft()) as demo:
             btn = gr.Button("🚀 Iniciar Tradução", variant="primary")
             status = gr.Textbox(label="📌 Status do processo", interactive=False)
             arquivos = gr.File(label="📎 Arquivos traduzidos (.docx)", file_types=[".docx"], file_count="multiple")
+            loading = gr.Markdown("⏳ Processando...", visible=False)
 
-            btn.click(fn=rodar_interface, inputs=[pais_dropdown, qtd], outputs=[status, arquivos])
+            btn.click(
+                fn=rodar_interface,
+                inputs=[pais_dropdown, qtd],
+                outputs=[status, arquivos],
+                show_progress=True
+            ).then(
+                fn=lambda: gr.update(visible=False), inputs=None, outputs=loading
+            )
 
-    btn_login.click(fn=checar_senha, inputs=senha, outputs=[login_box, app_box, erro_senha])
+    btn_login.click(
+        fn=checar_senha,
+        inputs=senha,
+        outputs=[login_box, app_box, erro_senha, boas_vindas, senha]
+    )
 
-# === Lançamento do app ===
+# === Start ===
 if __name__ == "__main__":
     demo.launch(server_name="0.0.0.0", server_port=int(os.getenv("PORT", 7860)))
