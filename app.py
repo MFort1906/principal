@@ -31,11 +31,14 @@ NOMES_TO_ALIAS = {nome: alias for nome, alias in OPCOES_PAISES}
 def checar_senha(senha_input):
     with open("/etc/secrets/SCRAPER_PASSWORD") as f:
         senha_correta = f.read().strip()
-    return (
-        gr.update(visible=False), gr.update(visible=True)
-    ) if senha_input == senha_correta else (
-        gr.update(visible=True), gr.update(visible=False)
-    )
+    if senha_input == senha_correta:
+        return gr.update(visible=False), gr.update(visible=True), gr.update(visible=False)
+    else:
+        return (
+            gr.update(visible=True),          # login_box permanece
+            gr.update(visible=False),         # app_box continua oculto
+            gr.update(visible=True, value="❌ Senha incorreta. Tente novamente.")  # mostra aviso
+        )
 
 # === Função principal da interface ===
 async def rodar_interface(pais_nome, qtd):
@@ -53,6 +56,7 @@ with gr.Blocks(title="W.S.T.B.R 2000", theme=gr.themes.Soft()) as demo:
         with gr.Column():
             senha = gr.Textbox(label="🔐 Senha de acesso", type="password")
             btn_login = gr.Button("Entrar", variant="primary")
+            erro_senha = gr.Markdown("", visible=False)
 
     with gr.Row(visible=False) as app_box:
         with gr.Column():
@@ -86,7 +90,7 @@ with gr.Blocks(title="W.S.T.B.R 2000", theme=gr.themes.Soft()) as demo:
 
             btn.click(fn=rodar_interface, inputs=[pais_dropdown, qtd], outputs=[status, arquivos])
 
-    btn_login.click(fn=checar_senha, inputs=senha, outputs=[login_box, app_box])
+    btn_login.click(fn=checar_senha, inputs=senha, outputs=[login_box, app_box, erro_senha])
 
 # === Lançamento do app ===
 if __name__ == "__main__":
