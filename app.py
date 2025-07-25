@@ -1,13 +1,11 @@
 import os
 import gradio as gr
 import asyncio
-from pipeline import rodar_interface  # Usa a função com yield
-
-print("🔧 Gradio version:", gr.__version__)
+from pipeline import executar_pipeline
 
 # === Mapa visual com países e emojis ===
 OPCOES_PAISES = [
-    ("🇧🇷 Brasil (👑⚽🥅)", "pt_br"),
+    ("🇧🇷 Brasil (👑⚽🏅)", "pt_br"),
     ("🇺🇸 Estados Unidos 🏈", "en_us"),
     ("🇨🇦 Canadá ❄️", "en_ca"),
     ("🇦🇺 Austrália e Nova Zelândia 🦘", "en_au"),
@@ -18,12 +16,12 @@ OPCOES_PAISES = [
     ("🇳🇱 Holanda 🌷", "nl_nl"),
     ("🇪🇺 Europa 🏰", "en_eu"),
     ("🌏 Ásia 🐼", "en_ap"),
-    ("🌎 América Latina 💃", "en_la"),
+    ("🌎 América Latina 🕺", "en_la"),
     ("🇩🇪 Alemanha 🍻", "de_de"),
     ("🇮🇹 Itália 🍝", "it_it"),
-    ("🇯🇵 Japão 🤺", "ja_jp"),
+    ("🇯🇵 Japão ⛺", "ja_jp"),
     ("🇨🇳 China 🐉", "zh_cn"),
-    ("🇵🇹 Portugal 🛎️", "pt_pt"),
+    ("🇵🇹 Portugal 🛖️", "pt_pt"),
 ]
 NOMES_TO_ALIAS = {nome: alias for nome, alias in OPCOES_PAISES}
 
@@ -48,14 +46,14 @@ def checar_senha(senha_input):
             gr.update(value="")
         )
 
-# === Wrapper para coroutine async com yield ===
-def wrapper_gradio(pais_nome, qtd):
-    async def _async_wrapper():
-        alias = NOMES_TO_ALIAS.get(pais_nome, "")
-        pais_formatado = pais_nome.split("(", 1)[0].strip()
-        async for status, arquivos in rodar_interface(pais_formatado, alias, qtd):
-            yield status, arquivos
-    return _async_wrapper()
+# === Execução principal ===
+async def rodar_interface(pais_nome, qtd):
+    alias = NOMES_TO_ALIAS.get(pais_nome, "")
+    pais_formatado = pais_nome.split("(", 1)[0].strip()
+    try:
+        return await executar_pipeline(pais_formatado, alias, qtd)
+    except Exception as e:
+        return f"❌ Erro: {str(e)}", []
 
 # === Interface ===
 with gr.Blocks(title="W.S.T.B.R 2000 🧠🌍", theme=gr.themes.Soft()) as demo:
@@ -83,8 +81,8 @@ with gr.Blocks(title="W.S.T.B.R 2000 🧠🌍", theme=gr.themes.Soft()) as demo:
             <ol>
             <li>Escolha um país com base no tema cultural mais marcante. 😎</li>
             <li>Defina quantos artigos deseja traduzir 📰. O padrão é 3.</li>
-            <li>Clique em <b>"Iniciar Tradução"</b> e acompanhe o progresso ⏳.</li>
-            <li><b>Baixe os arquivos gerados 📥</b> no final.</li>
+            <li>Clique em <b>"Iniciar Tradução"</b> e acompanhe o progresso ⌛.</li>
+            <li><b>Baixe os arquivos gerados 📅</b> no final.</li>
             </ol>
             </details>
             """)
@@ -93,21 +91,20 @@ with gr.Blocks(title="W.S.T.B.R 2000 🧠🌍", theme=gr.themes.Soft()) as demo:
                 pais_dropdown = gr.Dropdown(
                     label="🌍 Selecione o país",
                     choices=[nome for nome, _ in OPCOES_PAISES],
-                    value="🇧🇷 Brasil (👑⚽🥅)"
+                    value="🇧🇷 Brasil (👑⚽🏅)"
                 )
-                qtd = gr.Number(label="🗞️ Número de artigos", value=3, minimum=1, maximum=45)
+                qtd = gr.Number(label="🗾️ Número de artigos", value=3, minimum=1, maximum=45)
 
             btn = gr.Button("🛠️ Iniciar Tradução", variant="primary")
 
-            status = gr.Markdown("⌛ Status aparecerá aqui", label="📌 Status do processo")
+            status = gr.Textbox(label="📌 Status do processo", interactive=False)
             arquivos = gr.File(label="📎 Arquivos traduzidos (.docx)", file_types=[".docx"], file_count="multiple")
 
             btn.click(
-                fn=wrapper_gradio,
+                fn=rodar_interface,
                 inputs=[pais_dropdown, qtd],
                 outputs=[status, arquivos],
-                show_progress=True,
-                stream=True  # ✅ esta é a forma correta!
+                show_progress=True
             )
 
     btn_login.click(
