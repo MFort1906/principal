@@ -22,41 +22,50 @@ async def executar_pipeline(pais_input, alias_input, qtd_artigos):
 
     vistos_hash = set()
     arquivos_gerados = []
+    artigos_processados = 0
 
-    for artigo in links[:int(qtd_artigos)]:
-        titulo, conteudo, _ = get_article_content(artigo['href'])
-        if not conteudo:
+    for artigo in links:
+        if artigos_processados >= int(qtd_artigos):
+            break
+
+        try:
+            titulo, conteudo, _ = get_article_content(artigo['href'])
+            if not conteudo:
+                print(f"[⚠️ Artigo ignorado: sem conteúdo] {artigo['href']}", flush=True)
+                continue
+
+            texto_bruto = " ".join([item['conteudo'] for item in conteudo if item['tipo'] in ['p', 'h2', 'h3']])
+            hash_artigo = hash(texto_bruto.strip().lower())
+            if hash_artigo in vistos_hash:
+                print(f"[⚠️ Artigo ignorado: duplicado] {artigo['href']}", flush=True)
+                continue
+
+            texto_para_traduzir = [item['conteudo'] for item in conteudo if item['tipo'] in ['p', 'h2', 'h3']]
+            traducao, _ = await traduzir_e_formatar_gpt(texto_para_traduzir)
+
+            traduzido_formatado = []
+            i = 0
+            for item in conteudo:
+                if item['tipo'] in ['p', 'h2', 'h3']:
+                    if i < len(traducao):
+                        traduzido_formatado.append({'tipo': item['tipo'], 'conteudo': traducao[i]})
+                        i += 1
+                else:
+                    traduzido_formatado.append(item)
+
+            caminho = salvar_conteudo_em_docx(
+                titulo=titulo,
+                elementos=traduzido_formatado,
+                pasta_saida=pasta_saida,
+                url_origem=artigo['href']
+            )
+
+            arquivos_gerados.append(caminho)
+            vistos_hash.add(hash_artigo)
+            artigos_processados += 1
+
+        except Exception as e:
+            print(f"[❌ Erro ao processar artigo] {artigo['href']}: {e}", flush=True)
             continue
 
-        # Hash apenas do conteúdo textual
-        texto_bruto = " ".join([item['conteudo'] for item in conteudo if item['tipo'] in ['p', 'h2', 'h3']])
-        hash_artigo = hash(texto_bruto.strip().lower())
-        if hash_artigo in vistos_hash:
-            continue
-
-        # Tradução apenas do texto
-        texto_para_traduzir = [item['conteudo'] for item in conteudo if item['tipo'] in ['p', 'h2', 'h3']]
-        traducao, _ = await traduzir_e_formatar_gpt(texto_para_traduzir)
-
-        # Recombinar texto traduzido + imagens
-        traduzido_formatado = []
-        i = 0
-        for item in conteudo:
-            if item['tipo'] in ['p', 'h2', 'h3']:
-                if i < len(traducao):
-                    traduzido_formatado.append({'tipo': item['tipo'], 'conteudo': traducao[i]})
-                    i += 1
-            else:
-                traduzido_formatado.append(item)
-
-        caminho = salvar_conteudo_em_docx(
-            titulo=titulo,
-            elementos=traduzido_formatado,
-            pasta_saida=pasta_saida,
-            url_origem=artigo['href']
-        )
-
-        arquivos_gerados.append(caminho)
-        vistos_hash.add(hash_artigo)
-
-    return "✅ Tradução concluída!", arquivos_gerados  # ✅ Somente 2 valores retornados!
+    return "✅ Tradução concluída!", arquivos_gerados
