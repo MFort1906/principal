@@ -3,6 +3,8 @@ import gradio as gr
 import asyncio
 from pipeline import rodar_interface  # Usa a função com yield
 
+print("🔧 Gradio version:", gr.__version__)
+
 # === Mapa visual com países e emojis ===
 OPCOES_PAISES = [
     ("🇧🇷 Brasil (👑⚽🥅)", "pt_br"),
