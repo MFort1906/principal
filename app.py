@@ -100,7 +100,7 @@ with gr.Blocks(title="W.S.T.B.R 2000 🧠🌍", theme=gr.themes.Soft()) as demo:
             status = gr.Markdown("⌛ Status aparecerá aqui", label="📌 Status do processo")
             arquivos = gr.File(label="📎 Arquivos traduzidos (.docx)", file_types=[".docx"], file_count="multiple")
 
-            btn.click(
+            btn.stream(
                 fn=wrapper_gradio,
                 inputs=[pais_dropdown, qtd],
                 outputs=[status, arquivos],
