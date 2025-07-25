@@ -2,6 +2,6 @@ requests
 beautifulsoup4
 python-docx
 pillow
-gradio==4.21.0
+gradio
 openai
 nest_asyncio
