@@ -1,7 +1,7 @@
 import os
 import gradio as gr
 import asyncio
-from pipeline import executar_pipeline
+from pipeline import rodar_interface  # Usa a função com yield
 
 # === Mapa visual com países e emojis ===
 OPCOES_PAISES = [
@@ -23,7 +23,6 @@ OPCOES_PAISES = [
     ("🇨🇳 China 🐉", "zh_cn"),
     ("🇵🇹 Portugal 🛎️", "pt_pt"),
 ]
-
 NOMES_TO_ALIAS = {nome: alias for nome, alias in OPCOES_PAISES}
 
 # === Checagem de senha ===
@@ -47,14 +46,14 @@ def checar_senha(senha_input):
             gr.update(value="")
         )
 
-# === Execução principal ===
-async def rodar_interface(pais_nome, qtd):
-    alias = NOMES_TO_ALIAS.get(pais_nome, "")
-    pais_formatado = pais_nome.split("(", 1)[0].strip()
-    try:
-        return await executar_pipeline(pais_formatado, alias, qtd)
-    except Exception as e:
-        return f"❌ Erro: {str(e)}", [], gr.update(visible=True)
+# === Wrapper para coroutine async com yield ===
+def wrapper_gradio(pais_nome, qtd):
+    async def _async_wrapper():
+        alias = NOMES_TO_ALIAS.get(pais_nome, "")
+        pais_formatado = pais_nome.split("(", 1)[0].strip()
+        async for status, arquivos in rodar_interface(pais_formatado, alias, qtd):
+            yield status, arquivos
+    return _async_wrapper()
 
 # === Interface ===
 with gr.Blocks(title="W.S.T.B.R 2000 🧠🌍", theme=gr.themes.Soft()) as demo:
@@ -73,7 +72,7 @@ with gr.Blocks(title="W.S.T.B.R 2000 🧠🌍", theme=gr.themes.Soft()) as demo:
     with gr.Row(visible=False) as app_box:
         with gr.Column():
             gr.Markdown("""
-            <h1 style="color:#d9534f;">🚨 Bem-vindo ao W.S.T.B.R 2000</h1>
+            <h1 style="color:#5c4dff;">🚀 Bem-vindo ao W.S.T.B.R 2000</h1>
             <p><b>Tradutor de Artigos Web em Português do Brasil, powered by GPT-4o-mini</b> 🌍<br>
             Tradução automática, formatação DOCX e scraping editorial refinado.</p>
 
@@ -82,7 +81,7 @@ with gr.Blocks(title="W.S.T.B.R 2000 🧠🌍", theme=gr.themes.Soft()) as demo:
             <ol>
             <li>Escolha um país com base no tema cultural mais marcante. 😎</li>
             <li>Defina quantos artigos deseja traduzir 📰. O padrão é 3.</li>
-            <li>Clique em <b>"Executar"</b> e aguarde ⏳. Cada artigo pode levar um tempinho.</li>
+            <li>Clique em <b>"Iniciar Tradução"</b> e acompanhe o progresso ⏳.</li>
             <li><b>Baixe os arquivos gerados 📥</b> no final.</li>
             </ol>
             </details>
@@ -96,18 +95,16 @@ with gr.Blocks(title="W.S.T.B.R 2000 🧠🌍", theme=gr.themes.Soft()) as demo:
                 )
                 qtd = gr.Number(label="🗞️ Número de artigos", value=3, minimum=1, maximum=45)
 
-            btn = gr.Button("🚀 Iniciar Tradução", variant="primary")
-            status = gr.Textbox(label="📌 Status do processo", interactive=False)
+            btn = gr.Button("🛠️ Iniciar Tradução", variant="primary")
+
+            status = gr.Markdown("⌛ Status aparecerá aqui", label="📌 Status do processo")
             arquivos = gr.File(label="📎 Arquivos traduzidos (.docx)", file_types=[".docx"], file_count="multiple")
-            loading = gr.Markdown("⏳ Processando...", visible=False)
 
             btn.click(
-                fn=rodar_interface,
+                fn=wrapper_gradio,
                 inputs=[pais_dropdown, qtd],
                 outputs=[status, arquivos],
                 show_progress=True
-            ).then(
-                fn=lambda: gr.update(visible=False), inputs=None, outputs=loading
             )
 
     btn_login.click(
