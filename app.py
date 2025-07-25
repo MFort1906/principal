@@ -5,7 +5,7 @@ from pipeline import executar_pipeline
 
 # === Mapa visual com países e emojis ===
 OPCOES_PAISES = [
-    ("🇧🇷 Brasil (👑⚽🏅)", "pt_br"),
+    ("🇧🇷 Brasil (👑⚽🥅)", "pt_br"),
     ("🇺🇸 Estados Unidos 🏈", "en_us"),
     ("🇨🇦 Canadá ❄️", "en_ca"),
     ("🇦🇺 Austrália e Nova Zelândia 🦘", "en_au"),
@@ -16,13 +16,14 @@ OPCOES_PAISES = [
     ("🇳🇱 Holanda 🌷", "nl_nl"),
     ("🇪🇺 Europa 🏰", "en_eu"),
     ("🌏 Ásia 🐼", "en_ap"),
-    ("🌎 América Latina 🕺", "en_la"),
+    ("🌎 América Latina 💃", "en_la"),
     ("🇩🇪 Alemanha 🍻", "de_de"),
     ("🇮🇹 Itália 🍝", "it_it"),
-    ("🇯🇵 Japão ⛺", "ja_jp"),
+    ("🇯🇵 Japão 🤺", "ja_jp"),
     ("🇨🇳 China 🐉", "zh_cn"),
-    ("🇵🇹 Portugal 🛖️", "pt_pt"),
+    ("🇵🇹 Portugal 🛎️", "pt_pt"),
 ]
+
 NOMES_TO_ALIAS = {nome: alias for nome, alias in OPCOES_PAISES}
 
 # === Checagem de senha ===
@@ -53,7 +54,7 @@ async def rodar_interface(pais_nome, qtd):
     try:
         return await executar_pipeline(pais_formatado, alias, qtd)
     except Exception as e:
-        return f"❌ Erro: {str(e)}", []
+        return f"❌ Erro: {str(e)}", [], gr.update(visible=True)
 
 # === Interface ===
 with gr.Blocks(title="W.S.T.B.R 2000 🧠🌍", theme=gr.themes.Soft()) as demo:
@@ -72,7 +73,7 @@ with gr.Blocks(title="W.S.T.B.R 2000 🧠🌍", theme=gr.themes.Soft()) as demo:
     with gr.Row(visible=False) as app_box:
         with gr.Column():
             gr.Markdown("""
-            <h1 style="color:#5c4dff;">🚀 Bem-vindo ao W.S.T.B.R 2000</h1>
+            <h1 style="color:#d9534f;">🚨 Bem-vindo ao W.S.T.B.R 2000</h1>
             <p><b>Tradutor de Artigos Web em Português do Brasil, powered by GPT-4o-mini</b> 🌍<br>
             Tradução automática, formatação DOCX e scraping editorial refinado.</p>
 
@@ -81,8 +82,8 @@ with gr.Blocks(title="W.S.T.B.R 2000 🧠🌍", theme=gr.themes.Soft()) as demo:
             <ol>
             <li>Escolha um país com base no tema cultural mais marcante. 😎</li>
             <li>Defina quantos artigos deseja traduzir 📰. O padrão é 3.</li>
-            <li>Clique em <b>"Iniciar Tradução"</b> e acompanhe o progresso ⌛.</li>
-            <li><b>Baixe os arquivos gerados 📅</b> no final.</li>
+            <li>Clique em <b>"Executar"</b> e aguarde ⏳. Cada artigo pode levar um tempinho.</li>
+            <li><b>Baixe os arquivos gerados 📥</b> no final.</li>
             </ol>
             </details>
             """)
@@ -91,20 +92,22 @@ with gr.Blocks(title="W.S.T.B.R 2000 🧠🌍", theme=gr.themes.Soft()) as demo:
                 pais_dropdown = gr.Dropdown(
                     label="🌍 Selecione o país",
                     choices=[nome for nome, _ in OPCOES_PAISES],
-                    value="🇧🇷 Brasil (👑⚽🏅)"
+                    value="🇧🇷 Brasil (👑⚽🥅)"
                 )
-                qtd = gr.Number(label="🗾️ Número de artigos", value=3, minimum=1, maximum=45)
+                qtd = gr.Number(label="🗞️ Número de artigos", value=3, minimum=1, maximum=45)
 
-            btn = gr.Button("🛠️ Iniciar Tradução", variant="primary")
-
+            btn = gr.Button("🚀 Iniciar Tradução", variant="primary")
             status = gr.Textbox(label="📌 Status do processo", interactive=False)
             arquivos = gr.File(label="📎 Arquivos traduzidos (.docx)", file_types=[".docx"], file_count="multiple")
+            loading = gr.Markdown("⏳ Processando...", visible=False)
 
             btn.click(
                 fn=rodar_interface,
                 inputs=[pais_dropdown, qtd],
                 outputs=[status, arquivos],
                 show_progress=True
+            ).then(
+                fn=lambda: gr.update(visible=False), inputs=None, outputs=loading
             )
 
     btn_login.click(
