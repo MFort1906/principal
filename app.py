@@ -74,10 +74,10 @@ with gr.Blocks(title="W.S.T.B.R 2000 🧠🌍", theme=gr.themes.Soft()) as demo:
         with gr.Column():
             # === LOGO no topo ===
             gr.Markdown("""
-            <div style="text-align:center;">
-                <img src="zezinha.png" alt="Logo Tennant" style="max-width:200px; margin-bottom: 10px;">
-            </div>
-            """)
+              <div style="text-align:center; margin-bottom: 5px;">
+              <img src="assets/zezinha.png" alt="Logo Tennant" style="width:150px; height:auto;">
+              </div>
+                      """)
             
             gr.Markdown("""
             <h1 style="color:#d9534f; text-align:center;">🚨 Bem-vindo ao W.S.T.B.R 2000</h1>
