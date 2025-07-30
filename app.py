@@ -72,9 +72,16 @@ with gr.Blocks(title="W.S.T.B.R 2000 🧠🌍", theme=gr.themes.Soft()) as demo:
 
     with gr.Row(visible=False) as app_box:
         with gr.Column():
+            # === LOGO no topo ===
             gr.Markdown("""
-            <h1 style="color:#d9534f;">🚨 Bem-vindo ao W.S.T.B.R 2000</h1>
-            <p><b>Tradutor de Artigos Web em Português do Brasil, powered by GPT-4o-mini</b> 🌍<br>
+            <div style="text-align:center;">
+                <img src="zezinha.png" alt="Logo Tennant" style="max-width:200px; margin-bottom: 10px;">
+            </div>
+            """)
+            
+            gr.Markdown("""
+            <h1 style="color:#d9534f; text-align:center;">🚨 Bem-vindo ao W.S.T.B.R 2000</h1>
+            <p style="text-align:center;"><b>Tradutor de Artigos Web em Português do Brasil, powered by GPT-4o-mini</b> 🌍<br>
             Tradução automática, formatação DOCX e scraping editorial refinado.</p>
 
             <details>
