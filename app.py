@@ -1,7 +1,11 @@
 import os
 import gradio as gr
 import asyncio
+import pathlib
 from pipeline import executar_pipeline
+
+# === Caminho da Logo e Banner ===
+logo_path = pathlib.Path(__file__).parent / "assets" / "zezinha.png"
 
 # === Mapa visual com países e emojis ===
 OPCOES_PAISES = [
@@ -72,18 +76,26 @@ with gr.Blocks(title="W.S.T.B.R 2000 🧠🌍", theme=gr.themes.Soft()) as demo:
 
     with gr.Row(visible=False) as app_box:
         with gr.Column():
-            # === LOGO no topo ===
-            gr.Markdown("""
-              <div style="text-align:center; margin-bottom: 5px;">
-              <img src="assets/zezinha.png" alt="Logo Tennant" style="width:150px; height:auto;">
-              </div>
-                      """)
-            
-            gr.Markdown("""
-            <h1 style="color:#d9534f; text-align:center;">🚨 Bem-vindo ao W.S.T.B.R 2000</h1>
-            <p style="text-align:center;"><b>Tradutor de Artigos Web em Português do Brasil, powered by GPT-4o-mini</b> 🌍<br>
-            Tradução automática, formatação DOCX e scraping editorial refinado.</p>
+            # === LOGO + TÍTULO ===
+            if logo_path.exists():
+                gr.Image(value=str(logo_path), show_label=False, height=120)
+            else:
+                gr.Markdown("⚠️ Logo não encontrada")
 
+            gr.Markdown("""
+            <h1 style="color:#d9534f; text-align:center; margin-top: 0;">🚨 Bem-vindo ao W.S.T.B.R 2000</h1>
+            <p style="text-align:center; font-size:16px;">
+            <b>Tradutor de Artigos Web em Português do Brasil, powered by GPT-4o-mini</b> 🌍<br>
+            Tradução automática, formatação DOCX e scraping editorial refinado.</p>
+            """)
+
+            # === Banner largo ===
+            if logo_path.exists():
+                gr.Image(value=str(logo_path), show_label=False, height=200)
+            else:
+                gr.Markdown("⚠️ Banner não encontrado")
+
+            gr.Markdown("""
             <details>
             <summary><strong>📘 Como usar este tradutor?</strong></summary>
             <ol>
