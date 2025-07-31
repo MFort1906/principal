@@ -90,7 +90,7 @@ def limpar_duplicados(texto_traduzido):
         linha = linha.strip()
         if not linha or linha.lower() in linhas_vistas:
             continue
-        if any(difflib.SequenceMatcher(None, linha.lower(), p.lower()).ratio() > 0.90 for p in paragrafos):
+        if any(difflib.SequenceMatcher(None, linha.lower(), p.lower()).ratio() > 0.97 for p in paragrafos):
             continue
         paragrafos.append(linha)
         linhas_vistas.add(linha.lower())
