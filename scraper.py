@@ -1,5 +1,6 @@
 import time
 import random
+import re  # <-- novo
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
@@ -14,6 +15,13 @@ HEADERS = {
 }
 
 URL_BASE = "https://www.tennantco.com"
+
+# ---- Parâmetros da heurística de títulos (ajuste fino conforme necessidade) ----
+SCORE_LIMIAR = 4          # pontuação mínima para manter como h2/h3
+MAX_WORDS_TIT = 14        # títulos muito longos viram parágrafo
+MAX_CHARS_TIT = 120       # limite de caracteres para título
+PENALIZA_PONTOS_FINAIS = True
+LIMIAR_STREAK_LEN = 80    # se houver muitos headings seguidos e próximo for >80 chars, rebaixa
 
 # === Funções Auxiliares ===
 def tempo_espera(min_time=5, max_time=9, contexto="aguardando..."):
@@ -70,6 +78,66 @@ def coletar_links_artigos(pagina_url, pais):
     print(f"🔗 {len(links_unicos)} links válidos extraídos.", flush=True)
     return links_unicos
 
+# ---------------- Heurística robusta para decidir se é título ----------------
+def _tem_varias_frases(txt: str) -> bool:
+    """Mais de uma sentença separada por . ? ! indica parágrafo."""
+    return len(re.split(r'[\.?!]\s+', txt.strip())) > 1
+
+def _classes(el):
+    try:
+        return " ".join(el.get("class", [])).lower()
+    except Exception:
+        return ""
+
+def _classes_pai(el):
+    try:
+        p = el.parent
+        if p:
+            return " ".join(p.get("class", [])).lower()
+    except Exception:
+        pass
+    return ""
+
+def pontuar_titulo(el, texto: str) -> int:
+    score = 0
+    tag = (el.name or "").lower()
+
+    # peso pela tag
+    if tag == "h2":
+        score += 3
+    elif tag == "h3":
+        score += 2
+
+    # enumeração no início (ex.: "1. ...", "2:", "3 -")
+    if re.match(r'^\s*\d+\s*[\.\-:]\s+', texto):
+        score += 2
+
+    # comprimento e palavras
+    if len(texto) <= MAX_CHARS_TIT:
+        score += 1
+    if len(texto.split()) <= MAX_WORDS_TIT:
+        score += 1
+
+    # classes sugerindo título
+    cself = _classes(el)
+    cparent = _classes_pai(el)
+    if any(k in cself for k in ["title", "heading", "cmp-title", "section-title"]):
+        score += 2
+    if any(k in cparent for k in ["title", "heading", "cmp-title", "section-title"]):
+        score += 1
+
+    # penalizações
+    if _tem_varias_frases(texto):
+        score -= 2
+    if PENALIZA_PONTOS_FINAIS and texto.strip().endswith(('.', '?', '!', ';', ':')):
+        score -= 1
+    if len(texto) > 200:
+        score -= 2
+
+    return score
+# -----------------------------------------------------------------------------
+
+
 def get_article_content(article_url):
     try:
         tempo_espera(7.5, 9.5, contexto="esperando antes de coletar o artigo")
@@ -112,6 +180,9 @@ def get_article_content(article_url):
             "seu carrinho de compras está vazio"
         ]
 
+        # controle para evitar muitos headings longos em sequência
+        head_streak = 0
+
         for bloco in blocos:
             for el in bloco.find_all(['h2', 'h3', 'p', 'li', 'img']):
                 if el.name in ['p', 'li', 'h2', 'h3']:
@@ -123,7 +194,22 @@ def get_article_content(article_url):
                     if texto.lower() in vistos_texto:
                         continue
 
-                    tipo = el.name if el.name in ['h2', 'h3'] else 'p'
+                    # ---------- decisão de tipo com heurística ----------
+                    if el.name in ['h2', 'h3']:
+                        score = pontuar_titulo(el, texto)
+                        tipo = el.name if score >= SCORE_LIMIAR else 'p'
+                    else:
+                        tipo = 'p'
+
+                    # pós-regra: se muitos headings seguidos e o próximo é grande, rebaixa
+                    if tipo in ('h2', 'h3'):
+                        head_streak += 1
+                        if head_streak >= 2 and len(texto) > LIMIAR_STREAK_LEN:
+                            tipo = 'p'
+                    else:
+                        head_streak = 0
+                    # ---------------------------------------------------
+
                     conteudo_ordenado.append({'tipo': tipo, 'conteudo': texto})
                     vistos_texto.add(texto.lower())
 
@@ -154,4 +240,5 @@ def get_article_content(article_url):
 
     except Exception as e:
         print(f"[Erro ao coletar artigo] {e}", flush=True)
-        return None, []
+        # mantém a assinatura com 3 itens para não quebrar o pipeline
+        return None, [], None
