@@ -92,7 +92,7 @@ def salvar_conteudo_em_docx(titulo, elementos, pasta_saida, url_origem=None):
         conteudo = item['conteudo']
 
         if tipo == 'h2':
-            doc.add_paragraph(conteudo, style='Heading 2')
+            doc.add_paragraph(conteudo, style='Heading 1')
             print(f"🔹 H2: {conteudo[:50]}...", flush=True)
         elif tipo == 'h3':
             doc.add_paragraph(conteudo, style='Heading 3')
