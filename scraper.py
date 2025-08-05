@@ -111,7 +111,7 @@ def get_article_content(article_url):
             "seu carrinho de compras está vazio"
         ]
 
-        ultimo_tipo = None  # controle para não promover <p> logo após título
+        ultimo_tipo = None  # Guarda o último tipo adicionado
 
         for bloco in blocos:
             for el in bloco.find_all(['h2', 'h3', 'p', 'li', 'img']):
@@ -124,13 +124,13 @@ def get_article_content(article_url):
                     if texto.lower() in vistos_texto:
                         continue
 
-                    # Mantém o tipo original do HTML
+                    # Mantém o tipo original
                     if el.name in ['h2', 'h3']:
                         tipo = el.name
                     else:
                         tipo = 'p'
 
-                    # Garante que <p> logo após título não vire título
+                    # Se for <p> e vier logo após <h2>/<h3>, mantém como parágrafo
                     if ultimo_tipo in ['h2', 'h3'] and tipo == 'p':
                         tipo = 'p'
 
