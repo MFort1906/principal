@@ -111,7 +111,7 @@ def get_article_content(article_url):
             "seu carrinho de compras está vazio"
         ]
 
-        ultimo_tipo = None  # Guarda o último tipo adicionado
+        ultimo_tipo_global = None  # mantém o tipo mesmo entre blocos diferentes
 
         for bloco in blocos:
             for el in bloco.find_all(['h2', 'h3', 'p', 'li', 'img']):
@@ -124,19 +124,19 @@ def get_article_content(article_url):
                     if texto.lower() in vistos_texto:
                         continue
 
-                    # Mantém o tipo original
+                    # Mantém o tipo original do HTML
                     if el.name in ['h2', 'h3']:
                         tipo = el.name
                     else:
                         tipo = 'p'
 
-                    # Se for <p> e vier logo após <h2>/<h3>, mantém como parágrafo
-                    if ultimo_tipo in ['h2', 'h3'] and tipo == 'p':
+                    # Se último bloco terminou com h2/h3 e este é um p, mantém como p
+                    if ultimo_tipo_global in ['h2', 'h3'] and tipo == 'p':
                         tipo = 'p'
 
                     conteudo_ordenado.append({'tipo': tipo, 'conteudo': texto})
                     vistos_texto.add(texto.lower())
-                    ultimo_tipo = tipo
+                    ultimo_tipo_global = tipo
 
                 elif el.name == 'img':
                     src = el.get("src") or el.get("data-src")
