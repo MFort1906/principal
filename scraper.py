@@ -1,6 +1,5 @@
 import time
 import random
-import re
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
@@ -111,7 +110,7 @@ def get_article_content(article_url):
             "seu carrinho de compras está vazio"
         ]
 
-        ultimo_tipo_global = None  # mantém o tipo mesmo entre blocos diferentes
+        ultimo_tipo = None
 
         for bloco in blocos:
             for el in bloco.find_all(['h2', 'h3', 'p', 'li', 'img']):
@@ -124,19 +123,16 @@ def get_article_content(article_url):
                     if texto.lower() in vistos_texto:
                         continue
 
-                    # Mantém o tipo original do HTML
-                    if el.name in ['h2', 'h3']:
-                        tipo = el.name
-                    else:
-                        tipo = 'p'
+                    # Mantém tipo original
+                    tipo = el.name if el.name in ['h2', 'h3'] else 'p'
 
-                    # Se último bloco terminou com h2/h3 e este é um p, mantém como p
-                    if ultimo_tipo_global in ['h2', 'h3'] and tipo == 'p':
+                    # Se for <p> logo após H2/H3, força como parágrafo
+                    if ultimo_tipo in ['h2', 'h3'] and tipo == 'p':
                         tipo = 'p'
 
                     conteudo_ordenado.append({'tipo': tipo, 'conteudo': texto})
                     vistos_texto.add(texto.lower())
-                    ultimo_tipo_global = tipo
+                    ultimo_tipo = tipo
 
                 elif el.name == 'img':
                     src = el.get("src") or el.get("data-src")
@@ -146,7 +142,7 @@ def get_article_content(article_url):
                             conteudo_ordenado.append({'tipo': 'img', 'conteudo': img_url})
                             imagens_encontradas.add(img_url)
 
-        # Imagens fora da richtext
+        # Captura imagens adicionais fora do bloco principal
         for img in soup.select("img"):
             src = img.get("src") or img.get("data-src")
             if not src or "tracking" in src.lower():
@@ -158,8 +154,6 @@ def get_article_content(article_url):
 
         print(f"✅ Total de blocos de texto: {len(vistos_texto)}", flush=True)
         print(f"🖼️ Total de imagens encontradas: {len(imagens_encontradas)}", flush=True)
-        for idx, img in enumerate(imagens_encontradas, 1):
-            print(f"   {idx}. {img}")
 
         return title, conteudo_ordenado, article_url
 
