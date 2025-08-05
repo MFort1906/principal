@@ -3,7 +3,7 @@ import requests
 import mimetypes
 from urllib.parse import urlparse
 from docx import Document
-from docx.shared import Inches
+from docx.shared import Inches, RGBColor
 from PIL import Image
 from utils import clean_filename, limpar_xml
 
@@ -80,26 +80,45 @@ def salvar_conteudo_em_docx(titulo, elementos, pasta_saida, url_origem=None):
     if url_origem:
         doc.add_paragraph(f"🔗 Artigo original: {url_origem}", style="Intense Quote")
 
-    # 📝 Título
+    # 📝 Título principal
     doc.add_heading(limpar_xml(titulo), level=1)
 
     print(f"\n📝 Iniciando documento: {nome_arquivo}", flush=True)
     total_imgs = 0
     total_paragrafos = 0
+    last_was_heading = False  # controle para cor do parágrafo seguinte
 
     for item in elementos:
         tipo = item['tipo']
         conteudo = item['conteudo']
 
         if tipo == 'h2':
-            doc.add_paragraph(conteudo, style='Heading 1')
+            p = doc.add_paragraph(conteudo)
+            run = p.runs[0]
+            run.bold = True
+            run.font.color.rgb = RGBColor(0, 102, 204)  # azul
+            p.style = 'Heading 1'
             print(f"🔹 H2: {conteudo[:50]}...", flush=True)
+            last_was_heading = True
+
         elif tipo == 'h3':
-            doc.add_paragraph(conteudo, style='Heading 3')
+            p = doc.add_paragraph(conteudo)
+            run = p.runs[0]
+            run.bold = True
+            run.font.color.rgb = RGBColor(0, 102, 204)
+            p.style = 'Heading 3'
             print(f"🔸 H3: {conteudo[:50]}...", flush=True)
+            last_was_heading = True
+
         elif tipo == 'p':
-            doc.add_paragraph(f"• {conteudo}")
+            p = doc.add_paragraph(f"• {conteudo}")
             total_paragrafos += 1
+            if last_was_heading:
+                # força parágrafo a ser preto normal
+                for run in p.runs:
+                    run.font.color.rgb = RGBColor(0, 0, 0)
+                last_was_heading = False
+
         elif tipo == 'img':
             img_path = baixar_imagem(conteudo, pasta_saida)
             if img_path:
