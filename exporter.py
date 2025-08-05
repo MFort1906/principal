@@ -27,8 +27,6 @@ def baixar_imagem(url, pasta_destino):
             return None
 
         ext = mimetypes.guess_extension(content_type.lower()) or '.jpg'
-        print(f"📦 Tipo de conteúdo: {content_type} | Extensão detectada: {ext}", flush=True)
-
         nome_url = os.path.basename(urlparse(url).path).split("?")[0]
         if not nome_url:
             nome_url = f"img_{hash(url)}"
@@ -41,7 +39,6 @@ def baixar_imagem(url, pasta_destino):
         with open(caminho, 'wb') as f:
             f.write(response.content)
 
-        # Verifica se a imagem é válida com Pillow
         try:
             with Image.open(caminho) as img:
                 img.verify()
@@ -59,7 +56,7 @@ def baixar_imagem(url, pasta_destino):
 def reparar_imagem(caminho_original):
     try:
         with Image.open(caminho_original) as img:
-            rgb = img.convert('RGB')  # modo seguro para Word
+            rgb = img.convert('RGB')
             caminho_corrigido = caminho_original.replace(".", "_reparada.", 1)
             rgb.save(caminho_corrigido, format="JPEG")
             print(f"[🛠️ Imagem reparada e salva como] {caminho_corrigido}", flush=True)
@@ -69,55 +66,48 @@ def reparar_imagem(caminho_original):
         return None
 
 def salvar_conteudo_em_docx(titulo, elementos, pasta_saida, url_origem=None):
-    """Salva o conteúdo traduzido em um arquivo .docx com texto e imagens"""
     nome_arquivo = clean_filename(titulo)
     caminho = os.path.join(pasta_saida, f"{nome_arquivo}.docx")
     os.makedirs(pasta_saida, exist_ok=True)
 
     doc = Document()
 
-    # 🔗 Link do artigo original
+    # Adiciona link do artigo original
     if url_origem:
-        doc.add_paragraph(f"🔗 Artigo original: {url_origem}", style="Intense Quote")
+        p = doc.add_paragraph(f"🔗 Artigo original: {url_origem}", style="Intense Quote")
+        for run in p.runs:
+            run.font.color.rgb = RGBColor(0, 0, 0)
 
-    # 📝 Título principal
-    doc.add_heading(limpar_xml(titulo), level=1)
+    # Adiciona título principal
+    p = doc.add_heading(limpar_xml(titulo), level=1)
+    for run in p.runs:
+        run.font.color.rgb = RGBColor(0, 0, 0)
 
     print(f"\n📝 Iniciando documento: {nome_arquivo}", flush=True)
     total_imgs = 0
     total_paragrafos = 0
-    last_was_heading = False  # controle para cor do parágrafo seguinte
 
     for item in elementos:
         tipo = item['tipo']
         conteudo = item['conteudo']
 
         if tipo == 'h2':
-            p = doc.add_paragraph(conteudo)
-            run = p.runs[0]
-            run.bold = True
-            run.font.color.rgb = RGBColor(0, 102, 204)  # azul
-            p.style = 'Heading 1'
+            p = doc.add_paragraph(conteudo, style='Heading 1')
+            for run in p.runs:
+                run.font.color.rgb = RGBColor(0, 0, 0)
             print(f"🔹 H2: {conteudo[:50]}...", flush=True)
-            last_was_heading = True
 
         elif tipo == 'h3':
-            p = doc.add_paragraph(conteudo)
-            run = p.runs[0]
-            run.bold = True
-            run.font.color.rgb = RGBColor(0, 102, 204)
-            p.style = 'Heading 3'
+            p = doc.add_paragraph(conteudo, style='Heading 3')
+            for run in p.runs:
+                run.font.color.rgb = RGBColor(0, 0, 0)
             print(f"🔸 H3: {conteudo[:50]}...", flush=True)
-            last_was_heading = True
 
         elif tipo == 'p':
             p = doc.add_paragraph(f"• {conteudo}")
+            for run in p.runs:
+                run.font.color.rgb = RGBColor(0, 0, 0)
             total_paragrafos += 1
-            if last_was_heading:
-                # força parágrafo a ser preto normal
-                for run in p.runs:
-                    run.font.color.rgb = RGBColor(0, 0, 0)
-                last_was_heading = False
 
         elif tipo == 'img':
             img_path = baixar_imagem(conteudo, pasta_saida)
