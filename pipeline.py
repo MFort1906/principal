@@ -29,7 +29,10 @@ async def executar_pipeline(pais_input, alias_input, qtd_artigos):
             break
 
         try:
-            titulo, conteudo, _ = get_article_content(artigo['href'])
+            titulo_original, conteudo, _ = get_article_content(artigo['href'])
+            # Traduzir o título separadamente
+            titulo_traduzido, _ = await traduzir_e_formatar_gpt([titulo_original])
+            titulo = titulo_traduzido[0] if titulo_traduzido else titulo_original
             if not conteudo:
                 print(f"[⚠️ Artigo ignorado: sem conteúdo] {artigo['href']}", flush=True)
                 continue
