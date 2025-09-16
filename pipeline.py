@@ -68,7 +68,7 @@ async def executar_pipeline(pais_input, alias_input, qtd_artigos):
             artigos_processados += 1
 
         except Exception as e:
-            print(f"[❌ Erro ao processar artigo] {artigo['href']}: {e}", flush=True)
+            print(f"[❌ Erro ao processar artigo] {artigo['href']} {e}", flush=True)
             continue
 
     return "✅ Tradução concluída!", arquivos_gerados
