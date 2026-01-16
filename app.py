@@ -7,7 +7,8 @@ from pipeline import executar_pipeline
 # Assets
 # ==========================================================
 
-banner_path = pathlib.Path(__file__).parent / "assets" / "logo_tennant_scraper.png"
+BASE_DIR = pathlib.Path(__file__).parent
+banner_path = BASE_DIR / "assets" / "logo_tennant_scraper.png"
 
 # ==========================================================
 # Países
@@ -40,14 +41,23 @@ NOMES_TO_ALIAS = {nome: alias for nome, alias in OPCOES_PAISES}
 # ==========================================================
 
 def checar_senha(senha_input):
-    with open("/etc/secrets/SCRAPER_PASSWORD") as f:
-        senha_correta = f.read().strip()
+    try:
+        with open("/etc/secrets/SCRAPER_PASSWORD") as f:
+            senha_correta = f.read().strip()
+    except Exception:
+        return (
+            gr.update(visible=True),
+            gr.update(visible=False),
+            gr.update(visible=True, value="❌ Erro ao carregar a senha."),
+            gr.update(visible=False),
+            gr.update(value="")
+        )
 
     if senha_input == senha_correta:
         return (
-            gr.update(visible=False),
-            gr.update(visible=True),
-            gr.update(visible=False),
+            gr.update(visible=False),   # login_box
+            gr.update(visible=True),    # app_box
+            gr.update(visible=False),   # erro_senha
             gr.update(visible=True, value="✅ Acesso liberado. Bem-vindo!"),
             gr.update(value="")
         )
@@ -55,13 +65,13 @@ def checar_senha(senha_input):
     return (
         gr.update(visible=True),
         gr.update(visible=False),
-        gr.update(visible=True, value="❌ Senha incorreta."),
+        gr.update(visible=True, value="❌ Senha incorreta. Tente novamente."),
         gr.update(visible=False),
         gr.update(value="")
     )
 
 # ==========================================================
-# Execução
+# Execução principal
 # ==========================================================
 
 async def rodar_interface(pais_nome, qtd):
@@ -73,16 +83,10 @@ async def rodar_interface(pais_nome, qtd):
 # Interface
 # ==========================================================
 
-with gr.Blocks(
-    title="W.S.T.B.R 2000",
-    theme=gr.themes.Soft(
-        primary_hue="red",
-        secondary_hue="gray"
-    )
-) as demo:
+with gr.Blocks(title="W.S.T.B.R 2000") as demo:
 
     # ================= LOGIN =================
-    with gr.Card(visible=True) as login_box:
+    with gr.Box(visible=True) as login_box:
         gr.Markdown("## 🔐 Acesso ao Sistema")
 
         senha = gr.Textbox(
@@ -91,7 +95,7 @@ with gr.Blocks(
             placeholder="Digite a senha de acesso"
         )
 
-        btn_login = gr.Button("Entrar", variant="primary")
+        btn_login = gr.Button("Entrar")
         erro_senha = gr.Markdown("", visible=False)
 
     boas_vindas = gr.Markdown("", visible=False)
@@ -101,28 +105,46 @@ with gr.Blocks(
 
         # Banner
         if banner_path.exists():
-            gr.Image(value=str(banner_path), show_label=False, height=160)
+            gr.Image(
+                value=str(banner_path),
+                show_label=False,
+                height=160
+            )
+        else:
+            gr.Markdown("⚠️ Banner não encontrado")
 
+        # Título
         gr.Markdown("""
-        # 🌍 W.S.T.B.R 2000
-        **Web Scraper & Tradutor de Artigos para PT-BR**  
-        Tradução editorial refinada + arquivos DOCX automatizados.
+        # 🌍 W.S.T.B.R 2000  
+        **Web Scraper & Tradutor de Artigos para Português do Brasil**  
+
+        Tradução editorial refinada, scraping automatizado  
+        e geração de arquivos **DOCX prontos para uso**.
         """)
 
         # Manual
-        with gr.Card():
+        with gr.Box():
             gr.Markdown("""
-            ### 🧭 Como usar (rápido)
-            **1️⃣ Escolha o país** de origem dos artigos  
-            **2️⃣ Defina a quantidade** desejada  
-            **3️⃣ Clique em iniciar** e aguarde  
-            **4️⃣ Baixe os arquivos ao final**
-            
-            ⏳ *O processo pode levar alguns minutos por artigo.*
+            ### 🧭 Como usar (passo a passo)
+
+            **1️⃣ Escolha o país**  
+            Selecione o país de origem dos artigos.
+
+            **2️⃣ Defina a quantidade**  
+            Escolha quantos artigos deseja processar.
+
+            **3️⃣ Inicie o processo**  
+            Clique em **Iniciar Tradução** e aguarde.
+
+            **4️⃣ Baixe os arquivos**  
+            Os arquivos `.docx` aparecerão ao final.
+
+            ⏳ *Cada artigo pode levar alguns minutos.  
+            Não feche a página durante o processamento.*
             """)
 
         # Controles
-        with gr.Card():
+        with gr.Box():
             with gr.Row():
                 pais_dropdown = gr.Dropdown(
                     label="🌍 País",
@@ -137,13 +159,17 @@ with gr.Blocks(
                     maximum=45
                 )
 
-            btn = gr.Button("🚀 Iniciar Tradução", variant="primary")
+            btn = gr.Button("🚀 Iniciar Tradução")
 
         # Resultados
-        with gr.Card():
-            status = gr.Textbox(label="📌 Status", interactive=False)
+        with gr.Box():
+            status = gr.Textbox(
+                label="📌 Status do processo",
+                interactive=False
+            )
+
             arquivos = gr.File(
-                label="📎 Arquivos DOCX",
+                label="📎 Arquivos traduzidos (.docx)",
                 file_types=[".docx"],
                 file_count="multiple"
             )
@@ -155,6 +181,7 @@ with gr.Blocks(
             show_progress=True
         )
 
+    # ================= AÇÃO LOGIN =================
     btn_login.click(
         fn=checar_senha,
         inputs=senha,
@@ -166,4 +193,7 @@ with gr.Blocks(
 # ==========================================================
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=int(os.getenv("PORT", 7860)))
+    demo.launch(
+        server_name="0.0.0.0",
+        server_port=int(os.getenv("PORT", 7860))
+    )
