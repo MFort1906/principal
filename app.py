@@ -5,7 +5,7 @@ import pathlib
 from pipeline import executar_pipeline
 
 # === Caminho do Banner ===
-banner_path = pathlib.Path(__file__).parent / "assets" / "logo_tennant_scraper.png"
+banner_path = pathlib.Path(__file__).parent / "assets" / "LOGO W.S.T.B.R.png"
 
 # === Países ===
 OPCOES_PAISES = [
