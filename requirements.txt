@@ -1,9 +1,7 @@
-requests>=2.31.0
-beautifulsoup4>=4.12.2
-python-docx>=1.1.0
-pillow>=10.0.0
-
-gradio==3.50.2
-
-openai>=1.0.0
-nest_asyncio>=1.5.8
+requests
+beautifulsoup4
+python-docx
+pillow
+gradio
+openai
+nest_asyncio
