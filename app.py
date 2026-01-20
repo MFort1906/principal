@@ -68,7 +68,7 @@ with gr.Blocks(
 
     # ===== LOGIN =====
     with gr.Row(visible=True) as login_box:
-        with gr.Column(max_width=420):
+        with gr.Column():
             gr.Markdown("### Acesso restrito")
             senha = gr.Textbox(
                 label="Senha",
