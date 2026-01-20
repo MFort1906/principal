@@ -7,25 +7,25 @@ from pipeline import executar_pipeline
 # === Caminho do Banner ===
 banner_path = pathlib.Path(__file__).parent / "assets" / "logo_tennant_scraper.png"
 
-# === Mapa visual com países e emojis ===
+# === Mapa visual com países ===
 OPCOES_PAISES = [
-    ("🇧🇷 Brasil (👑⚽🥅)", "pt_br"),
-    ("🇺🇸 Estados Unidos 🏈", "en_us"),
-    ("🇨🇦 Canadá ❄️", "en_ca"),
-    ("🇦🇺 Austrália e Nova Zelândia 🦘", "en_au"),
-    ("🇬🇧 Reino Unido 👑", "en_gb"),
-    ("🇪🇸 Espanha 🦩", "es_es"),
-    ("🇲🇽 México 🌮", "es_mx"),
-    ("🇫🇷 França 🥐", "fr_fr"),
-    ("🇳🇱 Holanda 🌷", "nl_nl"),
-    ("🇪🇺 Europa 🏰", "en_eu"),
-    ("🌏 Ásia 🐼", "en_ap"),
-    ("🌎 América Latina 💃", "en_la"),
-    ("🇩🇪 Alemanha 🍻", "de_de"),
-    ("🇮🇹 Itália 🍝", "it_it"),
-    ("🇯🇵 Japão 🤺", "ja_jp"),
-    ("🇨🇳 China 🐉", "zh_cn"),
-    ("🇵🇹 Portugal 🛎️", "pt_pt"),
+    ("Brasil", "pt_br"),
+    ("Estados Unidos", "en_us"),
+    ("Canadá", "en_ca"),
+    ("Austrália e Nova Zelândia", "en_au"),
+    ("Reino Unido", "en_gb"),
+    ("Espanha", "es_es"),
+    ("México", "es_mx"),
+    ("França", "fr_fr"),
+    ("Holanda", "nl_nl"),
+    ("Europa", "en_eu"),
+    ("Ásia", "en_ap"),
+    ("América Latina", "en_la"),
+    ("Alemanha", "de_de"),
+    ("Itália", "it_it"),
+    ("Japão", "ja_jp"),
+    ("China", "zh_cn"),
+    ("Portugal", "pt_pt"),
 ]
 
 NOMES_TO_ALIAS = {nome: alias for nome, alias in OPCOES_PAISES}
@@ -37,17 +37,17 @@ def checar_senha(senha_input):
 
     if senha_input == senha_correta:
         return (
-            gr.update(visible=False),   # login_box
-            gr.update(visible=True),    # app_box
-            gr.update(visible=False),   # erro_senha
-            gr.update(visible=True, value="✅ Login bem-sucedido! Bem-vindo 😄"),
+            gr.update(visible=False),
+            gr.update(visible=True),
+            gr.update(visible=False),
+            gr.update(visible=True, value="Acesso autorizado."),
             gr.update(value="")
         )
     else:
         return (
             gr.update(visible=True),
             gr.update(visible=False),
-            gr.update(visible=True, value="❌ Senha incorreta. Tente novamente."),
+            gr.update(visible=True, value="Senha inválida."),
             gr.update(visible=False),
             gr.update(value="")
         )
@@ -55,78 +55,86 @@ def checar_senha(senha_input):
 # === Execução principal ===
 async def rodar_interface(pais_nome, qtd):
     alias = NOMES_TO_ALIAS.get(pais_nome, "")
-    pais_formatado = pais_nome.split("(", 1)[0].strip()
     try:
-        return await executar_pipeline(pais_formatado, alias, qtd)
+        return await executar_pipeline(pais_nome, alias, qtd)
     except Exception as e:
-        return f"❌ Erro: {str(e)}", []
+        return f"Erro durante a execução: {str(e)}", []
 
 # === Interface ===
-with gr.Blocks(title="W.S.T.B.R 2000 🧠🌍", theme=gr.themes.Soft()) as demo:
+with gr.Blocks(
+    title="W.S.T.B.R 2000",
+    theme=gr.themes.Soft()
+) as demo:
 
     # ===== LOGIN =====
     with gr.Row(visible=True) as login_box:
-        with gr.Column():
+        with gr.Column(max_width=420):
+            gr.Markdown("### Acesso restrito")
             senha = gr.Textbox(
-                label="🔐 Senha de acesso",
+                label="Senha",
                 type="password",
-                placeholder="Digite a senha para acessar"
+                placeholder="Informe a senha de acesso"
             )
             btn_login = gr.Button("Entrar", variant="primary")
             erro_senha = gr.Markdown("", visible=False)
 
     boas_vindas = gr.Markdown("", visible=False)
 
-    # ===== APP =====
+    # ===== APLICATIVO =====
     with gr.Row(visible=False) as app_box:
         with gr.Column():
 
-            # Banner
             if banner_path.exists():
-                gr.Image(value=str(banner_path), show_label=False, height=180)
-            else:
-                gr.Markdown("⚠️ Banner não encontrado")
+                gr.Image(value=str(banner_path), show_label=False, height=160)
 
             gr.Markdown("""
-            <h1 style="color:#d9534f; text-align:center; margin-top:0;">
-            🚨 Bem-vindo ao W.S.T.B.R 2000
-            </h1>
+### Web Scraper & Tradutor de Artigos Técnicos
 
-            <p style="text-align:center; font-size:16px;">
-            <b>Tradutor de Artigos Web em Português do Brasil, powered by GPT-4o-mini</b> 🌍<br>
-            Tradução automática, formatação DOCX e scraping editorial refinado.
-            </p>
+Ferramenta interna para **coleta, tradução editorial e formatação profissional**
+de artigos do blog institucional da Tennant.
 
-            <details>
-            <summary><strong>📘 Como usar este tradutor?</strong></summary>
-            <ol>
-                <li>Escolha um país 😎</li>
-                <li>Defina quantos artigos deseja 📰</li>
-                <li>Clique em <b>Executar</b> ⏳</li>
-                <li>Baixe os arquivos 📥</li>
-            </ol>
-            </details>
-            """)
+- Tradução automática para **Português do Brasil**
+- Preservação de termos técnicos e marcas
+- Geração de arquivos **.DOCX prontos para publicação**
+""")
+
+            gr.Markdown("""
+---
+
+#### Instruções de uso
+
+1. Selecione o país de origem dos artigos  
+2. Defina a quantidade de artigos a processar  
+3. Inicie a execução e aguarde a finalização  
+4. Faça o download dos arquivos gerados  
+
+O sistema evita artigos duplicados e ignora conteúdos inválidos automaticamente.
+""")
 
             with gr.Row():
                 pais_dropdown = gr.Dropdown(
-                    label="🌍 Selecione o país",
+                    label="País de origem dos artigos",
                     choices=[nome for nome, _ in OPCOES_PAISES],
-                    value="🇧🇷 Brasil (👑⚽🥅)"
+                    value="Brasil"
                 )
 
                 qtd = gr.Number(
-                    label="🗞️ Número de artigos",
+                    label="Quantidade de artigos",
                     value=3,
                     minimum=1,
-                    maximum=45
+                    maximum=45,
+                    precision=0
                 )
 
-            btn = gr.Button("🚀 Iniciar Tradução", variant="primary")
+            btn = gr.Button("Executar processamento", variant="primary")
 
-            status = gr.Textbox(label="📌 Status do processo", interactive=False)
+            status = gr.Textbox(
+                label="Status da execução",
+                interactive=False
+            )
+
             arquivos = gr.File(
-                label="📎 Arquivos traduzidos (.docx)",
+                label="Arquivos gerados",
                 file_types=[".docx"],
                 file_count="multiple"
             )
