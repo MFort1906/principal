@@ -7,7 +7,7 @@ from pipeline import executar_pipeline
 # === Caminho do Banner ===
 banner_path = pathlib.Path(__file__).parent / "assets" / "logo_tennant_scraper.png"
 
-# === Mapa visual com países ===
+# === Países ===
 OPCOES_PAISES = [
     ("🇧🇷 Brasil", "pt_br"),
     ("🇺🇸 Estados Unidos", "en_us"),
@@ -30,7 +30,7 @@ OPCOES_PAISES = [
 
 NOMES_TO_ALIAS = {nome: alias for nome, alias in OPCOES_PAISES}
 
-# === Checagem de senha ===
+# === Senha ===
 def checar_senha(senha_input):
     with open("/etc/secrets/SCRAPER_PASSWORD") as f:
         senha_correta = f.read().strip()
@@ -52,19 +52,26 @@ def checar_senha(senha_input):
             gr.update(value="")
         )
 
-# === Execução principal ===
+# === Execução ===
 async def rodar_interface(pais_nome, qtd):
     alias = NOMES_TO_ALIAS.get(pais_nome, "")
-    pais_formatado = pais_nome.strip()
     try:
-        return await executar_pipeline(pais_formatado, alias, qtd)
+        return await executar_pipeline(pais_nome, alias, qtd)
     except Exception as e:
         return f"Erro: {str(e)}", []
+
+# === Tema Azul + Cinza ===
+tema_corporativo = gr.themes.Base(
+    primary_hue="blue",
+    secondary_hue="blue",
+    neutral_hue="gray",
+    font=["Inter", "ui-sans-serif", "system-ui"]
+)
 
 # === Interface ===
 with gr.Blocks(title="W.S.T.B.R 2000") as demo:
 
-    # ===== LOGIN =====
+    # LOGIN
     with gr.Row(visible=True) as login_box:
         with gr.Column():
             gr.Markdown("### Acesso ao sistema")
@@ -78,59 +85,55 @@ with gr.Blocks(title="W.S.T.B.R 2000") as demo:
 
     boas_vindas = gr.Markdown("", visible=False)
 
-    # ===== APLICAÇÃO =====
+    # APP
     with gr.Row(visible=False) as app_box:
         with gr.Column():
 
-            # Banner
             if banner_path.exists():
-                gr.Image(value=str(banner_path), show_label=False, height=160)
+                gr.Image(value=str(banner_path), show_label=False, height=150)
 
-            # Título
             gr.Markdown("""
-            <h2 style="text-align:center; margin-bottom:6px;">
+            <h2 style="text-align:center; margin-bottom:4px;">
             W.S.T.B.R 2000
             </h2>
 
-            <p style="text-align:center; font-size:15px; color:#555;">
-            Sistema corporativo para scraping, tradução editorial e geração automática de artigos em DOCX.
+            <p style="text-align:center; font-size:14px; color:#555;">
+            Plataforma corporativa de scraping e tradução editorial automatizada
             </p>
             """)
 
-            # Manual técnico (recolhido)
             gr.Markdown("""
             <details>
-            <summary><strong>Documentação de uso</strong></summary>
+            <summary><strong>Documentação técnica</strong></summary>
 
             <br>
 
-            <b>Finalidade</b><br>
-            Coletar artigos do blog institucional da Tennant, traduzir para português do Brasil
-            com qualidade editorial e gerar documentos formatados em DOCX.
+            <b>Objetivo</b><br>
+            Coletar artigos institucionais, traduzir para PT-BR e gerar documentos DOCX
+            com padrão editorial corporativo.
 
             <br><br>
 
-            <b>Fluxo de execução</b>
+            <b>Fluxo</b>
             <ol>
-                <li>Selecionar o país de origem</li>
-                <li>Definir a quantidade de artigos</li>
-                <li>Iniciar o processamento</li>
-                <li>Realizar o download dos arquivos gerados</li>
+                <li>Selecionar país</li>
+                <li>Definir quantidade</li>
+                <li>Executar processamento</li>
+                <li>Baixar arquivos</li>
             </ol>
 
-            <b>Observações técnicas</b>
+            <b>Automatizações</b>
             <ul>
-                <li>Artigos duplicados são ignorados automaticamente</li>
-                <li>Imagens são validadas antes da inserção</li>
-                <li>Termos técnicos e marcas são preservados</li>
+                <li>Remoção de conteúdo promocional</li>
+                <li>Deduplicação de artigos</li>
+                <li>Validação de imagens</li>
             </ul>
             </details>
             """)
 
-            # Inputs principais
             with gr.Row():
                 pais_dropdown = gr.Dropdown(
-                    label="País de origem dos artigos",
+                    label="País de origem",
                     choices=[nome for nome, _ in OPCOES_PAISES],
                     value="🇧🇷 Brasil"
                 )
@@ -144,10 +147,7 @@ with gr.Blocks(title="W.S.T.B.R 2000") as demo:
 
             btn = gr.Button("Iniciar processamento", variant="primary")
 
-            status = gr.Textbox(
-                label="Status",
-                interactive=False
-            )
+            status = gr.Textbox(label="Status", interactive=False)
 
             arquivos = gr.File(
                 label="Arquivos gerados (.docx)",
@@ -172,5 +172,6 @@ with gr.Blocks(title="W.S.T.B.R 2000") as demo:
 if __name__ == "__main__":
     demo.launch(
         server_name="0.0.0.0",
-        server_port=int(os.getenv("PORT", 7860))
+        server_port=int(os.getenv("PORT", 7860)),
+        theme=tema_corporativo
     )
