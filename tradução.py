@@ -27,11 +27,10 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
                 "1) Não adicione chamadas promocionais.\n"
                 "2) Preserve nomes técnicos e marcas.\n"
                 "3) Ignore rodapés e menus.\n"
-                "4) Use “esfregão” para mop e “lavadora de pisos” para scrubber.\n"
+                "4) Use “lavadora de pisos” para scrubber.\n"
                 "5) Evite repetições e traduza com naturalidade.\n"
                 "6) Se o conteúdo for claramente irrelevante, ignore.\n"
-                "7) Preserve perguntas e tópicos curtos quando fizerem sentido.\n"
-                "8) Troque "esfregão" por "mop" na hora de traduzir."
+                "7) Preserve perguntas e tópicos curtos quando fizerem sentido."     
             )
         }
 
