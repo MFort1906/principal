@@ -60,7 +60,7 @@ async def rodar_interface(pais_nome, qtd):
     except Exception as e:
         return f"Erro: {str(e)}", []
 
-# === Tema Azul + Cinza ===
+# === Tema Corporativo ===
 tema_corporativo = gr.themes.Base(
     primary_hue="blue",
     secondary_hue="blue",
@@ -68,86 +68,80 @@ tema_corporativo = gr.themes.Base(
     font=["Inter", "ui-sans-serif", "system-ui"]
 )
 
-# === Interface ===
-with gr.Blocks(title="W.S.T.B.R 2000") as demo:
+# === Interface Gradio ===
+with gr.Blocks(title="W.S.T.B.R 2000", theme=tema_corporativo) as demo:
 
-    # LOGIN
+    # ----------------------------
+    # LOGIN CARD
+    # ----------------------------
     with gr.Row(visible=True) as login_box:
-        with gr.Column():
-            gr.Markdown("### Acesso ao sistema")
+        with gr.Column(scale=1):
+            gr.Markdown("## 🔐 Acesso ao sistema")
             senha = gr.Textbox(
                 label="Senha",
                 type="password",
-                placeholder="Digite a senha de acesso"
+                placeholder="Digite a senha de acesso",
             )
             btn_login = gr.Button("Entrar", variant="primary")
             erro_senha = gr.Markdown("", visible=False)
 
     boas_vindas = gr.Markdown("", visible=False)
 
-    # APP
+    # ----------------------------
+    # APP PRINCIPAL
+    # ----------------------------
     with gr.Row(visible=False) as app_box:
-        with gr.Column():
-
+        # Coluna esquerda: entrada e informações
+        with gr.Column(scale=1):
             if banner_path.exists():
-                gr.Image(value=str(banner_path), show_label=False, height=150)
+                gr.Image(value=str(banner_path), show_label=False, height=120)
 
-            gr.Markdown("""
-            <h2 style="text-align:center; margin-bottom:4px;">
-            W.S.T.B.R 2000
-            </h2>
+            gr.Markdown(
+                """
+                ## W.S.T.B.R 2000
+                Plataforma corporativa de scraping e tradução automatizada.
+                """
+            )
 
-            <p style="text-align:center; font-size:14px; color:#555;">
-            Plataforma corporativa de scraping e tradução editorial automatizada
-            </p>
-            """)
+            gr.Markdown(
+                """
+                <details>
+                <summary><strong>Documentação técnica</strong></summary>
+                <br>
+                **Objetivo:** Coletar artigos institucionais, traduzir e gerar DOCX padrão editorial.<br>
+                **Fluxo:** Selecionar país → Definir quantidade → Executar → Baixar arquivos.<br>
+                **Automatizações:** Remoção de conteúdo promocional, deduplicação e validação de imagens.
+                </details>
+                """
+            )
 
-            gr.Markdown("""
-            <details>
-            <summary><strong>Documentação técnica</strong></summary>
+            gr.Markdown("---")
 
-            <br>
+            # Seleção de país e quantidade
+            pais_dropdown = gr.Dropdown(
+                label="País de origem",
+                choices=[nome for nome, _ in OPCOES_PAISES],
+                value="🇧🇷 Brasil",
+                interactive=True
+            )
 
-            <b>Objetivo</b><br>
-            Coletar artigos institucionais, traduzir para PT-BR e gerar documentos DOCX
-            com padrão editorial corporativo.
+            qtd = gr.Number(
+                label="Quantidade de artigos",
+                value=3,
+                minimum=1,
+                maximum=45
+            )
 
-            <br><br>
+            btn = gr.Button("▶️ Iniciar processamento", variant="primary")
 
-            <b>Fluxo</b>
-            <ol>
-                <li>Selecionar país</li>
-                <li>Definir quantidade</li>
-                <li>Executar processamento</li>
-                <li>Baixar arquivos</li>
-            </ol>
-
-            <b>Automatizações</b>
-            <ul>
-                <li>Remoção de conteúdo promocional</li>
-                <li>Deduplicação de artigos</li>
-                <li>Validação de imagens</li>
-            </ul>
-            </details>
-            """)
-
-            with gr.Row():
-                pais_dropdown = gr.Dropdown(
-                    label="País de origem",
-                    choices=[nome for nome, _ in OPCOES_PAISES],
-                    value="🇧🇷 Brasil"
-                )
-
-                qtd = gr.Number(
-                    label="Quantidade de artigos",
-                    value=3,
-                    minimum=1,
-                    maximum=45
-                )
-
-            btn = gr.Button("Iniciar processamento", variant="primary")
-
-            status = gr.Textbox(label="Status", interactive=False)
+        # Coluna direita: status e arquivos
+        with gr.Column(scale=1):
+            status = gr.Textbox(
+                label="Status",
+                interactive=False,
+                placeholder="Status aparecerá aqui...",
+                lines=8
+            )
 
             arquivos = gr.File(
                 label="Arquivos gerados (.docx)",
@@ -155,23 +149,25 @@ with gr.Blocks(title="W.S.T.B.R 2000") as demo:
                 file_count="multiple"
             )
 
-            btn.click(
-                fn=rodar_interface,
-                inputs=[pais_dropdown, qtd],
-                outputs=[status, arquivos],
-                show_progress=True
-            )
-
+    # ----------------------------
+    # Conexões de eventos
+    # ----------------------------
     btn_login.click(
         fn=checar_senha,
         inputs=senha,
         outputs=[login_box, app_box, erro_senha, boas_vindas, senha]
     )
 
+    btn.click(
+        fn=rodar_interface,
+        inputs=[pais_dropdown, qtd],
+        outputs=[status, arquivos],
+        show_progress=True
+    )
+
 # === Start ===
 if __name__ == "__main__":
     demo.launch(
         server_name="0.0.0.0",
-        server_port=int(os.getenv("PORT", 7860)),
-        theme=tema_corporativo
+        server_port=int(os.getenv("PORT", 7860))
     )
