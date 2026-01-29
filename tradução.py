@@ -30,7 +30,8 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
                 "4) Use “lavadora de pisos” para scrubber.\n"
                 "5) Evite repetições e traduza com naturalidade.\n"
                 "6) Se o conteúdo for claramente irrelevante, ignore.\n"
-                "7) Preserve perguntas e tópicos curtos quando fizerem sentido."     
+                "7) Preserve perguntas e tópicos curtos quando fizerem sentido." 
+                "8) Use “rodo” para Squeegee.\n"
             )
         }
 
