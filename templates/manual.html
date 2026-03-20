@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual do Scraper</title>
+
+  <!-- CSS GLOBAL -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <!-- Ícones -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+
+  <div class="manual-header">
+    <i class="fa-solid fa-book"></i> Manual de Uso — Scraper de Artigos
+  </div>
+
+  <div class="manual-container">
+
+    <div class="section">
+      <h2><span>🔐 Dicas principais</span> <i class="fa-solid fa-chevron-down"></i></h2>
+      <div class="section-content">
+        <p>1. Não atualize a pagina no meio do processo.<br>
+           2. O tempo para cada site e quantidade pode variar, dependendo da carga, internet e sistema.<br>
+           3. pode usar somente um usuario por execução. <strong>existe uma fila para multiplos usuarios</strong>.</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2><span>🌍 Seleção de país</span> <i class="fa-solid fa-chevron-down"></i></h2>
+      <div class="section-content">
+        <p>Escolha o país desejado para buscar os artigos.</p>
+        <button class="btn" onclick="alert('Selecione o país antes de iniciar para evitar erros.')">💡 Dica</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2><span>🔎 Quantidade de artigos</span> <i class="fa-solid fa-chevron-down"></i></h2>
+      <div class="section-content">
+        <p>Máximo de <strong>50 artigos por vez</strong>.</p>
+        <button class="btn" onclick="alert('Para melhor performance, use lotes menores.')">💡 Dica</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2><span>▶️ Iniciar o processo</span> <i class="fa-solid fa-chevron-down"></i></h2>
+      <div class="section-content">
+        <p>Clique em <strong>Rodar Scraper</strong> e aguarde.</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2><span>📥 Download</span> <i class="fa-solid fa-chevron-down"></i></h2>
+      <div class="section-content">
+        <p>Os arquivos serão gerados em formato <strong>.docx</strong>.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const sections = document.querySelectorAll('.section h2');
+    sections.forEach(section => {
+      section.addEventListener('click', () => {
+        const content = section.nextElementSibling;
+        content.style.display = content.style.display === 'block' ? 'none' : 'block';
+        section.classList.toggle('expanded');
+      });
+    });
+  </script>
+
+</body>
+</html>
