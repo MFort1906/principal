@@ -14,7 +14,9 @@ const avisoQuantidade = document.getElementById("aviso-quantidade");
 // 🌍 CARREGAR PAÍSES DINAMICAMENTE
 async function carregarPaises() {
     try {
-        const response = await fetch("/paises");
+        const response = await fetch("/paises", {
+            credentials: "include" // 🔥 ESSENCIAL
+        });
 
         // 🔐 se não autorizado → volta pro login
         if (response.status === 401) {
@@ -59,13 +61,11 @@ form.addEventListener("submit", async (e) => {
     const pais = selectPais.value;
     let quantidade = parseInt(inputQuantidade.value);
 
-    // ❌ Validação extra no submit
     if (quantidade > 50) {
         avisoQuantidade.style.display = "block";
         return;
     }
 
-    // UI: reset
     statusDiv.style.display = "flex";
     statusText.innerText = "🔄 Processando artigos...";
     resultadoDiv.style.display = "none";
@@ -77,10 +77,10 @@ form.addEventListener("submit", async (e) => {
         const response = await fetch("/rodar", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "include", // 🔥 ESSENCIAL
             body: JSON.stringify({ pais, quantidade })
         });
 
-        // 🔐 sessão expirou
         if (response.status === 401) {
             alert("Sessão expirada. Faça login novamente.");
             window.location.href = "/";
