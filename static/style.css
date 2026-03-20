@@ -1,25 +1,24 @@
 /* =========================
-   🎨 VARIÁVEIS (LOOK PREMIUM)
+   🎨 VARIÁVEIS (CLARO PROFISSIONAL)
 ========================= */
 :root {
-    --bg-main: #0b1220;
-    --bg-card: rgba(30, 41, 59, 0.75);
-    --border: rgba(148, 163, 184, 0.15);
+    --bg-main: #f5f7fb;
+    --bg-card: #ffffff;
+    --border: #e2e8f0;
 
     --primary: #2563eb;
     --primary-soft: #3b82f6;
-    --primary-dark: #1e40af;
 
-    --text-main: #e5e7eb;
-    --text-muted: #94a3b8;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
 
-    --success: #22c55e;
-    --error: #ef4444;
+    --success: #16a34a;
+    --error: #dc2626;
 }
 
 
 /* =========================
-   🔄 RESET
+   RESET
 ========================= */
 * {
     margin: 0;
@@ -29,11 +28,11 @@
 
 
 /* =========================
-   🌌 FUNDO PREMIUM
+   FUNDO GERAL
 ========================= */
 body {
     font-family: "Inter", "Segoe UI", sans-serif;
-    background: radial-gradient(circle at top, #1e293b, #020617);
+    background: var(--bg-main);
     color: var(--text-main);
 
     min-height: 100vh;
@@ -45,16 +44,16 @@ body {
 
 
 /* =========================
-   📦 CONTAINER
+   CONTAINER
 ========================= */
 .container {
     width: 100%;
-    max-width: 440px;
+    max-width: 460px;
 }
 
 
 /* =========================
-   🧭 TOPO
+   HEADER
 ========================= */
 .top-bar {
     display: flex;
@@ -64,35 +63,35 @@ body {
 }
 
 .top-bar h1 {
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 600;
 }
 
 
 /* =========================
-   📘 BOTÃO MANUAL
+   BOTÃO MANUAL
 ========================= */
 .manual-btn {
-    background: rgba(59, 130, 246, 0.15);
-    color: var(--primary-soft);
-    padding: 7px 12px;
+    background: #eef4ff;
+    color: var(--primary);
+    padding: 8px 14px;
     border-radius: 8px;
     text-decoration: none;
     font-size: 0.85em;
+    font-weight: 500;
 
-    border: 1px solid rgba(59, 130, 246, 0.25);
+    border: 1px solid #dbeafe;
 
-    transition: all 0.2s ease;
+    transition: 0.2s;
 }
 
 .manual-btn:hover {
-    background: rgba(59, 130, 246, 0.25);
-    transform: translateY(-1px);
+    background: #dbeafe;
 }
 
 
 /* =========================
-   📝 SUBTÍTULO
+   SUBTÍTULO
 ========================= */
 .subtitle {
     text-align: center;
@@ -103,27 +102,24 @@ body {
 
 
 /* =========================
-   🧾 CARD PREMIUM (GLASS)
+   CARD PRINCIPAL
 ========================= */
 .card {
     background: var(--bg-card);
-    backdrop-filter: blur(10px);
-
-    border: 1px solid var(--border);
-
     padding: 25px;
-    border-radius: 16px;
+    border-radius: 14px;
 
     display: flex;
     flex-direction: column;
     gap: 15px;
 
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 }
 
 
 /* =========================
-   📥 FORMULÁRIOS
+   FORM
 ========================= */
 .form-group {
     display: flex;
@@ -138,7 +134,7 @@ label {
 
 
 /* =========================
-   ✏️ INPUTS
+   INPUTS
 ========================= */
 input,
 select {
@@ -146,23 +142,22 @@ select {
     border-radius: 10px;
 
     border: 1px solid var(--border);
-    background: rgba(15, 23, 42, 0.7);
+    background: white;
 
     color: var(--text-main);
 
-    transition: all 0.2s ease;
+    transition: 0.2s;
 }
 
-/* Foco */
 input:focus,
 select:focus {
-    border-color: var(--primary-soft);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
 }
 
 
 /* =========================
-   🔘 BOTÃO PREMIUM
+   BOTÃO
 ========================= */
 button {
     margin-top: 10px;
@@ -170,42 +165,33 @@ button {
     border: none;
     border-radius: 10px;
 
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    background: linear-gradient(135deg, var(--primary), #1d4ed8);
     color: white;
 
     font-weight: 600;
     font-size: 14px;
 
     cursor: pointer;
-
-    transition: all 0.25s ease;
+    transition: 0.2s;
 }
 
-/* Hover mais elegante */
 button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 15px rgba(37, 99, 235, 0.25);
 }
 
-/* Active */
-button:active {
-    transform: scale(0.98);
-}
-
-/* Disabled */
 button:disabled {
-    background: #334155;
+    background: #94a3b8;
     cursor: not-allowed;
-    box-shadow: none;
 }
 
 
 /* =========================
-   ❌ ERRO
+   ERRO
 ========================= */
 .error {
-    background: rgba(239, 68, 68, 0.15);
-    color: #fca5a5;
+    background: #fee2e2;
+    color: var(--error);
     padding: 10px;
     border-radius: 8px;
     text-align: center;
@@ -213,14 +199,14 @@ button:disabled {
 
 
 /* =========================
-   ⏳ STATUS
+   STATUS
 ========================= */
 .status {
     margin-top: 20px;
     padding: 15px;
     border-radius: 12px;
 
-    background: rgba(15, 23, 42, 0.7);
+    background: white;
     border: 1px solid var(--border);
 
     text-align: center;
@@ -228,12 +214,12 @@ button:disabled {
 }
 
 
-/* Spinner mais suave */
+/* Spinner */
 .spinner {
     width: 18px;
     height: 18px;
-    border: 2px solid rgba(148, 163, 184, 0.2);
-    border-top: 2px solid var(--primary-soft);
+    border: 2px solid #e2e8f0;
+    border-top: 2px solid var(--primary);
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
 }
@@ -246,27 +232,27 @@ button:disabled {
 
 
 /* =========================
-   ✅ RESULTADO
+   RESULTADO
 ========================= */
 .result-card {
     margin-top: 20px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-
+    background: white;
     padding: 20px;
     border-radius: 14px;
+
+    border: 1px solid var(--border);
 }
 
 .success {
     color: var(--success);
     font-weight: 600;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     text-align: center;
 }
 
 
 /* =========================
-   📥 DOWNLOADS
+   DOWNLOADS
 ========================= */
 .downloads {
     display: flex;
@@ -275,24 +261,21 @@ button:disabled {
 }
 
 .download-btn {
-    display: block;
-    text-align: center;
     padding: 12px;
+    text-align: center;
 
     border-radius: 10px;
-
-    background: rgba(15, 23, 42, 0.6);
     border: 1px solid var(--border);
 
-    color: var(--primary-soft);
+    background: #f8fafc;
+    color: var(--primary);
+
     text-decoration: none;
     font-weight: 500;
 
-    transition: all 0.2s ease;
+    transition: 0.2s;
 }
 
 .download-btn:hover {
-    background: rgba(30, 41, 59, 0.8);
-    transform: translateY(-1px);
-    color: #60a5fa;
+    background: #eef2ff;
 }
