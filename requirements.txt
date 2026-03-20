@@ -1,8 +1,8 @@
+flask
 requests
 beautifulsoup4
 python-docx
 pillow
-gradio
 openai
-nest_asyncio
+python-dotenv
 pytz
