@@ -2,59 +2,42 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Scraper Tennant</title>
+    <title>W.S.T.B.R 2000</title>
+
+    <!-- Fonte mais premium -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        /* Ajustes específicos para o header com o botão do manual */
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 15px 30px;
-            background-color: #f5f5f5;
-            border-bottom: 1px solid #ddd;
-            border-radius: 0 0 10px 10px;
-            margin-bottom: 20px;
-        }
-
-        .header h1 {
-            font-size: 1.8em;
-            margin: 0;
-        }
-
-        .header .manual-btn {
-            background-color: #4a90e2;
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .header .manual-btn:hover {
-            background-color: #357ab7;
-        }
-    </style>
 </head>
+
 <body>
     <div class="container">
-        <!-- Header atualizado -->
+
+        <!-- 🔝 HEADER -->
         <div class="top-bar">
-            <h1>🌍 Scraper de Artigos</h1>
+            <div>
+                <h1>🌍 W.S.T.B.R 2000</h1>
+                <p style="font-size:12px; color:#94a3b8;">
+                    Plataforma de scraping e tradução editorial
+                </p>
+            </div>
+
             <a href="{{ url_for('manual') }}" target="_blank" class="manual-btn">
                 📘 Manual
             </a>
         </div>
 
-        <p class="subtitle">Selecione o país e a quantidade de artigos (máx. 50)</p>
+        <!-- 🧭 SUBTÍTULO -->
+        <p class="subtitle">
+            Configure os parâmetros e inicie o processamento dos artigos
+        </p>
 
+        <!-- 📦 CARD PRINCIPAL -->
         <div class="card">
             <form id="scraper-form">
+
                 <div class="form-group">
-                    <label for="pais">País</label>
+                    <label for="pais">País de origem</label>
                     <select id="pais" name="pais" required></select>
                 </div>
 
@@ -71,23 +54,38 @@
                     >
                 </div>
 
-                <div id="aviso-quantidade" class="error" style="display:none;">Quantidade máxima permitida: 50</div>
+                <div id="aviso-quantidade" class="error" style="display:none;">
+                    ⚠️ Limite máximo: 50 artigos
+                </div>
 
-                <button type="submit" id="submit-btn">Rodar Scraper</button>
+                <button type="submit" id="submit-btn">
+                    🚀 Iniciar processamento
+                </button>
+
             </form>
         </div>
 
+        <!-- ⏳ STATUS -->
         <div id="status" class="status" style="display:none;">
             <div class="loading">
                 <div class="spinner"></div>
-                <span id="status-text"></span>
+                <span id="status-text">Processando...</span>
             </div>
         </div>
 
+        <!-- ✅ RESULTADO -->
         <div id="resultado" class="result-card" style="display:none;">
-            <div class="success">Artigos processados com sucesso!</div>
+            <div class="success">
+                ✅ Processamento concluído com sucesso
+            </div>
+
+            <div style="font-size:13px; color:#94a3b8; text-align:center; margin-bottom:10px;">
+                Os arquivos estão prontos para download
+            </div>
+
             <div id="downloads" class="downloads"></div>
         </div>
+
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
