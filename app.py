@@ -4,17 +4,25 @@ import asyncio
 from dotenv import load_dotenv
 from pipeline import executar_pipeline
 
-# 🔌 Carregar variáveis do .env
-load_dotenv()
+# 🔌 Carregar .env APENAS localmente (Render já usa Environment)
+if os.environ.get("RENDER") is None:
+    load_dotenv()
 
-# 🔐 Senha do sistema
-APP_PASSWORD = os.getenv("APP_PASSWORD")
+# 🔐 Função segura para pegar variáveis de ambiente
+def get_env_var(nome):
+    valor = os.getenv(nome)
+    if not valor:
+        print(f"⚠️ Variável de ambiente NÃO encontrada: {nome}")
+    else:
+        print(f"✅ Variável {nome} carregada com sucesso")
+    return valor
 
-# 🔎 DEBUG INICIAL
-print("🔐 DEBUG - APP_PASSWORD carregada:", APP_PASSWORD)
+# 🔐 Variáveis do sistema
+APP_PASSWORD = get_env_var("APP_PASSWORD")
+FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "chave_super_secreta_padrao")
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "chave_super_secreta_padrao")
+app.secret_key = FLASK_SECRET_KEY
 
 # 🌍 Mapa de países
 MAPA_PAISES = {
@@ -32,7 +40,6 @@ os.makedirs(PASTA_RESULTADOS, exist_ok=True)
 
 print("📁 Pasta de resultados:", PASTA_RESULTADOS)
 
-
 # 🔐 LOGIN
 @app.route("/", methods=["GET", "POST"])
 def login():
@@ -41,12 +48,18 @@ def login():
     if request.method == "POST":
         senha = request.form.get("password")
 
-        # 🔎 DEBUG LOGIN
-        print("🔎 DEBUG - senha digitada:", repr(senha))
-        print("🔎 DEBUG - senha sistema:", repr(APP_PASSWORD))
+        # 🔎 DEBUG seguro (sem vazar senha)
+        print("🔎 DEBUG - senha digitada:", "OK" if senha else "VAZIA")
+        print("🔎 DEBUG - senha sistema:", "OK" if APP_PASSWORD else "NÃO CARREGADA")
 
-        # ✅ Comparação segura (remove espaços invisíveis)
-        if senha and APP_PASSWORD and senha.strip() == APP_PASSWORD.strip():
+        # 🚨 Verificação crítica
+        if not APP_PASSWORD:
+            print("🚨 ERRO CRÍTICO: APP_PASSWORD não definida no ambiente")
+            erro = "Erro interno no servidor"
+            return render_template("login.html", erro=erro)
+
+        # ✅ Comparação segura
+        if senha and senha.strip() == APP_PASSWORD.strip():
             print("✅ LOGIN OK")
             session["logado"] = True
             return redirect(url_for("home"))
