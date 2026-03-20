@@ -23,10 +23,10 @@ MAPA_PAISES = {
     'de_de': 'Alemanha', 'it_it': 'Itália', 'ja_jp': 'Japão', 'zh_cn': 'China', 'pt_pt': 'Portugal'
 }
 
-# 📂 Caminho absoluto da pasta resultados
-PASTA_RESULTADOS = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "resultados")
-)
+# 📂 Pasta de resultados (compatível com Render)
+PASTA_RESULTADOS = os.path.join(os.getcwd(), "resultados")
+os.makedirs(PASTA_RESULTADOS, exist_ok=True)
+
 print("📁 Pasta de resultados:", PASTA_RESULTADOS)
 
 
@@ -60,7 +60,7 @@ def manual():
     return render_template("manual.html")
 
 
-# 🌍 Rota para fornecer países (API)
+# 🌍 API de países
 @app.route("/paises", methods=["GET"])
 def get_paises():
     if not session.get("logado"):
@@ -68,7 +68,7 @@ def get_paises():
     return jsonify(MAPA_PAISES)
 
 
-# 🚀 Rota para rodar o scraper
+# 🚀 Rodar scraper
 @app.route("/rodar", methods=["POST"])
 def rodar():
     if not session.get("logado"):
@@ -98,14 +98,18 @@ def rodar():
 
         print("📂 Arquivos gerados:", arquivos)
 
-        return jsonify({"sucesso": True, "status": status, "arquivos": arquivos})
+        return jsonify({
+            "sucesso": True,
+            "status": status,
+            "arquivos": arquivos
+        })
 
     except Exception as e:
         print("❌ Erro no /rodar:", str(e))
         return jsonify({"sucesso": False, "erro": str(e)}), 500
 
 
-# 📥 Rota de download
+# 📥 Download de arquivos
 @app.route("/download/<path:nome_arquivo>", methods=["GET"])
 def download(nome_arquivo):
     if not session.get("logado"):
@@ -132,6 +136,7 @@ def logout():
     return redirect(url_for("login"))
 
 
-# ▶️ Rodar servidor
+# ▶️ Rodar servidor (AJUSTADO PARA RENDER)
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
