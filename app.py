@@ -4,21 +4,37 @@ import asyncio
 from dotenv import load_dotenv
 from pipeline import executar_pipeline
 
-# 🔌 Carregar .env APENAS localmente (Render já usa Environment)
+# 🔌 Carregar .env APENAS localmente
 if os.environ.get("RENDER") is None:
     load_dotenv()
 
-# 🔐 Função segura para pegar variáveis de ambiente
-def get_env_var(nome):
-    valor = os.getenv(nome)
-    if not valor:
-        print(f"⚠️ Variável de ambiente NÃO encontrada: {nome}")
-    else:
-        print(f"✅ Variável {nome} carregada com sucesso")
-    return valor
+# 🔐 Função para pegar senha (SECRET FILE + fallback ENV)
+def get_password():
+    # 1. Tenta SECRET FILE (Render)
+    secret_path = "/etc/secrets/APP_PASSWORD"
+
+    if os.path.exists(secret_path):
+        try:
+            with open(secret_path) as f:
+                senha = f.read().strip()
+                print("✅ Senha carregada via SECRET FILE")
+                return senha
+        except Exception as e:
+            print("❌ Erro ao ler secret file:", e)
+
+    # 2. Fallback: variável de ambiente
+    senha_env = os.getenv("APP_PASSWORD")
+    if senha_env:
+        print("✅ Senha carregada via ENV")
+        return senha_env
+
+    # 3. Falhou tudo
+    print("🚨 Nenhuma senha encontrada!")
+    return None
+
 
 # 🔐 Variáveis do sistema
-APP_PASSWORD = get_env_var("APP_PASSWORD")
+APP_PASSWORD = get_password()
 FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "chave_super_secreta_padrao")
 
 app = Flask(__name__)
@@ -34,7 +50,7 @@ MAPA_PAISES = {
     'de_de': 'Alemanha', 'it_it': 'Itália', 'ja_jp': 'Japão', 'zh_cn': 'China', 'pt_pt': 'Portugal'
 }
 
-# 📂 Pasta de resultados (Render-safe)
+# 📂 Pasta de resultados
 PASTA_RESULTADOS = os.path.join(os.getcwd(), "resultados")
 os.makedirs(PASTA_RESULTADOS, exist_ok=True)
 
@@ -48,17 +64,17 @@ def login():
     if request.method == "POST":
         senha = request.form.get("password")
 
-        # 🔎 DEBUG seguro (sem vazar senha)
+        # 🔎 DEBUG seguro
         print("🔎 DEBUG - senha digitada:", "OK" if senha else "VAZIA")
         print("🔎 DEBUG - senha sistema:", "OK" if APP_PASSWORD else "NÃO CARREGADA")
 
         # 🚨 Verificação crítica
         if not APP_PASSWORD:
-            print("🚨 ERRO CRÍTICO: APP_PASSWORD não definida no ambiente")
+            print("🚨 ERRO CRÍTICO: senha não carregada")
             erro = "Erro interno no servidor"
             return render_template("login.html", erro=erro)
 
-        # ✅ Comparação segura
+        # ✅ Comparação
         if senha and senha.strip() == APP_PASSWORD.strip():
             print("✅ LOGIN OK")
             session["logado"] = True
@@ -78,7 +94,7 @@ def home():
     return render_template("index.html")
 
 
-# 📘 Página do manual
+# 📘 Manual
 @app.route("/manual")
 def manual():
     if not session.get("logado"):
@@ -86,7 +102,7 @@ def manual():
     return render_template("manual.html")
 
 
-# 🌍 API de países
+# 🌍 API países
 @app.route("/paises", methods=["GET"])
 def get_paises():
     if not session.get("logado"):
@@ -140,18 +156,14 @@ def download(nome_arquivo):
     if not session.get("logado"):
         return jsonify({"erro": "Não autorizado"}), 401
 
-    caminho_completo = os.path.join(PASTA_RESULTADOS, nome_arquivo)
-    print("📥 Tentando baixar:", caminho_completo)
+    caminho = os.path.join(PASTA_RESULTADOS, nome_arquivo)
+    print("📥 Download:", caminho)
 
-    if os.path.exists(caminho_completo):
-        return send_file(caminho_completo, as_attachment=True)
+    if os.path.exists(caminho):
+        return send_file(caminho, as_attachment=True)
     else:
-        print("❌ Arquivo não encontrado!")
-        return jsonify({
-            "erro": "Arquivo não encontrado",
-            "caminho_recebido": nome_arquivo,
-            "caminho_completo": caminho_completo
-        }), 404
+        print("❌ Arquivo não encontrado")
+        return jsonify({"erro": "Arquivo não encontrado"}), 404
 
 
 # 🚪 Logout
@@ -161,7 +173,7 @@ def logout():
     return redirect(url_for("login"))
 
 
-# ▶️ Rodar servidor (Render OK)
+# ▶️ Run
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
