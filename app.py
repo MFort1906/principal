@@ -10,10 +10,13 @@ load_dotenv()
 # 🔐 Senha do sistema
 APP_PASSWORD = os.getenv("APP_PASSWORD")
 
+# 🔎 DEBUG INICIAL
+print("🔐 DEBUG - APP_PASSWORD carregada:", APP_PASSWORD)
+
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "chave_super_secreta_padrao")
 
-# 🌍 Mapa de países (FONTE ÚNICA DE VERDADE)
+# 🌍 Mapa de países
 MAPA_PAISES = {
     'pt_br': 'Brasil', 'en_us': 'Estados Unidos', 'en_ca': 'Canadá',
     'en_au': 'Austrália e Nova Zelândia', 'en_za': 'África do Sul', 'en_gb': 'Reino Unido',
@@ -23,7 +26,7 @@ MAPA_PAISES = {
     'de_de': 'Alemanha', 'it_it': 'Itália', 'ja_jp': 'Japão', 'zh_cn': 'China', 'pt_pt': 'Portugal'
 }
 
-# 📂 Pasta de resultados (compatível com Render)
+# 📂 Pasta de resultados (Render-safe)
 PASTA_RESULTADOS = os.path.join(os.getcwd(), "resultados")
 os.makedirs(PASTA_RESULTADOS, exist_ok=True)
 
@@ -34,13 +37,23 @@ print("📁 Pasta de resultados:", PASTA_RESULTADOS)
 @app.route("/", methods=["GET", "POST"])
 def login():
     erro = None
+
     if request.method == "POST":
         senha = request.form.get("password")
-        if senha == APP_PASSWORD:
+
+        # 🔎 DEBUG LOGIN
+        print("🔎 DEBUG - senha digitada:", repr(senha))
+        print("🔎 DEBUG - senha sistema:", repr(APP_PASSWORD))
+
+        # ✅ Comparação segura (remove espaços invisíveis)
+        if senha and APP_PASSWORD and senha.strip() == APP_PASSWORD.strip():
+            print("✅ LOGIN OK")
             session["logado"] = True
             return redirect(url_for("home"))
         else:
+            print("❌ LOGIN FALHOU")
             erro = "Senha incorreta"
+
     return render_template("login.html", erro=erro)
 
 
@@ -87,7 +100,6 @@ def rodar():
 
         print(f"🌍 País: {pais} | 📄 Quantidade: {quantidade}")
 
-        # 🔥 Executa pipeline async dentro do Flask
         status, arquivos = asyncio.run(
             executar_pipeline(
                 pais_input=pais,
@@ -109,7 +121,7 @@ def rodar():
         return jsonify({"sucesso": False, "erro": str(e)}), 500
 
 
-# 📥 Download de arquivos
+# 📥 Download
 @app.route("/download/<path:nome_arquivo>", methods=["GET"])
 def download(nome_arquivo):
     if not session.get("logado"):
@@ -136,7 +148,7 @@ def logout():
     return redirect(url_for("login"))
 
 
-# ▶️ Rodar servidor (AJUSTADO PARA RENDER)
+# ▶️ Rodar servidor (Render OK)
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
