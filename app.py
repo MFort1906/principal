@@ -1,173 +1,137 @@
+from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for
 import os
-import gradio as gr
 import asyncio
-import pathlib
+from dotenv import load_dotenv
 from pipeline import executar_pipeline
 
-# === Caminho do Banner ===
-banner_path = pathlib.Path(__file__).parent / "assets" / "LOGO W.S.T.B.R.png"
+# 🔌 Carregar variáveis do .env
+load_dotenv()
 
-# === Países ===
-OPCOES_PAISES = [
-    ("🇧🇷 Brasil", "pt_br"),
-    ("🇺🇸 Estados Unidos", "en_us"),
-    ("🇨🇦 Canadá", "en_ca"),
-    ("🇦🇺 Austrália e Nova Zelândia", "en_au"),
-    ("🇬🇧 Reino Unido", "en_gb"),
-    ("🇪🇸 Espanha", "es_es"),
-    ("🇲🇽 México", "es_mx"),
-    ("🇫🇷 França", "fr_fr"),
-    ("🇳🇱 Holanda", "nl_nl"),
-    ("🇪🇺 Europa", "en_eu"),
-    ("🌏 Ásia", "en_ap"),
-    ("🌎 América Latina", "en_la"),
-    ("🇩🇪 Alemanha", "de_de"),
-    ("🇮🇹 Itália", "it_it"),
-    ("🇯🇵 Japão", "ja_jp"),
-    ("🇨🇳 China", "zh_cn"),
-    ("🇵🇹 Portugal", "pt_pt"),
-]
+# 🔐 Senha do sistema
+APP_PASSWORD = os.getenv("APP_PASSWORD")
 
-NOMES_TO_ALIAS = {nome: alias for nome, alias in OPCOES_PAISES}
+app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "chave_super_secreta_padrao")
 
-# === Senha ===
-def checar_senha(senha_input):
-    with open("/etc/secrets/SCRAPER_PASSWORD") as f:
-        senha_correta = f.read().strip()
+# 🌍 Mapa de países (FONTE ÚNICA DE VERDADE)
+MAPA_PAISES = {
+    'pt_br': 'Brasil', 'en_us': 'Estados Unidos', 'en_ca': 'Canadá',
+    'en_au': 'Austrália e Nova Zelândia', 'en_za': 'África do Sul', 'en_gb': 'Reino Unido',
+    'es_es': 'Espanha', 'es_mx': 'México', 'fr_fr': 'França', 'nl_nl': 'Holanda',
+    'en_eu': 'Europa (outros países)', 'en_ap': 'Ásia (outros países)',
+    'en_la': 'América Latina (outros países)', 'es_la': 'América Latina (outros países)',
+    'de_de': 'Alemanha', 'it_it': 'Itália', 'ja_jp': 'Japão', 'zh_cn': 'China', 'pt_pt': 'Portugal'
+}
 
-    if senha_input == senha_correta:
-        return (
-            gr.update(visible=False),
-            gr.update(visible=True),
-            gr.update(visible=False),
-            gr.update(visible=True, value="Acesso autorizado."),
-            gr.update(value="")
-        )
-    else:
-        return (
-            gr.update(visible=True),
-            gr.update(visible=False),
-            gr.update(visible=True, value="Senha incorreta."),
-            gr.update(visible=False),
-            gr.update(value="")
-        )
-
-# === Execução ===
-async def rodar_interface(pais_nome, qtd):
-    alias = NOMES_TO_ALIAS.get(pais_nome, "")
-    try:
-        return await executar_pipeline(pais_nome, alias, qtd)
-    except Exception as e:
-        return f"Erro: {str(e)}", []
-
-# === Tema Corporativo ===
-tema_corporativo = gr.themes.Base(
-    primary_hue="blue",
-    secondary_hue="blue",
-    neutral_hue="gray",
-    font=["Inter", "ui-sans-serif", "system-ui"]
+# 📂 Caminho absoluto da pasta resultados
+PASTA_RESULTADOS = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "resultados")
 )
+print("📁 Pasta de resultados:", PASTA_RESULTADOS)
 
-# === Interface Gradio ===
-with gr.Blocks(title="W.S.T.B.R 2000", theme=tema_corporativo) as demo:
 
-    # ----------------------------
-    # LOGIN CARD
-    # ----------------------------
-    with gr.Row(visible=True) as login_box:
-        with gr.Column(scale=1):
-            gr.Markdown("## 🔐 Acesso ao sistema")
-            senha = gr.Textbox(
-                label="Senha",
-                type="password",
-                placeholder="Digite a senha de acesso",
+# 🔐 LOGIN
+@app.route("/", methods=["GET", "POST"])
+def login():
+    erro = None
+    if request.method == "POST":
+        senha = request.form.get("password")
+        if senha == APP_PASSWORD:
+            session["logado"] = True
+            return redirect(url_for("home"))
+        else:
+            erro = "Senha incorreta"
+    return render_template("login.html", erro=erro)
+
+
+# 🏠 Página protegida
+@app.route("/home")
+def home():
+    if not session.get("logado"):
+        return redirect(url_for("login"))
+    return render_template("index.html")
+
+
+# 📘 Página do manual
+@app.route("/manual")
+def manual():
+    if not session.get("logado"):
+        return redirect(url_for("login"))
+    return render_template("manual.html")
+
+
+# 🌍 Rota para fornecer países (API)
+@app.route("/paises", methods=["GET"])
+def get_paises():
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+    return jsonify(MAPA_PAISES)
+
+
+# 🚀 Rota para rodar o scraper
+@app.route("/rodar", methods=["POST"])
+def rodar():
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"sucesso": False, "erro": "Nenhum dado recebido"}), 400
+
+        pais = data.get("pais")
+        quantidade = int(data.get("quantidade", 1))
+
+        if pais not in MAPA_PAISES:
+            return jsonify({"sucesso": False, "erro": "País inválido"}), 400
+
+        print(f"🌍 País: {pais} | 📄 Quantidade: {quantidade}")
+
+        # 🔥 Executa pipeline async dentro do Flask
+        status, arquivos = asyncio.run(
+            executar_pipeline(
+                pais_input=pais,
+                alias_input=None,
+                qtd_artigos=quantidade
             )
-            btn_login = gr.Button("Entrar", variant="primary")
-            erro_senha = gr.Markdown("", visible=False)
+        )
 
-    boas_vindas = gr.Markdown("", visible=False)
+        print("📂 Arquivos gerados:", arquivos)
 
-    # ----------------------------
-    # APP PRINCIPAL
-    # ----------------------------
-    with gr.Row(visible=False) as app_box:
-        # Coluna esquerda: entrada e informações
-        with gr.Column(scale=1):
-            if banner_path.exists():
-                gr.Image(value=str(banner_path), show_label=False, height=120)
+        return jsonify({"sucesso": True, "status": status, "arquivos": arquivos})
 
-            gr.Markdown(
-                """
-                ## W.S.T.B.R 2000
-                Plataforma corporativa de scraping e tradução automatizada.
-                """
-            )
+    except Exception as e:
+        print("❌ Erro no /rodar:", str(e))
+        return jsonify({"sucesso": False, "erro": str(e)}), 500
 
-            gr.Markdown(
-                """
-                <details>
-                <summary><strong>Documentação técnica</strong></summary>
-                <br>
-                **Objetivo:** Coletar artigos institucionais, traduzir e gerar DOCX padrão editorial.<br>
-                **Fluxo:** Selecionar país → Definir quantidade → Executar → Baixar arquivos.<br>
-                **Automatizações:** Remoção de conteúdo promocional, deduplicação e validação de imagens.
-                </details>
-                """
-            )
 
-            gr.Markdown("---")
+# 📥 Rota de download
+@app.route("/download/<path:nome_arquivo>", methods=["GET"])
+def download(nome_arquivo):
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
 
-            # Seleção de país e quantidade
-            pais_dropdown = gr.Dropdown(
-                label="País de origem",
-                choices=[nome for nome, _ in OPCOES_PAISES],
-                value="🇧🇷 Brasil",
-                interactive=True
-            )
+    caminho_completo = os.path.join(PASTA_RESULTADOS, nome_arquivo)
+    print("📥 Tentando baixar:", caminho_completo)
 
-            qtd = gr.Number(
-                label="Quantidade de artigos",
-                value=3,
-                minimum=1,
-                maximum=45
-            )
+    if os.path.exists(caminho_completo):
+        return send_file(caminho_completo, as_attachment=True)
+    else:
+        print("❌ Arquivo não encontrado!")
+        return jsonify({
+            "erro": "Arquivo não encontrado",
+            "caminho_recebido": nome_arquivo,
+            "caminho_completo": caminho_completo
+        }), 404
 
-            btn = gr.Button("▶️ Iniciar processamento", variant="primary")
 
-        # Coluna direita: status e arquivos
-        with gr.Column(scale=1):
-            status = gr.Textbox(
-                label="Status",
-                interactive=False,
-                placeholder="Status aparecerá aqui...",
-                lines=8
-            )
+# 🚪 Logout
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
 
-            arquivos = gr.File(
-                label="Arquivos gerados (.docx)",
-                file_types=[".docx"],
-                file_count="multiple"
-            )
 
-    # ----------------------------
-    # Conexões de eventos
-    # ----------------------------
-    btn_login.click(
-        fn=checar_senha,
-        inputs=senha,
-        outputs=[login_box, app_box, erro_senha, boas_vindas, senha]
-    )
-
-    btn.click(
-        fn=rodar_interface,
-        inputs=[pais_dropdown, qtd],
-        outputs=[status, arquivos],
-        show_progress=True
-    )
-
-# === Start ===
+# ▶️ Rodar servidor
 if __name__ == "__main__":
-    demo.launch(
-        server_name="0.0.0.0",
-        server_port=int(os.getenv("PORT", 7860))
-    )
+    app.run(debug=True)
