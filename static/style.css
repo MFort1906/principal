@@ -1,5 +1,3 @@
-CSS
-
 /* =========================
     🔄 RESET GLOBAL
 ========================= */
@@ -14,10 +12,8 @@ CSS
 ========================= */
 body {
     font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    /* Fundo claro com um tom de cinza azulado suave */
     background: linear-gradient(135deg, #f8fafc, #e2e8f0); 
     color: #1e293b;
-
     min-height: 100vh;
     display: flex;
     justify-content: center;
@@ -186,11 +182,11 @@ button:disabled {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* =========================
-    ✅ RESULTADOS (AJUSTADO COM CINZA)
+    ✅ RESULTADOS
 ========================= */
 .result-card {
     margin-top: 20px;
-    background: #e2e8f0; /* Cinza mais visível conforme pedido */
+    background: #e2e8f0; 
     padding: 20px;
     border-radius: 16px;
     border: 1px solid #cbd5e1;
@@ -198,7 +194,7 @@ button:disabled {
 }
 
 .success {
-    color: #047857; /* Verde escuro para contraste */
+    color: #047857;
     font-weight: 700;
     margin-bottom: 15px;
     text-align: center;
@@ -206,7 +202,7 @@ button:disabled {
 }
 
 /* =========================
-    📥 DOWNLOADS (CORREÇÃO DAS LETRAS)
+    📥 DOWNLOADS
 ========================= */
 .downloads {
     display: flex;
@@ -219,43 +215,26 @@ button:disabled {
     text-align: center;
     padding: 12px 10px;
     border-radius: 10px;
-    background: #f8fafc; /* Fundo branco/gelo para destacar do card cinza */
+    background: #f8fafc;
     border: 1px solid #cbd5e1;
     color: #1d4ed8;
     text-decoration: none;
     font-weight: 600;
-    font-size: 13px; /* Tamanho reduzido para nomes longos */
+    font-size: 13px;
     transition: all 0.2s ease;
-
-    /* Correção para o texto dos artigos não vazar */
-    white-space: normal;      /* Permite quebra de linha */
-    word-wrap: break-word;    /* Quebra palavras longas */
-    line-height: 1.4;         /* Espaço entre as linhas do nome */
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.4;
     max-width: 100%;
 }
 
 .download-btn:hover {
     background: #ffffff;
     border-color: #3b82f6;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 /* =========================
-    ❌ ERROS
-========================= */
-.error {
-    background: #fef2f2;
-    color: #dc2626;
-    padding: 10px;
-    border-radius: 8px;
-    font-size: 13px;
-    text-align: center;
-    border: 1px solid #fee2e2;
-    margin-top: 10px;
-}
-
-/* =========================
-    📘 MANUAL (MODO CLARO)
+    📘 MANUAL (CORREÇÃO: INICIAR FECHADO)
 ========================= */
 .manual-header {
     background-color: #2563eb;
@@ -280,12 +259,42 @@ button:disabled {
     background-color: #f1f5f9;
     border-radius: 8px;
     margin-bottom: 5px;
+    cursor: pointer; /* Indica que é clicável */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
+.section h2:hover {
+    background-color: #e2e8f0;
+}
+
+/* ESTA É A PARTE QUE FAZ COMECAR FECHADO */
 .section-content {
+    display: none; /* Esconde por padrão */
     padding: 15px;
     border-left: 4px solid #3b82f6;
     background-color: #f8fafc;
     margin-bottom: 15px;
     font-size: 14px;
+    animation: fadeIn 0.3s ease;
+}
+
+/* =========================
+    ❌ ERROS
+========================= */
+.error {
+    background: #fef2f2;
+    color: #dc2626;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: center;
+    border: 1px solid #fee2e2;
+    margin-top: 10px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
 }
