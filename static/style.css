@@ -1,3 +1,5 @@
+CSS
+
 /* =========================
     🔄 RESET GLOBAL
 ========================= */
@@ -12,9 +14,9 @@
 ========================= */
 body {
     font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    /* Fundo claro com um leve tom de cinza azulado */
+    /* Fundo claro com um tom de cinza azulado suave */
     background: linear-gradient(135deg, #f8fafc, #e2e8f0); 
-    color: #1e293b; /* Texto principal em cinza muito escuro */
+    color: #1e293b;
 
     min-height: 100vh;
     display: flex;
@@ -42,8 +44,8 @@ body {
 }
 
 .top-bar h1 {
-    font-size: 26px;
-    color: #0f172a; /* Azul quase preto */
+    font-size: 24px;
+    color: #0f172a;
     font-weight: 700;
 }
 
@@ -59,7 +61,6 @@ body {
     font-size: 0.85em;
     font-weight: 600;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
 }
 
 .manual-btn:hover {
@@ -72,29 +73,27 @@ body {
 ========================= */
 .subtitle {
     text-align: center;
-    font-size: 14px;
-    color: #64748b; /* Cinza suave */
+    font-size: 13px;
+    color: #64748b;
     margin-bottom: 25px;
+    line-height: 1.4;
 }
 
 /* =========================
     🧾 CARD PRINCIPAL
 ========================= */
 .card {
-    background: #ffffff; /* Fundo totalmente branco */
-    padding: 30px;
+    background: #ffffff;
+    padding: 25px;
     border-radius: 16px;
-
     display: flex;
     flex-direction: column;
     gap: 18px;
-
-    /* Sombra suave e moderna */
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05), 0 4px 10px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 }
 
 /* =========================
-    📥 FORMULÁRIOS
+    📥 FORMULÁRIOS E INPUTS
 ========================= */
 .form-group {
     display: flex;
@@ -103,30 +102,25 @@ body {
 }
 
 label {
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 700;
     color: #475569;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-/* =========================
-    ✏️ INPUTS E SELECTS
-========================= */
-input,
-select {
+input, select {
     padding: 12px 15px;
     border-radius: 10px;
-    border: 2px solid #e2e8f0; /* Borda clara */
-    background-color: #f8fafc; /* Fundo levemente cinza */
+    border: 2px solid #e2e8f0;
+    background-color: #f8fafc;
     color: #1e293b;
     font-size: 15px;
     outline: none;
     transition: all 0.2s ease;
 }
 
-input:focus,
-select:focus {
+input:focus, select:focus {
     border-color: #3b82f6;
     background-color: #ffffff;
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
@@ -138,135 +132,126 @@ select:focus {
 }
 
 /* =========================
-    🔘 BOTÕES
+    🔘 BOTÃO DE AÇÃO (RODAR)
 ========================= */
 button {
     margin-top: 10px;
-    padding: 15px;
+    padding: 14px;
     border: none;
     border-radius: 10px;
-
-    background: #2563eb; /* Azul sólido e forte */
+    background: #2563eb;
     color: white;
-
     font-weight: 700;
-    font-size: 16px;
-
+    font-size: 15px;
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
 button:hover {
     background: #1d4ed8;
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.25);
+    box-shadow: 0 6px 15px rgba(37, 99, 235, 0.2);
 }
 
 button:disabled {
     background: #cbd5e1;
-    color: #94a3b8;
     cursor: not-allowed;
-    box-shadow: none;
-}
-
-/* =========================
-    ❌ MENSAGEM DE ERRO
-========================= */
-.error {
-    background: #fef2f2;
-    color: #dc2626;
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 14px;
-    text-align: center;
-    border: 1px solid #fee2e2;
-    animation: fadeIn 0.3s ease;
-}
-
-/* =========================
-    ✨ ANIMAÇÕES
-========================= */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-5px); }
-    to { opacity: 1; transform: translateY(0); }
 }
 
 /* =========================
     ⏳ STATUS / LOADING
 ========================= */
 .status {
-    margin-top: 20px;
-    padding: 15px;
-    border-radius: 12px;
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 10px;
     text-align: center;
-    background: #ffffff;
+    background: #f1f5f9;
     color: #64748b;
     border: 1px solid #e2e8f0;
-}
-
-.loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
+    font-size: 14px;
 }
 
 .spinner {
-    width: 20px;
-    height: 20px;
-    border: 3px solid #f1f5f9;
+    width: 18px;
+    height: 18px;
+    border: 3px solid #e2e8f0;
     border-top: 3px solid #3b82f6;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
 }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* =========================
-    ✅ RESULTADOS
+    ✅ RESULTADOS (AJUSTADO COM CINZA)
 ========================= */
 .result-card {
     margin-top: 20px;
-    background: #ffffff;
+    background: #e2e8f0; /* Cinza mais visível conforme pedido */
     padding: 20px;
     border-radius: 16px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .success {
-    color: #059669; /* Verde sucesso */
+    color: #047857; /* Verde escuro para contraste */
     font-weight: 700;
     margin-bottom: 15px;
     text-align: center;
+    font-size: 15px;
 }
 
 /* =========================
-    📥 DOWNLOADS
+    📥 DOWNLOADS (CORREÇÃO DAS LETRAS)
 ========================= */
 .downloads {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
 .download-btn {
     display: block;
     text-align: center;
-    padding: 14px;
+    padding: 12px 10px;
     border-radius: 10px;
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
-    color: #2563eb;
+    background: #f8fafc; /* Fundo branco/gelo para destacar do card cinza */
+    border: 1px solid #cbd5e1;
+    color: #1d4ed8;
     text-decoration: none;
     font-weight: 600;
+    font-size: 13px; /* Tamanho reduzido para nomes longos */
     transition: all 0.2s ease;
+
+    /* Correção para o texto dos artigos não vazar */
+    white-space: normal;      /* Permite quebra de linha */
+    word-wrap: break-word;    /* Quebra palavras longas */
+    line-height: 1.4;         /* Espaço entre as linhas do nome */
+    max-width: 100%;
 }
 
 .download-btn:hover {
-    background: #e2e8f0;
-    border-color: #cbd5e1;
+    background: #ffffff;
+    border-color: #3b82f6;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* =========================
+    ❌ ERROS
+========================= */
+.error {
+    background: #fef2f2;
+    color: #dc2626;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: center;
+    border: 1px solid #fee2e2;
+    margin-top: 10px;
 }
 
 /* =========================
@@ -275,47 +260,32 @@ button:disabled {
 .manual-header {
     background-color: #2563eb;
     color: white;
-    padding: 30px;
+    padding: 25px;
     text-align: center;
-    font-size: 1.8em;
-    font-weight: 800;
+    font-size: 1.6em;
 }
 
 .manual-container {
     max-width: 800px;
-    margin: 40px auto;
-    padding: 30px;
+    margin: 30px auto;
+    padding: 20px;
     background: white;
-    color: #334155;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-}
-
-.section {
-    margin-bottom: 20px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
 }
 
 .section h2 {
     font-size: 1.1em;
-    color: #1e293b;
-    padding: 15px 20px;
+    padding: 12px 15px;
     background-color: #f1f5f9;
-    border-radius: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: 0.2s;
-}
-
-.section h2:hover {
-    background-color: #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 5px;
 }
 
 .section-content {
-    padding: 20px;
+    padding: 15px;
     border-left: 4px solid #3b82f6;
     background-color: #f8fafc;
-    margin-top: 8px;
-    border-radius: 8px;
-    line-height: 1.6;
+    margin-bottom: 15px;
+    font-size: 14px;
 }
