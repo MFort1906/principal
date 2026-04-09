@@ -32,7 +32,7 @@ body {
 .tennant-text {
     font-size: 52px;
     font-weight: 800;
-    color: #0099cc;
+    color: #0099cc; /* Azul característico */
     letter-spacing: -2px;
     line-height: 0.9;
 }
@@ -47,7 +47,7 @@ body {
 }
 
 /* =========================
-    ✨ ANIMAÇÕES
+    ✨ ANIMAÇÕES GERAIS
 ========================= */
 .fade-in-logo {
     animation: slideUpFade 1.2s ease-out forwards;
@@ -233,7 +233,7 @@ button:disabled { background: #cbd5e1; cursor: not-allowed; }
 .error { background: #fef2f2; color: #dc2626; padding: 12px; border-radius: 10px; font-size: 13px; text-align: center; }
 
 /* =========================
-    📘 SEÇÃO DO MANUAL (ESTAVA FALTANDO)
+    📘 MANUAL & ANIMAÇÃO DE TEXTO
 ========================= */
 .manual-header {
     background-color: #2563eb;
@@ -275,7 +275,7 @@ button:disabled { background: #cbd5e1; cursor: not-allowed; }
 .section h2:hover { background-color: #f1f5f9; }
 
 .section-content {
-    display: none; /* JS controla a exibição */
+    display: none; 
     padding: 20px;
     border-top: 1px solid #e2e8f0;
     font-size: 14px;
@@ -288,3 +288,24 @@ button:disabled { background: #cbd5e1; cursor: not-allowed; }
     font-size: 0.8em;
     color: #94a3b8;
 }
+
+/* ✨ Efeito de surgimento gradual das frases */
+.section-content p, 
+.section-content li {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+/* Quando a seção está ativa, as frases aparecem em cascata */
+.section.active .section-content p,
+.section.active .section-content li {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Delays para as frases não aparecerem todas de uma vez */
+.section.active .section-content p:nth-child(1) { transition-delay: 0.1s; }
+.section.active .section-content p:nth-child(2) { transition-delay: 0.3s; }
+.section.active .section-content p:nth-child(3) { transition-delay: 0.5s; }
+.section.active .section-content p:nth-child(4) { transition-delay: 0.7s; }
