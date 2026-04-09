@@ -26,13 +26,13 @@ body {
     align-items: center;
     width: 100%;
     margin-bottom: 35px;
-    user-select: none; /* Impede selecionar como texto comum */
+    user-select: none;
 }
 
 .tennant-text {
     font-size: 52px;
-    font-weight: 800; /* Extra Bold */
-    color: #0099cc; /* Azul característico */
+    font-weight: 800;
+    color: #0099cc;
     letter-spacing: -2px;
     line-height: 0.9;
 }
@@ -41,7 +41,7 @@ body {
     font-size: 14px;
     font-weight: 500;
     color: #64748b;
-    letter-spacing: 6px; /* Espaçamento largo característico */
+    letter-spacing: 6px;
     margin-top: 4px;
     text-transform: uppercase;
 }
@@ -59,14 +59,8 @@ body {
 }
 
 @keyframes slideUpFade {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .shake {
@@ -183,7 +177,7 @@ button:disabled { background: #cbd5e1; cursor: not-allowed; }
 ========================= */
 .result-card {
     margin-top: 20px;
-    background: #e2e8f0; /* Cinza solicitado */
+    background: #e2e8f0; 
     padding: 20px;
     border-radius: 20px;
     border: 1px solid #cbd5e1;
@@ -205,7 +199,7 @@ button:disabled { background: #cbd5e1; cursor: not-allowed; }
     font-weight: 600;
     font-size: 13px;
     line-height: 1.4;
-    word-wrap: break-word; /* Proteção para nomes longos */
+    word-wrap: break-word;
     transition: 0.2s;
 }
 
@@ -237,3 +231,60 @@ button:disabled { background: #cbd5e1; cursor: not-allowed; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .error { background: #fef2f2; color: #dc2626; padding: 12px; border-radius: 10px; font-size: 13px; text-align: center; }
+
+/* =========================
+    📘 SEÇÃO DO MANUAL (ESTAVA FALTANDO)
+========================= */
+.manual-header {
+    background-color: #2563eb;
+    color: white;
+    padding: 30px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    margin-bottom: 30px;
+}
+
+.manual-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 0 20px 40px 20px;
+}
+
+.section {
+    background: #ffffff;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.section h2 {
+    font-size: 15px;
+    padding: 15px 20px;
+    background-color: #f8fafc;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.section h2:hover { background-color: #f1f5f9; }
+
+.section-content {
+    display: none; /* JS controla a exibição */
+    padding: 20px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #475569;
+}
+
+.arrow {
+    transition: transform 0.3s ease;
+    font-size: 0.8em;
+    color: #94a3b8;
+}
