@@ -15,7 +15,7 @@ const avisoQuantidade = document.getElementById("aviso-quantidade");
 async function carregarPaises() {
     try {
         const response = await fetch("/paises", {
-            credentials: "include" // 🔥 ESSENCIAL
+            credentials: "include" 
         });
 
         // 🔐 se não autorizado → volta pro login
@@ -66,18 +66,22 @@ form.addEventListener("submit", async (e) => {
         return;
     }
 
+    // Reset de interface para nova execução
     statusDiv.style.display = "flex";
     statusText.innerText = "🔄 Processando artigos...";
     resultadoDiv.style.display = "none";
+    resultadoDiv.classList.remove("fade-in-content"); // Reset da animação
     downloadsDiv.innerHTML = "";
+    
+    // Estado do botão
     button.disabled = true;
-    button.innerText = "Processando...";
+    button.innerText = "Aguarde...";
 
     try {
         const response = await fetch("/rodar", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            credentials: "include", // 🔥 ESSENCIAL
+            credentials: "include", 
             body: JSON.stringify({ pais, quantidade })
         });
 
@@ -88,35 +92,45 @@ form.addEventListener("submit", async (e) => {
         }
 
         const data = await response.json();
-        console.log("Resposta do backend:", data);
 
         if (data.sucesso) {
             statusText.innerText = "✅ Concluído!";
+            
+            // Ativa o card de resultados com a animação CSS
             resultadoDiv.style.display = "block";
+            resultadoDiv.classList.add("fade-in-content");
 
             if (data.arquivos && data.arquivos.length > 0) {
                 data.arquivos.forEach((arquivo) => {
                     const link = document.createElement("a");
                     link.href = `/download/${encodeURIComponent(arquivo)}`;
                     link.className = "download-btn";
-                    link.innerText = `📄 Baixar ${arquivo}`;
+                    // Ícone de documento antes do nome
+                    link.innerHTML = `<i class="fa-regular fa-file-word"></i> Baixar: ${arquivo}`;
                     downloadsDiv.appendChild(link);
                 });
             } else {
-                downloadsDiv.innerHTML = "<p>Nenhum arquivo disponível.</p>";
+                downloadsDiv.innerHTML = "<p style='text-align:center; font-size:13px; color:#64748b;'>Nenhum arquivo gerado.</p>";
             }
 
         } else {
-            statusText.innerText = "❌ " + (data.erro || "Erro desconhecido");
+            statusText.innerText = "❌ " + (data.erro || "Erro inesperado");
+            button.disabled = false;
+            button.innerText = "Tentar novamente";
         }
 
     } catch (error) {
         console.error("Erro na requisição:", error);
-        statusText.innerText = "❌ Erro ao conectar com o servidor";
+        statusText.innerText = "❌ Erro de conexão com o servidor";
+        button.disabled = false;
+        button.innerText = "Rodar Scraper";
     }
 
-    button.disabled = false;
-    button.innerText = "Rodar Scraper";
+    // Reativa o botão se não houver sucesso imediato ou após o fim
+    if (statusText.innerText.includes("Concluído")) {
+        button.disabled = false;
+        button.innerText = "Iniciar Novo Scraper";
+    }
 });
 
 // 🚀 INICIALIZAÇÃO
