@@ -1,5 +1,5 @@
 /* =========================
-    🔄 RESET GLOBAL
+    🔄 RESET & BASE
 ========================= */
 * {
     margin: 0;
@@ -7,11 +7,8 @@
     box-sizing: border-box;
 }
 
-/* =========================
-    🌌 FUNDO GERAL
-========================= */
 body {
-    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Inter', "Segoe UI", Roboto, sans-serif;
     background: linear-gradient(135deg, #f8fafc, #e2e8f0); 
     color: #1e293b;
     min-height: 100vh;
@@ -21,30 +18,41 @@ body {
 }
 
 /* =========================
-    🏢 LOGO TENNANT (NOVO)
+    🏢 LOGO TENNANT (TEXTO PURO)
 ========================= */
-.logo-container {
+.logo-text-container {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
     width: 100%;
-    margin-bottom: 20px;
+    margin-bottom: 35px;
+    user-select: none; /* Impede selecionar como texto comum */
 }
 
-.tennant-logo {
-    max-width: 280px;
-    height: auto;
+.tennant-text {
+    font-size: 52px;
+    font-weight: 800; /* Extra Bold */
+    color: #0099cc; /* Azul característico */
+    letter-spacing: -2px;
+    line-height: 0.9;
+}
+
+.company-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #64748b;
+    letter-spacing: 6px; /* Espaçamento largo característico */
+    margin-top: 4px;
+    text-transform: uppercase;
 }
 
 /* =========================
-    ✨ ANIMAÇÕES DE TRANSIÇÃO
+    ✨ ANIMAÇÕES
 ========================= */
-
-/* A logo aparece primeiro */
 .fade-in-logo {
     animation: slideUpFade 1.2s ease-out forwards;
 }
 
-/* O conteúdo aparece com um leve atraso de 0.6s */
 .fade-in-content {
     opacity: 0;
     animation: slideUpFade 1s ease-out 0.6s forwards;
@@ -61,84 +69,73 @@ body {
     }
 }
 
-/* Efeito de balançar para erro de senha no login */
 .shake {
     animation: shake 0.4s ease-in-out;
 }
 
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
 }
 
 /* =========================
-    📦 CONTAINER PRINCIPAL
+    📦 CONTAINER & HEADER
 ========================= */
 .container {
     width: 100%;
-    max-width: 420px;
+    max-width: 440px;
     padding: 20px;
 }
 
 .top-bar {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 15px;
 }
 
 .top-bar h1 {
-    font-size: 24px;
+    font-size: 22px;
     color: #0f172a;
     font-weight: 700;
 }
 
-/* =========================
-    📘 BOTÃO MANUAL
-========================= */
 .manual-btn {
     background: #3b82f6;
     color: white;
-    padding: 8px 16px;
+    padding: 8px 14px;
     border-radius: 8px;
     text-decoration: none;
-    font-size: 0.85em;
+    font-size: 13px;
     font-weight: 600;
-    transition: all 0.3s ease;
+    transition: 0.3s;
 }
 
-.manual-btn:hover {
-    background: #2563eb;
-    transform: translateY(-1px);
-}
+.manual-btn:hover { background: #2563eb; transform: translateY(-1px); }
 
 .subtitle {
     text-align: center;
     font-size: 13px;
     color: #64748b;
     margin-bottom: 25px;
-    line-height: 1.4;
+    line-height: 1.5;
 }
 
 /* =========================
-    🧾 CARD PRINCIPAL
+    🧾 FORMULÁRIO & CARDS
 ========================= */
 .card {
     background: #ffffff;
     padding: 25px;
-    border-radius: 16px;
+    border-radius: 20px;
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 20px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 }
 
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
+.form-group { display: flex; flex-direction: column; gap: 8px; }
 
 label {
     font-size: 11px;
@@ -150,13 +147,13 @@ label {
 
 input, select {
     padding: 12px 15px;
-    border-radius: 10px;
+    border-radius: 12px;
     border: 2px solid #e2e8f0;
     background-color: #f8fafc;
     color: #1e293b;
     font-size: 15px;
     outline: none;
-    transition: all 0.2s ease;
+    transition: 0.2s;
 }
 
 input:focus, select:focus {
@@ -165,97 +162,62 @@ input:focus, select:focus {
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
-.input-error {
-    border-color: #fca5a5 !important;
-    background: #fef2f2 !important;
-}
-
-/* =========================
-    🔘 BOTÃO DE AÇÃO
-========================= */
 button {
     margin-top: 10px;
     padding: 14px;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     background: #2563eb;
     color: white;
     font-weight: 700;
     font-size: 15px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: 0.3s;
 }
 
-button:hover {
-    background: #1d4ed8;
-}
-
-button:disabled {
-    background: #cbd5e1;
-    cursor: not-allowed;
-}
+button:hover { background: #1d4ed8; }
+button:disabled { background: #cbd5e1; cursor: not-allowed; }
 
 /* =========================
-    ✅ RESULTADOS (ACINZENTADO)
+    ✅ RESULTADOS (CINZA)
 ========================= */
 .result-card {
     margin-top: 20px;
-    background: #e2e8f0; /* Cinza médio solicitado */
+    background: #e2e8f0; /* Cinza solicitado */
     padding: 20px;
-    border-radius: 16px;
+    border-radius: 20px;
     border: 1px solid #cbd5e1;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.success {
-    color: #047857;
-    font-weight: 700;
-    margin-bottom: 15px;
-    text-align: center;
-    font-size: 15px;
-}
+.success { color: #047857; font-weight: 700; text-align: center; margin-bottom: 12px; }
 
-/* =========================
-    📥 DOWNLOADS (CORREÇÃO DE TEXTO)
-========================= */
-.downloads {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
+.downloads { display: flex; flex-direction: column; gap: 10px; }
 
 .download-btn {
     display: block;
     text-align: center;
-    padding: 12px 10px;
-    border-radius: 10px;
-    background: #f8fafc;
+    padding: 14px;
+    border-radius: 12px;
+    background: #ffffff;
     border: 1px solid #cbd5e1;
     color: #1d4ed8;
     text-decoration: none;
     font-weight: 600;
     font-size: 13px;
-    transition: all 0.2s ease;
-
-    /* Impedir que o texto vaze */
-    white-space: normal;
-    word-wrap: break-word;
     line-height: 1.4;
-    max-width: 100%;
+    word-wrap: break-word; /* Proteção para nomes longos */
+    transition: 0.2s;
 }
 
-.download-btn:hover {
-    background: #ffffff;
-    border-color: #3b82f6;
-}
+.download-btn:hover { border-color: #3b82f6; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 
 /* =========================
-    ⏳ STATUS / LOADING
+    ⏳ STATUS & ERROS
 ========================= */
 .status {
     margin-top: 15px;
     padding: 12px;
-    border-radius: 10px;
+    border-radius: 12px;
     text-align: center;
     background: #f1f5f9;
     color: #64748b;
@@ -263,68 +225,15 @@ button:disabled {
 }
 
 .spinner {
-    width: 18px;
-    height: 18px;
+    width: 20px; height: 20px;
     border: 3px solid #e2e8f0;
     border-top: 3px solid #3b82f6;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
     display: inline-block;
     vertical-align: middle;
-    margin-right: 8px;
+    margin-right: 10px;
 }
-
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* =========================
-    📘 MANUAL (SEÇÕES FECHADAS)
-========================= */
-.manual-header {
-    background-color: #2563eb;
-    color: white;
-    padding: 25px;
-    text-align: center;
-    font-size: 1.6em;
-}
-
-.manual-container {
-    max-width: 800px;
-    margin: 30px auto;
-    padding: 20px;
-    background: white;
-    border-radius: 12px;
-}
-
-.section h2 {
-    font-size: 1.1em;
-    padding: 12px 15px;
-    background-color: #f1f5f9;
-    border-radius: 8px;
-    margin-bottom: 5px;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.section-content {
-    display: none; /* Inicia fechado */
-    padding: 15px;
-    border-left: 4px solid #3b82f6;
-    background-color: #f8fafc;
-    margin-bottom: 15px;
-    font-size: 14px;
-}
-
-/* =========================
-    ❌ ERROS
-========================= */
-.error {
-    background: #fef2f2;
-    color: #dc2626;
-    padding: 10px;
-    border-radius: 8px;
-    font-size: 13px;
-    text-align: center;
-    border: 1px solid #fee2e2;
-}
+.error { background: #fef2f2; color: #dc2626; padding: 12px; border-radius: 10px; font-size: 13px; text-align: center; }
