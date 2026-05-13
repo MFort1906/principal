@@ -2,46 +2,66 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Acesso ao Sistema</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso — Tennant</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
+    <div class="container fade-in-logo" style="max-width: 400px;">
 
-    <div class="container">
-        <h1 style="text-align: center; margin-bottom: 5px;">🔐 Acesso Restrito</h1>
-        <p class="subtitle">Digite a senha para acessar o sistema</p>
+        <!-- LOGO -->
+        <div class="login-brand">
+            <div class="tennant-text">TENNANT</div>
+            <div class="company-text">C O M P A N Y</div>
+        </div>
 
+        <!-- CARD DE LOGIN -->
         <div class="card">
 
+            <!-- ÍCONE DE CADEADO -->
+            <div class="lock-icon">🔐</div>
+
+            <div style="text-align:center; margin-bottom: 4px;">
+                <div style="font-family:'Syne',sans-serif; font-size:18px; font-weight:700; color:#0f172a;">
+                    Acesso Restrito
+                </div>
+                <div style="font-size:13px; color:#94a3b8; margin-top:4px;">
+                    Digite a senha para entrar no painel
+                </div>
+            </div>
+
             {% if erro %}
-                <div class="error shake" style="margin-bottom: 15px;">
+                <div class="error shake">
                     ⚠️ {{ erro }}
                 </div>
             {% endif %}
 
             <form method="POST">
                 <div class="form-group">
-                    <label>Senha de Acesso</label>
-                    <input 
-                        type="password" 
-                        name="password" 
-                        placeholder="Digite sua senha"
+                    <label>Senha de acesso</label>
+                    <input
+                        type="password"
+                        name="password"
+                        placeholder="••••••••"
                         class="{% if erro %}input-error{% endif %}"
                         required
                         autofocus
                     >
                 </div>
 
-                <button type="submit" style="width: 100%;">Entrar no Painel</button>
+                <button type="submit" style="width:100%; margin-top: 8px;">
+                    Entrar no painel
+                </button>
             </form>
 
         </div>
 
-        <p class="subtitle" style="margin-top: 20px; font-size: 11px;">
+        <p class="login-tagline">
             Sistema de Automação Tennant &copy; 2026
         </p>
-    </div>
 
+    </div>
 </body>
 </html>
