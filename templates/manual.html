@@ -1,156 +1,80 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manual — Tennant Scraper</title>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>Manual do Scraper</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
 
-<body class="manual-body">
+<body style="display: block; padding-top: 0;">
 
-    <div class="orb orb-1" style="opacity:0.5;"></div>
-
-    <!-- HEADER -->
     <div class="manual-header">
-        <div class="manual-header-eyebrow">
-            <i class="fa-solid fa-book-open" style="margin-right:6px;"></i>
-            Documentação
-        </div>
-        <h1>MANUAL DE USO</h1>
-        <p>Guia completo da plataforma de scraping e tradução Tennant</p>
+        <i class="fa-solid fa-book"></i> Manual de Uso — Scraper de Artigos
     </div>
 
     <div class="manual-container">
 
-        <!-- SEÇÃO 1 -->
         <div class="section">
-            <h2>
-                <span>
-                    <span class="section-number">01</span>
-                    Dicas essenciais
-                </span>
-                <i class="fa-solid fa-chevron-down arrow"></i>
-            </h2>
+            <h2><span>Dicas principais</span> <i class="fa-solid fa-chevron-down arrow"></i></h2>
             <div class="section-content">
-                <p>
-                    <i class="fa-solid fa-ban section-icon red"></i>
-                    <strong>Não atualize a página</strong> durante o processamento — isso interrompe a execução e perde os dados gerados.
-                </p>
-                <p>
-                    <i class="fa-regular fa-clock section-icon"></i>
-                    O <strong>tempo de resposta varia</strong> conforme o país selecionado e a velocidade da sua conexão.
-                </p>
-                <p>
-                    <i class="fa-solid fa-users section-icon"></i>
-                    Há uma <strong>fila de execução</strong> para múltiplos usuários simultâneos. Aguarde sua vez.
-                </p>
-                <p>
-                    <i class="fa-solid fa-triangle-exclamation section-icon yellow"></i>
-                    Os arquivos <strong>não são salvos automaticamente</strong> — faça o download assim que concluir.
-                </p>
+                <p>1. Não atualize a página no meio do processo.</p>
+                <p>2. O tempo para cada site e quantidade pode variar conforme a internet.</p>
+                <p>3. Existe uma fila de execução para múltiplos usuários.</p>
+                <p>4. Os artigos <strong>não são salvos</strong> se você reiniciar a página.</p>
             </div>
         </div>
 
-        <!-- SEÇÃO 2 -->
         <div class="section">
-            <h2>
-                <span>
-                    <span class="section-number">02</span>
-                    Seleção de país
-                </span>
-                <i class="fa-solid fa-chevron-down arrow"></i>
-            </h2>
+            <h2><span>Seleção de país</span> <i class="fa-solid fa-chevron-down arrow"></i></h2>
             <div class="section-content">
-                <p>
-                    <i class="fa-solid fa-earth-americas section-icon accent"></i>
-                    Cada país corresponde a um <strong>blog oficial da Tennant</strong>. Escolha corretamente para buscar no domínio certo.
-                </p>
-                <p>
-                    <i class="fa-solid fa-language section-icon accent"></i>
-                    A <strong>tradução é automática</strong> — o conteúdo do blog do país escolhido será traduzido para o português.
-                </p>
-                <div class="tip-box">
-                    <i class="fa-solid fa-lightbulb"></i>
-                    <span>Sempre confira o país antes de iniciar. Trocar após o processo exige rodar novamente do zero.</span>
-                </div>
+                <p>Escolha o país desejado para que o scraper busque no blog correto da Tennant.</p>
+                <button class="manual-btn" style="margin-top:10px; border:none; cursor:pointer;" onclick="alert('Selecione o país antes de iniciar!')">💡 Dica</button>
             </div>
         </div>
 
-        <!-- SEÇÃO 3 -->
         <div class="section">
-            <h2>
-                <span>
-                    <span class="section-number">03</span>
-                    Quantidade de artigos
-                </span>
-                <i class="fa-solid fa-chevron-down arrow"></i>
-            </h2>
+            <h2><span>Quantidade de artigos</span> <i class="fa-solid fa-chevron-down arrow"></i></h2>
             <div class="section-content">
-                <p>
-                    <i class="fa-solid fa-file-lines section-icon accent"></i>
-                    O sistema aceita de <strong>1 a 50 artigos por execução</strong>. Valores maiores podem causar bloqueios temporários.
-                </p>
-                <p>
-                    <i class="fa-solid fa-gauge-high section-icon"></i>
-                    Para <strong>grandes volumes</strong>, prefira rodar em lotes menores (10–20 por vez) para maior confiabilidade.
-                </p>
-                <div class="tip-box">
-                    <i class="fa-solid fa-lightbulb"></i>
-                    <span>Lotes menores são mais rápidos e menos propensos a falhas por timeout.</span>
-                </div>
+                <p>O limite seguro é de <strong>50 artigos por vez</strong> para evitar bloqueios.</p>
             </div>
         </div>
 
-        <!-- SEÇÃO 4 -->
         <div class="section">
-            <h2>
-                <span>
-                    <span class="section-number">04</span>
-                    Formato de saída
-                </span>
-                <i class="fa-solid fa-chevron-down arrow"></i>
-            </h2>
+            <h2><span>Formato de Saída</span> <i class="fa-solid fa-chevron-down arrow"></i></h2>
             <div class="section-content">
-                <p>
-                    <i class="fa-solid fa-file-word section-icon accent"></i>
-                    Todos os artigos são exportados em <strong>.docx (Microsoft Word)</strong> com a formatação original preservada.
-                </p>
-                <p>
-                    <i class="fa-solid fa-download section-icon green"></i>
-                    Os arquivos ficam disponíveis para download <strong>imediatamente após o processamento</strong> — um por artigo.
-                </p>
+                <p>Todos os artigos são exportados em formato <strong>.docx (Microsoft Word)</strong> com a formatação original preservada.</p>
             </div>
-        </div>
-
-        <!-- BACK -->
-        <div class="manual-back">
-            <a href="{{ url_for('index') }}">
-                <i class="fa-solid fa-arrow-left"></i>
-                Voltar ao painel
-            </a>
         </div>
 
     </div>
 
     <script>
+        // Lógica para abrir/fechar as seções e ativar animação
         const headers = document.querySelectorAll('.section h2');
+        
         headers.forEach(header => {
             header.addEventListener('click', () => {
-                const section = header.parentElement;
-                const content = header.nextElementSibling;
+                const section = header.parentElement; // A div .section
+                const content = header.nextElementSibling; // A div .section-content
                 const arrow = header.querySelector('.arrow');
+                
+                // Verifica se a seção já está aberta (pela presença da classe active)
                 const isOpen = section.classList.contains('active');
+                
                 if (isOpen) {
+                    // FECHAR
                     content.style.display = 'none';
                     arrow.style.transform = 'rotate(0deg)';
-                    section.classList.remove('active');
+                    section.classList.remove('active'); // Remove a classe de animação
                 } else {
+                    // ABRIR
                     content.style.display = 'block';
                     arrow.style.transform = 'rotate(180deg)';
-                    section.classList.add('active');
+                    section.classList.add('active'); // 🔥 ATIVA O SURGIMENTO DAS LETRAS
                 }
             });
         });
