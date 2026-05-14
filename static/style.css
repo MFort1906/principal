@@ -1135,3 +1135,64 @@ body.manual-body {
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ===========================
+   ANIMAÇÃO CARTOON LOADING
+=========================== */
+.loading-scene {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 8px 0 4px;
+}
+
+/* Máquina inteira se move levemente para cima e baixo (bounce) */
+.machine-group {
+    animation: machine-bounce 0.5s ease-in-out infinite alternate;
+    transform-origin: center bottom;
+}
+
+@keyframes machine-bounce {
+    from { transform: translateY(0px); }
+    to   { transform: translateY(-3px); }
+}
+
+/* Rodas giram */
+.wheel-spin-rear {
+    animation: wheel-rotate 0.6s linear infinite;
+}
+.wheel-spin-front {
+    animation: wheel-rotate 0.6s linear infinite;
+}
+
+@keyframes wheel-rotate {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+/* Escova frontal gira mais rápido */
+.brush-spin {
+    animation: wheel-rotate 0.35s linear infinite;
+}
+
+/* Marcas do chão deslizam (dão sensação de movimento) */
+.ground-marks {
+    animation: ground-slide 0.6s linear infinite;
+}
+
+@keyframes ground-slide {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50px); }
+}
+
+/* Poeira pulsando */
+.d1 { animation: dust-pop 0.8s ease-in-out 0.0s infinite alternate; }
+.d2 { animation: dust-pop 0.8s ease-in-out 0.15s infinite alternate; }
+.d3 { animation: dust-pop 0.8s ease-in-out 0.30s infinite alternate; }
+.d4 { animation: dust-pop 0.8s ease-in-out 0.45s infinite alternate; }
+
+@keyframes dust-pop {
+    from { transform: translate(0, 0) scale(1); opacity: 0.5; }
+    to   { transform: translate(-8px, -6px) scale(0.3); opacity: 0; }
+}
