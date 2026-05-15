@@ -1,67 +1,216 @@
-<!DOCTYPE html>
+python3 << 'EOF'
+with open('/tmp/logo_b64.txt') as f:
+    b64 = f.read().strip()
+
+src = f"data:image/png;base64,{b64}"
+
+# ── MANUAL.HTML: replace header inner with logo ──
+with open('/home/claude/principal-sem-bonequinho/templates/manual.html', 'r', encoding='utf-8') as f:
+    manual = f.read()
+
+old_inner = '''        <div class="manual-header-inner">
+            <div class="manual-eyebrow">
+                <i class="fa-solid fa-book-open"></i>
+                Documentação
+            </div>
+            <h1 class="manual-title">Manual de Uso</h1>
+            <p class="manual-desc">Guia completo da plataforma de scraping e tradução Tennant</p>
+        </div>'''
+
+new_inner = f'''        <div class="manual-header-inner">
+            <div class="manual-eyebrow">
+                <i class="fa-solid fa-book-open"></i>
+                Documentação
+            </div>
+            <div class="manual-logo-wrap">
+                <img src="{src}" alt="Tennant" class="manual-logo-img"/>
+            </div>
+            <h1 class="manual-title">Manual de Uso</h1>
+            <p class="manual-desc">Guia completo da plataforma de scraping e tradução Tennant</p>
+        </div>'''
+
+manual = manual.replace(old_inner, new_inner)
+
+with open('/home/claude/principal-sem-bonequinho/templates/manual.html', 'w', encoding='utf-8') as f:
+    f.write(manual)
+
+print("manual:", "OK" if "manual-logo-img" in manual else "FAIL")
+
+# ── LOGIN.HTML: full redesign ──
+login_new = f'''<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acesso — Tennant</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{{{ url_for('static', filename='style.css') }}}}">
+    <style>
+        *{{box-sizing:border-box;margin:0;padding:0}}
+        body{{
+            min-height:100vh;
+            background: radial-gradient(ellipse at 60% 20%, #0a2540 0%, #050d1a 60%, #000 100%);
+            display:flex;align-items:center;justify-content:center;
+            font-family:'DM Sans',sans-serif;
+            overflow:hidden;
+        }}
+        /* Partículas de fundo */
+        body::before{{
+            content:'';position:fixed;inset:0;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(0,180,255,.06) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0,120,255,.05) 0%, transparent 50%);
+            pointer-events:none;
+        }}
+        .login-wrap{{
+            width:100%;max-width:420px;padding:24px;
+            display:flex;flex-direction:column;align-items:center;gap:32px;
+        }}
+        /* LOGO */
+        .login-logo{{
+            display:flex;flex-direction:column;align-items:center;gap:10px;
+            animation: fadeDown .6s ease both;
+        }}
+        .login-logo img{{
+            height:70px;width:auto;
+            filter: drop-shadow(0 0 18px rgba(0,200,255,.55)) drop-shadow(0 0 40px rgba(0,120,255,.3));
+            transition: filter .3s;
+        }}
+        .login-logo img:hover{{
+            filter: drop-shadow(0 0 28px rgba(0,200,255,.8)) drop-shadow(0 0 60px rgba(0,120,255,.5));
+        }}
+        .login-logo-sub{{
+            font-family:'DM Sans',sans-serif;
+            font-size:11px;font-weight:500;letter-spacing:4px;
+            color:rgba(0,200,255,.5);text-transform:uppercase;
+        }}
+        /* CARD */
+        .login-card{{
+            width:100%;
+            background: rgba(255,255,255,.04);
+            border:1px solid rgba(0,200,255,.12);
+            border-radius:20px;
+            padding:36px 32px;
+            backdrop-filter:blur(20px);
+            box-shadow:
+                0 0 0 1px rgba(0,200,255,.06),
+                0 24px 60px rgba(0,0,0,.6),
+                inset 0 1px 0 rgba(255,255,255,.06);
+            animation: fadeUp .6s .15s ease both;
+        }}
+        .login-card-head{{text-align:center;margin-bottom:28px}}
+        .login-lock{{
+            width:52px;height:52px;border-radius:14px;
+            background:linear-gradient(135deg,rgba(0,200,255,.15),rgba(0,80,180,.1));
+            border:1px solid rgba(0,200,255,.2);
+            display:flex;align-items:center;justify-content:center;
+            margin:0 auto 16px;
+            font-size:22px;
+        }}
+        .login-card-title{{
+            font-family:'Syne',sans-serif;
+            font-size:20px;font-weight:700;
+            color:#fff;letter-spacing:-.3px;
+        }}
+        .login-card-sub{{
+            font-size:13px;color:rgba(255,255,255,.4);
+            margin-top:6px;
+        }}
+        /* FORM */
+        .login-field{{margin-bottom:16px}}
+        .login-label{{
+            display:block;font-size:12px;font-weight:500;
+            color:rgba(255,255,255,.45);letter-spacing:.5px;
+            text-transform:uppercase;margin-bottom:8px;
+        }}
+        .login-input{{
+            width:100%;padding:13px 16px;
+            background:rgba(255,255,255,.05);
+            border:1px solid rgba(0,200,255,.15);
+            border-radius:10px;
+            color:#fff;font-size:14px;font-family:'DM Sans',sans-serif;
+            outline:none;transition:border .2s,box-shadow .2s,background .2s;
+        }}
+        .login-input::placeholder{{color:rgba(255,255,255,.2)}}
+        .login-input:focus{{
+            border-color:rgba(0,200,255,.45);
+            background:rgba(0,200,255,.05);
+            box-shadow:0 0 0 3px rgba(0,200,255,.1);
+        }}
+        .login-error{{
+            background:rgba(255,60,60,.08);
+            border:1px solid rgba(255,60,60,.25);
+            border-radius:10px;padding:10px 14px;
+            color:#ff6b6b;font-size:13px;
+            margin-bottom:16px;
+        }}
+        .login-btn{{
+            width:100%;padding:14px;margin-top:8px;
+            background:linear-gradient(135deg,#00b4d8,#0077b6);
+            border:none;border-radius:10px;
+            color:#fff;font-size:14px;font-weight:600;
+            font-family:'DM Sans',sans-serif;
+            cursor:pointer;letter-spacing:.3px;
+            transition:transform .2s,box-shadow .2s,opacity .2s;
+            box-shadow:0 4px 24px rgba(0,180,255,.3);
+            position:relative;overflow:hidden;
+        }}
+        .login-btn::before{{
+            content:'';position:absolute;inset:0;
+            background:linear-gradient(135deg,rgba(255,255,255,.12),transparent);
+        }}
+        .login-btn:hover{{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,180,255,.5);}}
+        .login-btn:active{{transform:translateY(0);}}
+        .login-footer{{
+            font-size:11px;color:rgba(255,255,255,.2);
+            letter-spacing:.5px;text-align:center;
+        }}
+        @keyframes fadeDown{{from{{opacity:0;transform:translateY(-16px)}}to{{opacity:1;transform:none}}}}
+        @keyframes fadeUp{{from{{opacity:0;transform:translateY(16px)}}to{{opacity:1;transform:none}}}}
+        .shake{{animation:shake .4s ease}}
+        @keyframes shake{{0%,100%{{transform:translateX(0)}}20%,60%{{transform:translateX(-6px)}}40%,80%{{transform:translateX(6px)}}}}}
+    </style>
 </head>
-
 <body>
-    <div class="container fade-in-logo" style="max-width: 400px;">
+    <div class="login-wrap fade-in-logo">
 
-        <!-- LOGO -->
-        <div class="login-brand">
-            <div class="tennant-text">TENNANT</div>
-            <div class="company-text">C O M P A N Y</div>
+        <div class="login-logo">
+            <img src="{src}" alt="Tennant Logo"/>
+            <span class="login-logo-sub">Automation Platform</span>
         </div>
 
-        <!-- CARD DE LOGIN -->
-        <div class="card">
-
-            <!-- ÍCONE DE CADEADO -->
-            <div class="lock-icon">🔐</div>
-
-            <div style="text-align:center; margin-bottom: 4px;">
-                <div style="font-family:'Syne',sans-serif; font-size:18px; font-weight:700; color:#0f172a;">
-                    Acesso Restrito
-                </div>
-                <div style="font-size:13px; color:#94a3b8; margin-top:4px;">
-                    Digite a senha para entrar no painel
-                </div>
+        <div class="login-card">
+            <div class="login-card-head">
+                <div class="login-lock">🔐</div>
+                <div class="login-card-title">Acesso Restrito</div>
+                <div class="login-card-sub">Digite a senha para entrar no painel</div>
             </div>
 
-            {% if erro %}
-                <div class="error shake">
-                    ⚠️ {{ erro }}
-                </div>
-            {% endif %}
+            {{% if erro %}}
+                <div class="login-error shake">⚠️ {{{{ erro }}}}</div>
+            {{% endif %}}
 
             <form method="POST">
-                <div class="form-group">
-                    <label>Senha de acesso</label>
+                <div class="login-field">
+                    <label class="login-label">Senha de acesso</label>
                     <input
                         type="password"
                         name="password"
-                        placeholder="*******"
-                        class="{% if erro %}input-error{% endif %}"
-                        required
-                        autofocus
+                        placeholder="••••••••"
+                        class="login-input {{% if erro %}}shake{{% endif %}}"
+                        required autofocus
                     >
                 </div>
-
-                <button type="submit" style="width:100%; margin-top: 8px;">
-                    Entrar no painel
-                </button>
+                <button type="submit" class="login-btn">Entrar no painel</button>
             </form>
-
         </div>
 
-        <p class="login-tagline">
-            Sistema de Automação Tennant &copy; 2026
-        </p>
-
+        <p class="login-footer">Sistema de Automação Tennant &copy; 2026</p>
     </div>
 </body>
-</html>
+</html>'''
+
+with open('/home/claude/principal-sem-bonequinho/templates/login.html', 'w', encoding='utf-8') as f:
+    f.write(login_new)
+print("login: OK")
+EOF
