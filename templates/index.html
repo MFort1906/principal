@@ -4,271 +4,400 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>W.S.T.B — Tennant Scraper</title>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
-
 <body>
-
-    <!-- AMBIENT ORBS -->
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
+    <canvas id="bg-canvas"></canvas>
+    <div class="noise-overlay"></div>
 
     <div class="container">
 
         <!-- LOGO -->
-        <div class="logo-text-container fade-in-logo">
-            <div class="logo-mark">
-                <span class="logo-mark-line"></span>
-                <span class="logo-mark-dot"></span>
-                <span class="logo-mark-line"></span>
+        <header class="site-header fade-in-logo">
+            <div class="logo-lockup">
+                <div class="logo-icon">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                        <rect x="1" y="1" width="26" height="26" rx="6" stroke="rgba(0,200,255,0.4)" stroke-width="1"/>
+                        <path d="M6 14h4l3-6 3 12 3-8 2 4h1" stroke="#00c8ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="logo-name">TENNANT</div>
+                    <div class="logo-sub">Automation Platform</div>
+                </div>
             </div>
-            <div class="tennant-text">TENNANT</div>
-            <div class="company-text">C O M P A N Y</div>
-        </div>
+            <a href="{{ url_for('manual') }}" target="_blank" class="manual-pill">
+                <i class="fa-regular fa-book-open"></i>
+                Manual
+            </a>
+        </header>
 
-        <div class="fade-in-content">
+        <main class="fade-in-content">
 
-            <!-- STATUS -->
-            <div class="status-row">
-                <span class="status-badge">
-                    <span class="pulse-ring"></span>
-                    Sistema online
-                </span>
-                <a href="{{ url_for('manual') }}" target="_blank" class="manual-btn">
-                    <i class="fa-regular fa-book-open"></i>
-                    Manual
-                </a>
+            <!-- HERO -->
+            <div class="hero-section">
+                <div class="hero-badge">
+                    <span class="live-dot"></span>
+                    Sistema operacional
+                </div>
+                <h1 class="hero-title">Scraper de<br><span class="gradient-text">Artigos</span></h1>
+                <p class="hero-desc">Extração e tradução automática de conteúdo dos blogs oficiais Tennant em qualquer idioma.</p>
             </div>
-
-            <!-- HEADING -->
-            <div class="page-heading">
-                <h1>Scraper de Artigos</h1>
-                <p>Plataforma de scraping e tradução — blogs Tennant</p>
-            </div>
-
-            <p class="subtitle">
-                Configure os parâmetros abaixo e inicie o processamento dos artigos
-            </p>
 
             <!-- FORMULÁRIO -->
-            <div class="card">
-
+            <div class="glass-card">
                 <form id="scraper-form">
 
-                    <div class="form-group">
-                        <label for="pais">
+                    <div class="field-group">
+                        <label for="pais" class="field-label">
                             <i class="fa-solid fa-earth-americas"></i>
-                            País do blog
+                            País de origem
                         </label>
-                        <div class="input-wrapper">
+                        <div class="select-wrap">
                             <select id="pais" name="pais" required></select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
                         </div>
                     </div>
 
-                    <div class="form-divider"></div>
-
-                    <div class="form-group">
-                        <label for="quantidade">
-                            <i class="fa-regular fa-file-lines"></i>
-                            Quantidade de artigos
-                        </label>
-                        <div class="input-wrapper number-input-wrap">
-                            <input
-                                type="number"
-                                id="quantidade"
-                                name="quantidade"
-                                min="1"
-                                max="50"
-                                value="1"
-                                required
-                            >
-                            <span class="input-suffix">/ 50 máx</span>
+                    <div class="field-row">
+                        <div class="field-group" style="flex:1">
+                            <label for="quantidade" class="field-label">
+                                <i class="fa-regular fa-file-lines"></i>
+                                Quantidade
+                            </label>
+                            <div class="number-wrap">
+                                <input type="number" id="quantidade" name="quantidade" min="1" max="50" value="1" required>
+                                <div class="number-ctrl">
+                                    <button type="button" class="num-btn" onclick="nudge(1)"><i class="fa-solid fa-chevron-up"></i></button>
+                                    <button type="button" class="num-btn" onclick="nudge(-1)"><i class="fa-solid fa-chevron-down"></i></button>
+                                </div>
+                                <span class="num-max">/ 50</span>
+                            </div>
+                        </div>
+                        <div class="field-meta">
+                            <div class="meta-item"><i class="fa-solid fa-clock-rotate-left"></i> Fila ativa</div>
+                            <div class="meta-item"><i class="fa-solid fa-file-word"></i> Saída .docx</div>
                         </div>
                     </div>
 
-                    <div id="aviso-quantidade" class="error" style="display:none;">
+                    <div id="aviso-quantidade" class="alert-bar" style="display:none;">
                         <i class="fa-solid fa-triangle-exclamation"></i>
-                        Limite máximo: 50 artigos por vez
+                        Máximo de 50 artigos por execução
                     </div>
 
-                    <button type="submit" id="submit-btn">
-                        <i class="fa-solid fa-bolt"></i>
-                        Iniciar processamento
+                    <button type="submit" id="submit-btn" class="run-btn">
+                        <span class="run-btn-inner">
+                            <i class="fa-solid fa-bolt"></i>
+                            <span>Iniciar processamento</span>
+                        </span>
+                        <span class="run-btn-shine"></span>
                     </button>
 
                 </form>
             </div>
 
-            <!-- STATUS DE PROCESSAMENTO -->
-            <div id="status" class="status-box" style="display:none;">
-                <div class="loading-scene">
-                    <!-- SVG CARTOON: bonequinho dirigindo máquina S7 -->
-                    <svg id="loading-svg" viewBox="0 0 320 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:320px;display:block;margin:0 auto;">
+            <!-- LOADING -->
+            <div id="status" class="loading-card" style="display:none;">
+                <div class="machine-scene">
 
-                        <!-- CHÃO / TRILHA -->
-                        <rect x="0" y="110" width="320" height="4" rx="2" fill="#1e3a4a" opacity="0.5"/>
-                        <!-- Marcas do chão animadas -->
-                        <g class="ground-marks">
-                            <rect class="gmark" x="10"  y="113" width="28" height="2" rx="1" fill="#0099cc" opacity="0.25"/>
-                            <rect class="gmark" x="60"  y="113" width="28" height="2" rx="1" fill="#0099cc" opacity="0.25"/>
-                            <rect class="gmark" x="110" y="113" width="28" height="2" rx="1" fill="#0099cc" opacity="0.25"/>
-                            <rect class="gmark" x="160" y="113" width="28" height="2" rx="1" fill="#0099cc" opacity="0.25"/>
-                            <rect class="gmark" x="210" y="113" width="28" height="2" rx="1" fill="#0099cc" opacity="0.25"/>
-                            <rect class="gmark" x="260" y="113" width="28" height="2" rx="1" fill="#0099cc" opacity="0.25"/>
+                    <svg viewBox="0 0 360 160" xmlns="http://www.w3.org/2000/svg" class="machine-svg">
+                        <defs>
+                            <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#00d8ee"/>
+                                <stop offset="100%" stop-color="#008a9e"/>
+                            </linearGradient>
+                            <linearGradient id="capotGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#00e4f8"/>
+                                <stop offset="100%" stop-color="#009db0"/>
+                            </linearGradient>
+                            <radialGradient id="groundGlow" cx="50%" cy="100%" r="50%">
+                                <stop offset="0%" stop-color="#00c8ff" stop-opacity="0.25"/>
+                                <stop offset="100%" stop-color="#00c8ff" stop-opacity="0"/>
+                            </radialGradient>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="2.5" result="blur"/>
+                                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                            </filter>
+                            <filter id="shadow" x="-15%" y="-15%" width="130%" height="130%">
+                                <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000" flood-opacity="0.5"/>
+                            </filter>
+                            <clipPath id="wheelClip1"><circle cx="90" cy="130" r="16"/></clipPath>
+                            <clipPath id="wheelClip2"><circle cx="248" cy="130" r="20"/></clipPath>
+                        </defs>
+
+                        <!-- CHÃO -->
+                        <ellipse cx="170" cy="148" rx="130" ry="9" fill="url(#groundGlow)"/>
+                        <rect x="0" y="147" width="360" height="3" rx="1.5" fill="#0d1a26"/>
+                        <!-- Marcas do chão -->
+                        <g class="ground-strip">
+                            <rect x="-10" y="149" width="38" height="2" rx="1" fill="#00c8ff" opacity="0.15"/>
+                            <rect x="45"  y="149" width="38" height="2" rx="1" fill="#00c8ff" opacity="0.15"/>
+                            <rect x="100" y="149" width="38" height="2" rx="1" fill="#00c8ff" opacity="0.15"/>
+                            <rect x="155" y="149" width="38" height="2" rx="1" fill="#00c8ff" opacity="0.15"/>
+                            <rect x="210" y="149" width="38" height="2" rx="1" fill="#00c8ff" opacity="0.15"/>
+                            <rect x="265" y="149" width="38" height="2" rx="1" fill="#00c8ff" opacity="0.15"/>
+                            <rect x="320" y="149" width="38" height="2" rx="1" fill="#00c8ff" opacity="0.15"/>
                         </g>
 
-                        <!-- GRUPO DA MÁQUINA + BONECO (anda da esquerda para direita) -->
-                        <g class="machine-group">
+                        <!-- GRUPO PRINCIPAL (bounce) -->
+                        <g class="ride-group" filter="url(#shadow)">
 
-                            <!-- === MÁQUINA S7 CARTOON (vista de lado) === -->
+                            <!-- ── MÁQUINA ── -->
 
-                            <!-- Escova frontal (roda) -->
-                            <g class="brush-spin" transform-origin="58 110">
-                                <circle cx="58" cy="110" r="9" fill="#1a2a30" stroke="#0d1f26" stroke-width="1"/>
-                                <line x1="58" y1="101" x2="58" y2="119" stroke="#2a3f4a" stroke-width="2"/>
-                                <line x1="49" y1="110" x2="67" y2="110" stroke="#2a3f4a" stroke-width="2"/>
-                                <line x1="51.4" y1="102.4" x2="64.6" y2="117.6" stroke="#2a3f4a" stroke-width="2"/>
-                                <line x1="64.6" y1="102.4" x2="51.4" y2="117.6" stroke="#2a3f4a" stroke-width="2"/>
-                                <!-- Cerdas -->
-                                <ellipse cx="58" cy="110" rx="5" ry="5" fill="#17303a"/>
+                            <!-- Roda dianteira -->
+                            <g class="w-front" transform-origin="90 130">
+                                <circle cx="90" cy="130" r="16" fill="#0e1e2c" stroke="#1a3045" stroke-width="1.5"/>
+                                <circle cx="90" cy="130" r="9"  fill="#152535"/>
+                                <circle cx="90" cy="130" r="3.5" fill="#1e3550"/>
+                                <line x1="90" y1="114" x2="90" y2="146" stroke="#1e3550" stroke-width="2.5"/>
+                                <line x1="74" y1="130" x2="106" y2="130" stroke="#1e3550" stroke-width="2.5"/>
+                                <line x1="79" y1="119" x2="101" y2="141" stroke="#1e3550" stroke-width="2"/>
+                                <line x1="101" y1="119" x2="79" y2="141" stroke="#1e3550" stroke-width="2"/>
+                                <!-- hubcap brilho -->
+                                <circle cx="86" cy="127" r="2" fill="rgba(255,255,255,0.12)"/>
                             </g>
-
-                            <!-- Corpo inferior (cinza) -->
-                            <rect x="50" y="82" width="120" height="30" rx="6" fill="#4a5568"/>
-                            <rect x="52" y="84" width="116" height="5" rx="2" fill="#5a6780"/>
-
-                            <!-- Corpo principal (verde teal) -->
-                            <path d="M55,40 Q60,30 75,28 L145,28 Q162,28 168,42 L172,82 L50,82 Z" fill="#00a8b5"/>
-                            <!-- Reflexo/brilho -->
-                            <path d="M80,32 Q90,29 110,29 L140,29 Q155,29 160,36 L162,50 Q140,42 100,42 Q75,42 70,50 Z" fill="#00c8d8" opacity="0.35"/>
-
-                            <!-- Detalhe lateral (grades de ventilação) -->
-                            <g opacity="0.6">
-                                <rect x="56" y="48" width="2" height="20" rx="1" fill="#007a85"/>
-                                <rect x="60" y="48" width="2" height="20" rx="1" fill="#007a85"/>
-                                <rect x="64" y="48" width="2" height="20" rx="1" fill="#007a85"/>
-                                <rect x="68" y="48" width="2" height="20" rx="1" fill="#007a85"/>
-                                <rect x="72" y="48" width="2" height="20" rx="1" fill="#007a85"/>
-                            </g>
-
-                            <!-- Logo TENNANT oval na máquina -->
-                            <ellipse cx="135" cy="52" rx="18" ry="11" fill="#007a85" stroke="#00c8d8" stroke-width="1.5"/>
-                            <text x="135" y="56" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="6" font-weight="900" fill="white">TENNANT</text>
-
-                            <!-- "S7" label -->
-                            <text x="65" y="78" font-family="Arial Black, sans-serif" font-size="11" font-weight="900" fill="white" opacity="0.9">S7</text>
 
                             <!-- Roda traseira -->
-                            <g class="wheel-spin-rear" transform-origin="155 110">
-                                <circle cx="155" cy="110" r="12" fill="#1a2a30" stroke="#0d1f26" stroke-width="1.5"/>
-                                <circle cx="155" cy="110" r="6" fill="#2a3f4a"/>
-                                <circle cx="155" cy="110" r="2" fill="#4a6070"/>
-                                <!-- Raios -->
-                                <line x1="155" y1="98" x2="155" y2="122" stroke="#2a3f4a" stroke-width="1.5"/>
-                                <line x1="143" y1="110" x2="167" y2="110" stroke="#2a3f4a" stroke-width="1.5"/>
-                                <line x1="146.5" y1="101.5" x2="163.5" y2="118.5" stroke="#2a3f4a" stroke-width="1.5"/>
-                                <line x1="163.5" y1="101.5" x2="146.5" y2="118.5" stroke="#2a3f4a" stroke-width="1.5"/>
+                            <g class="w-rear" transform-origin="248 130">
+                                <circle cx="248" cy="130" r="20" fill="#0e1e2c" stroke="#1a3045" stroke-width="1.5"/>
+                                <circle cx="248" cy="130" r="11" fill="#152535"/>
+                                <circle cx="248" cy="130" r="4"  fill="#1e3550"/>
+                                <line x1="248" y1="110" x2="248" y2="150" stroke="#1e3550" stroke-width="3"/>
+                                <line x1="228" y1="130" x2="268" y2="130" stroke="#1e3550" stroke-width="3"/>
+                                <line x1="234" y1="116" x2="262" y2="144" stroke="#1e3550" stroke-width="2.5"/>
+                                <line x1="262" y1="116" x2="234" y2="144" stroke="#1e3550" stroke-width="2.5"/>
+                                <circle cx="243" cy="126" r="2.5" fill="rgba(255,255,255,0.1)"/>
                             </g>
 
-                            <!-- Roda dianteira menor -->
-                            <g class="wheel-spin-front" transform-origin="75 110">
-                                <circle cx="75" cy="110" r="9" fill="#1a2a30" stroke="#0d1f26" stroke-width="1"/>
-                                <circle cx="75" cy="110" r="4" fill="#2a3f4a"/>
-                                <line x1="75" y1="101" x2="75" y2="119" stroke="#2a3f4a" stroke-width="1.5"/>
-                                <line x1="66" y1="110" x2="84" y2="110" stroke="#2a3f4a" stroke-width="1.5"/>
+                            <!-- Saia / base -->
+                            <rect x="78" y="112" width="180" height="22" rx="6" fill="#253545"/>
+                            <rect x="80" y="114" width="176" height="6" rx="2" fill="#2e4558" opacity="0.8"/>
+
+                            <!-- Capô principal (teal) -->
+                            <path d="M88,55 Q93,40 112,38 L225,38 Q248,38 254,58 L268,112 L76,112 Z" fill="url(#bodyGrad)"/>
+
+                            <!-- Reflexo brilhoso no capô -->
+                            <path d="M120,43 Q148,40 190,40 L218,40 Q238,41 244,52 L248,70 Q218,58 170,58 Q128,58 116,70 Z" fill="white" opacity="0.14"/>
+
+                            <!-- Faixa lateral decorativa -->
+                            <path d="M88,88 L268,88" stroke="rgba(0,232,255,0.3)" stroke-width="1.5" stroke-dasharray="6,4"/>
+
+                            <!-- Grade ventilação -->
+                            <g opacity="0.5">
+                                <rect x="92"  y="64" width="3" height="30" rx="1.5" fill="#006a78"/>
+                                <rect x="99"  y="64" width="3" height="30" rx="1.5" fill="#006a78"/>
+                                <rect x="106" y="64" width="3" height="30" rx="1.5" fill="#006a78"/>
+                                <rect x="113" y="64" width="3" height="30" rx="1.5" fill="#006a78"/>
+                                <rect x="120" y="64" width="3" height="30" rx="1.5" fill="#006a78"/>
                             </g>
 
-                            <!-- Guidão / manopla -->
-                            <line x1="160" y1="40" x2="175" y2="20" stroke="#2d4050" stroke-width="4" stroke-linecap="round"/>
-                            <rect x="172" y="15" width="10" height="7" rx="3" fill="#1a2a30"/>
+                            <!-- Painel cockpit -->
+                            <rect x="178" y="50" width="58" height="34" rx="5" fill="#071520" opacity="0.85" stroke="rgba(0,200,255,0.25)" stroke-width="1"/>
+                            <!-- Tela do painel -->
+                            <rect x="182" y="54" width="24" height="14" rx="2" fill="#001828" stroke="#004466" stroke-width="0.8"/>
+                            <rect x="184" y="56" width="20" height="2" rx="1" fill="#00c8ff" opacity="0.5"/>
+                            <rect x="184" y="60" width="14" height="2" rx="1" fill="#00c8ff" opacity="0.3"/>
+                            <rect x="184" y="64" width="17" height="2" rx="1" fill="#00c8ff" opacity="0.2"/>
+                            <!-- LEDs -->
+                            <circle cx="214" cy="58" r="3.5" fill="#00e8a2" filter="url(#glow)"/>
+                            <circle cx="222" cy="55" r="2.5" fill="#ff3d60" opacity="0.9"/>
+                            <circle cx="222" cy="63" r="2.5" fill="#f5c518" opacity="0.9"/>
+                            <circle cx="228" cy="59" r="2"   fill="#00c8ff" opacity="0.7"/>
 
-                            <!-- === BONEQUINHO CARTOON (sentado/dirigindo) === -->
-                            <!-- Posicionado atrás da máquina segurando o guidão -->
+                            <!-- Logo TENNANT -->
+                            <ellipse cx="158" cy="78" rx="28" ry="15" fill="#006070" stroke="#00d4e8" stroke-width="1.5"/>
+                            <text x="158" y="82" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="7.5" font-weight="900" fill="white" letter-spacing="0.8">TENNANT</text>
 
-                            <!-- Corpo bonequinho (casaco azul escuro) -->
-                            <rect x="162" y="52" width="22" height="28" rx="8" fill="#1a3a5c"/>
-                            <!-- Detalhe camisa/colarinho -->
-                            <rect x="168" y="52" width="10" height="5" rx="2" fill="#2a5080"/>
+                            <!-- S7 label -->
+                            <text x="95" y="108" font-family="Arial Black,sans-serif" font-size="15" font-weight="900" fill="white" opacity="0.9">S7</text>
 
-                            <!-- Braços segurando guidão -->
-                            <path d="M162,62 Q158,55 170,48" stroke="#1a3a5c" stroke-width="5" stroke-linecap="round" fill="none"/>
-                            <circle cx="170" cy="47" r="3" fill="#f4c07a"/><!-- mão -->
+                            <!-- Escova frontal -->
+                            <g class="brush" transform-origin="90 131">
+                                <circle cx="90" cy="131" r="7" fill="#0a2030" stroke="#00aacc" stroke-width="1.2"/>
+                                <line x1="90" y1="124" x2="90" y2="138" stroke="#007faa" stroke-width="2"/>
+                                <line x1="83" y1="131" x2="97" y2="131" stroke="#007faa" stroke-width="2"/>
+                                <line x1="85" y1="126" x2="95" y2="136" stroke="#007faa" stroke-width="1.5"/>
+                                <line x1="95" y1="126" x2="85" y2="136" stroke="#007faa" stroke-width="1.5"/>
+                            </g>
 
-                            <path d="M184,62 Q186,52 175,48" stroke="#1a3a5c" stroke-width="5" stroke-linecap="round" fill="none"/>
-                            <circle cx="175" cy="47" r="3" fill="#f4c07a"/><!-- mão -->
+                            <!-- Bolhas de limpeza -->
+                            <g class="bubbles">
+                                <circle class="b1" cx="68" cy="130" r="4"   fill="#00c8ff" opacity="0.7"/>
+                                <circle class="b2" cx="58" cy="122" r="2.5" fill="#00e8ff" opacity="0.55"/>
+                                <circle class="b3" cx="62" cy="116" r="2"   fill="#00aacc" opacity="0.45"/>
+                                <circle class="b4" cx="50" cy="128" r="3"   fill="#00c8ff" opacity="0.4"/>
+                                <circle class="b5" cx="54" cy="112" r="1.5" fill="#00e8ff" opacity="0.35"/>
+                            </g>
 
-                            <!-- Perna -->
-                            <rect x="165" y="78" width="8" height="12" rx="4" fill="#0f2a40"/>
-                            <rect x="175" y="78" width="8" height="12" rx="4" fill="#0f2a40"/>
+                            <!-- ── BONEQUINHO (operador sentado) ── -->
+
+                            <!-- Plataforma do operador (fundida com a máquina) -->
+                            <rect x="230" y="96" width="36" height="10" rx="4" fill="#1a3a55" stroke="#0d2840" stroke-width="1"/>
+
+                            <!-- PERNAS DOBRADAS (sentado sobre a máquina) -->
+                            <!-- Coxa esq -->
+                            <path d="M235,106 Q232,118 236,122" stroke="#0f2848" stroke-width="9" stroke-linecap="round" fill="none"/>
+                            <!-- Coxa dir -->
+                            <path d="M250,106 Q253,118 249,122" stroke="#0f2848" stroke-width="9" stroke-linecap="round" fill="none"/>
+                            <!-- Canela esq -->
+                            <path d="M236,120 Q233,128 238,132" stroke="#0c2040" stroke-width="7" stroke-linecap="round" fill="none"/>
+                            <!-- Canela dir -->
+                            <path d="M249,120 Q252,128 247,132" stroke="#0c2040" stroke-width="7" stroke-linecap="round" fill="none"/>
                             <!-- Sapatos -->
-                            <ellipse cx="169" cy="90" rx="6" ry="3" fill="#1a1a2e"/>
-                            <ellipse cx="179" cy="90" rx="6" ry="3" fill="#1a1a2e"/>
+                            <ellipse cx="238" cy="133" rx="9" ry="4.5" fill="#080e18"/>
+                            <ellipse cx="247" cy="133" rx="9" ry="4.5" fill="#080e18"/>
 
-                            <!-- Cabeça (rosto cartoon) -->
-                            <circle cx="173" cy="44" r="13" fill="#f4c07a"/>
-                            <!-- Cabelo -->
-                            <path d="M162,38 Q165,28 173,27 Q181,28 184,38 Q179,33 173,33 Q167,33 162,38 Z" fill="#2d1a00"/>
-                            <!-- Capacete de operador (hard hat amarelo) -->
-                            <path d="M161,36 Q163,24 173,23 Q183,24 185,36 L185,39 L161,39 Z" fill="#f5c518"/>
-                            <rect x="159" y="37" width="28" height="4" rx="2" fill="#e6b800"/>
-                            <!-- Aba do capacete -->
-                            <rect x="157" y="39" width="32" height="3" rx="1.5" fill="#d4a800"/>
+                            <!-- TORSO (uniforme azul Tennant) -->
+                            <rect x="231" y="72" width="26" height="34" rx="10" fill="#1a3e6a"/>
+                            <!-- Faixa refletiva -->
+                            <rect x="231" y="84" width="26" height="5" rx="2" fill="#f5c518" opacity="0.55"/>
+                            <!-- Detalhe peito -->
+                            <ellipse cx="244" cy="76" rx="8" ry="5" fill="#0e2845"/>
+                            <text x="244" y="78.5" text-anchor="middle" font-family="Arial,sans-serif" font-size="4" font-weight="900" fill="#00c8ff" letter-spacing="0.3">TEN</text>
+
+                            <!-- BRAÇO ESQ — segurando guidão -->
+                            <path d="M231,82 Q220,76 215,66" stroke="#1a3e6a" stroke-width="8" stroke-linecap="round" fill="none"/>
+                            <!-- mão esq -->
+                            <circle cx="214" cy="64" r="5.5" fill="#f4c07a"/>
+
+                            <!-- BRAÇO DIR — segurando guidão -->
+                            <path d="M257,82 Q268,76 271,66" stroke="#1a3e6a" stroke-width="8" stroke-linecap="round" fill="none"/>
+                            <!-- mão dir -->
+                            <circle cx="272" cy="64" r="5.5" fill="#f4c07a"/>
+
+                            <!-- GUIDÃO -->
+                            <path d="M214,64 Q243,50 272,64" stroke="#0d1e2e" stroke-width="6" stroke-linecap="round" fill="none"/>
+                            <rect x="209" y="60" width="10" height="10" rx="4" fill="#0a1828"/>
+                            <rect x="267" y="60" width="10" height="10" rx="4" fill="#0a1828"/>
+
+                            <!-- PESCOÇO -->
+                            <rect x="240" y="63" width="8" height="10" rx="4" fill="#f4c07a"/>
+
+                            <!-- CABEÇA -->
+                            <circle cx="244" cy="56" r="18" fill="#f4c07a"/>
+
+                            <!-- CABELO -->
+                            <path d="M228,50 Q230,35 244,33 Q258,35 260,50 Q254,42 244,42 Q234,42 228,50 Z" fill="#1a0c00"/>
+
+                            <!-- CAPACETE hard hat amarelo -->
+                            <path d="M226,46 Q228,30 244,28 Q260,30 262,46 L262,52 L226,52 Z" fill="#f5c518"/>
+                            <!-- stripes decorativas no capacete -->
+                            <rect x="233" y="35" width="22" height="3" rx="1.5" fill="#e6b800" opacity="0.5"/>
+                            <!-- aba -->
+                            <rect x="222" y="50" width="44" height="6" rx="3" fill="#e6b800"/>
+                            <!-- aba frontal menor -->
+                            <rect x="220" y="54" width="48" height="3" rx="1.5" fill="#d4a800"/>
+
+                            <!-- ROSTO -->
+                            <!-- Sobrancelhas -->
+                            <path d="M234,50 Q237,47.5 240,50" stroke="#7a4800" stroke-width="2" fill="none" stroke-linecap="round"/>
+                            <path d="M248,50 Q251,47.5 254,50" stroke="#7a4800" stroke-width="2" fill="none" stroke-linecap="round"/>
 
                             <!-- Olhos -->
-                            <circle cx="168" cy="43" r="2.5" fill="white"/>
-                            <circle cx="178" cy="43" r="2.5" fill="white"/>
-                            <circle cx="169" cy="43.5" r="1.5" fill="#1a1a2e"/>
-                            <circle cx="179" cy="43.5" r="1.5" fill="#1a1a2e"/>
-                            <!-- Brilho nos olhos -->
-                            <circle cx="169.8" cy="43" r="0.6" fill="white"/>
-                            <circle cx="179.8" cy="43" r="0.6" fill="white"/>
+                            <circle cx="237" cy="55" r="4"   fill="white"/>
+                            <circle cx="251" cy="55" r="4"   fill="white"/>
+                            <circle cx="238.5" cy="55.5" r="2.5" fill="#1a0800"/>
+                            <circle cx="252.5" cy="55.5" r="2.5" fill="#1a0800"/>
+                            <!-- pupilas brilho -->
+                            <circle cx="239.5" cy="54.5" r="1" fill="white"/>
+                            <circle cx="253.5" cy="54.5" r="1" fill="white"/>
 
-                            <!-- Sorriso -->
-                            <path d="M168,49 Q173,53 178,49" stroke="#c0784a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                            <!-- Bochechas -->
+                            <circle cx="231" cy="59" r="5" fill="#e07060" opacity="0.3"/>
+                            <circle cx="257" cy="59" r="5" fill="#e07060" opacity="0.3"/>
 
-                            <!-- Bochechas coradas -->
-                            <circle cx="165" cy="47" r="3" fill="#f08070" opacity="0.4"/>
-                            <circle cx="181" cy="47" r="3" fill="#f08070" opacity="0.4"/>
+                            <!-- Nariz -->
+                            <ellipse cx="244" cy="59" rx="2" ry="1.5" fill="#c4884a" opacity="0.65"/>
 
-                            <!-- Poeira / partículas saindo da escova -->
-                            <g class="dust">
-                                <circle class="d1" cx="45" cy="108" r="2.5" fill="#0099cc" opacity="0.5"/>
-                                <circle class="d2" cx="38" cy="104" r="1.5" fill="#00c8d8" opacity="0.4"/>
-                                <circle class="d3" cx="42" cy="100" r="1"   fill="#0099cc" opacity="0.3"/>
-                                <circle class="d4" cx="32" cy="108" r="2"   fill="#00c8d8" opacity="0.35"/>
-                            </g>
+                            <!-- Sorriso contente -->
+                            <path d="M237,64 Q244,70 251,64" stroke="#c07840" stroke-width="2.2" fill="none" stroke-linecap="round"/>
 
-                        </g><!-- fim machine-group -->
+                            <!-- Orelhas -->
+                            <ellipse cx="226" cy="56" rx="4" ry="5.5" fill="#f4c07a"/>
+                            <ellipse cx="262" cy="56" rx="4" ry="5.5" fill="#f4c07a"/>
 
+                        </g><!-- fim ride-group -->
                     </svg>
 
-                    <!-- Texto de status -->
-                    <div class="loading-text" style="margin-top:8px; justify-content:center;">
+                    <div class="machine-label">
+                        <div class="machine-label-dot"></div>
                         <span id="status-text">Processando artigos</span>
-                        <span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>
+                        <span class="dots"><span>.</span><span>.</span><span>.</span></span>
                     </div>
                 </div>
             </div>
 
             <!-- RESULTADO -->
-            <div id="resultado" class="result-card" style="display:none;">
-                <div class="success">
-                    <div class="success-icon">
+            <div id="resultado" class="result-panel" style="display:none;">
+
+                <div class="result-header">
+                    <div class="result-icon">
                         <i class="fa-solid fa-check"></i>
                     </div>
-                    <div>
-                        <div class="success-title">Processamento concluído</div>
-                        <div class="success-sub">Seus arquivos estão prontos para download</div>
+                    <div class="result-text">
+                        <div class="result-title">Processamento concluído</div>
+                        <div class="result-sub">Seus arquivos estão prontos</div>
                     </div>
+                    <div class="result-count" id="result-count">— arquivos</div>
                 </div>
-                <div id="downloads" class="downloads"></div>
+
+                <div id="downloads" class="file-list"></div>
+
             </div>
 
-        </div>
+        </main>
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        // Nudge quantity
+        function nudge(dir) {
+            const inp = document.getElementById('quantidade');
+            const v = parseInt(inp.value) + dir;
+            if (v >= 1 && v <= 50) inp.value = v;
+        }
+
+        // Subtle particle canvas
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let W, H, particles = [];
+
+        function resize() {
+            W = canvas.width  = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+        }
+
+        function initParticles() {
+            particles = Array.from({length: 55}, () => ({
+                x: Math.random() * W,
+                y: Math.random() * H,
+                r: Math.random() * 1.4 + 0.3,
+                vx: (Math.random() - 0.5) * 0.22,
+                vy: (Math.random() - 0.5) * 0.22,
+                o: Math.random() * 0.35 + 0.05
+            }));
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            for (const p of particles) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0,200,255,${p.o})`;
+                ctx.fill();
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0) p.x = W;
+                if (p.x > W) p.x = 0;
+                if (p.y < 0) p.y = H;
+                if (p.y > H) p.y = 0;
+            }
+            requestAnimationFrame(draw);
+        }
+
+        resize(); initParticles(); draw();
+        window.addEventListener('resize', () => { resize(); initParticles(); });
+    </script>
 </body>
 </html>

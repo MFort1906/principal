@@ -1,84 +1,206 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manual do Scraper</title>
-
+    <title>Manual — Tennant Scraper</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
+<body class="manual-body">
+    <div class="noise-overlay"></div>
 
-<body style="display: block; padding-top: 0;">
-
+    <!-- HEADER -->
     <div class="manual-header">
-        <i class="fa-solid fa-book"></i> Manual de Uso — Scraper de Artigos
+        <a href="{{ url_for('index') }}" class="back-link">
+            <i class="fa-solid fa-arrow-left"></i>
+            Voltar
+        </a>
+        <div class="manual-header-inner">
+            <div class="manual-eyebrow">
+                <i class="fa-solid fa-book-open"></i>
+                Documentação
+            </div>
+            <h1 class="manual-title">Manual de Uso</h1>
+            <p class="manual-desc">Guia completo da plataforma de scraping e tradução Tennant</p>
+        </div>
+        <div class="manual-header-stats">
+            <div class="stat-pill"><i class="fa-solid fa-layer-group"></i> 4 seções</div>
+            <div class="stat-pill"><i class="fa-solid fa-clock"></i> 2 min leitura</div>
+        </div>
     </div>
 
     <div class="manual-container">
 
-        <div class="section">
-            <h2><span>Dicas principais</span> <i class="fa-solid fa-chevron-down arrow"></i></h2>
-            <div class="section-content">
-                <p>1.  Não atualize a página no meio do processo.</p>
-                <p>2.  O tempo para cada site e quantidade pode variar conforme a internet.</p>
-                <p>3.  Existe uma fila de execução para múltiplos usuários.</p>
-                <p>4.  Os artigos <strong>não são salvos</strong> se você reiniciar a página.</p>
+        <!-- SEÇÃO 1 -->
+        <div class="accordion-item">
+            <button type="button" class="accordion-toggle" aria-expanded="false">
+                <div class="accordion-toggle-left">
+                    <span class="acc-num">01</span>
+                    <span class="acc-title">Dicas essenciais</span>
+                </div>
+                <div class="accordion-toggle-right">
+                    <span class="acc-tag">Importante</span>
+                    <i class="fa-solid fa-chevron-down acc-arrow"></i>
+                </div>
+            </button>
+            <div class="accordion-body">
+                <div class="acc-row">
+                    <div class="acc-icon-wrap red"><i class="fa-solid fa-ban"></i></div>
+                    <div>
+                        <div class="acc-row-title">Não atualize a página</div>
+                        <div class="acc-row-desc">Durante o processamento, atualizar a página interrompe a execução e perde todos os dados gerados.</div>
+                    </div>
+                </div>
+                <div class="acc-row">
+                    <div class="acc-icon-wrap yellow"><i class="fa-regular fa-clock"></i></div>
+                    <div>
+                        <div class="acc-row-title">Tempo variável</div>
+                        <div class="acc-row-desc">O tempo de resposta varia conforme o país e a qualidade da conexão. Seja paciente.</div>
+                    </div>
+                </div>
+                <div class="acc-row">
+                    <div class="acc-icon-wrap blue"><i class="fa-solid fa-users"></i></div>
+                    <div>
+                        <div class="acc-row-title">Fila de execução</div>
+                        <div class="acc-row-desc">Múltiplos usuários compartilham uma fila. Em horários de pico, aguarde sua vez.</div>
+                    </div>
+                </div>
+                <div class="acc-row">
+                    <div class="acc-icon-wrap orange"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <div>
+                        <div class="acc-row-title">Faça o download imediatamente</div>
+                        <div class="acc-row-desc">Os arquivos <strong>não são salvos permanentemente</strong>. Baixe assim que o processamento concluir.</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="section">
-            <h2><span>Seleção de país</span> <i class="fa-solid fa-chevron-down arrow"></i></h2>
-            <div class="section-content">
-                <p>Escolha o país desejado para que o scraper busque no blog correto da Tennant.</p>
-                <button class="manual-btn" style="margin-top:10px; border:none; cursor:pointer;" onclick="alert('Selecione o país antes de iniciar!')">💡 Dica</button>
+        <!-- SEÇÃO 2 -->
+        <div class="accordion-item">
+            <button type="button" class="accordion-toggle" aria-expanded="false">
+                <div class="accordion-toggle-left">
+                    <span class="acc-num">02</span>
+                    <span class="acc-title">Seleção de país</span>
+                </div>
+                <div class="accordion-toggle-right">
+                    <span class="acc-tag accent">Configuração</span>
+                    <i class="fa-solid fa-chevron-down acc-arrow"></i>
+                </div>
+            </button>
+            <div class="accordion-body">
+                <div class="acc-row">
+                    <div class="acc-icon-wrap accent"><i class="fa-solid fa-earth-americas"></i></div>
+                    <div>
+                        <div class="acc-row-title">Blog por domínio</div>
+                        <div class="acc-row-desc">Cada país corresponde a um blog oficial da Tennant. Escolha o correto para buscar no domínio certo.</div>
+                    </div>
+                </div>
+                <div class="acc-row">
+                    <div class="acc-icon-wrap accent"><i class="fa-solid fa-language"></i></div>
+                    <div>
+                        <div class="acc-row-title">Tradução automática</div>
+                        <div class="acc-row-desc">O conteúdo do blog do país escolhido é traduzido automaticamente para o português.</div>
+                    </div>
+                </div>
+                <div class="acc-tip">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <span>Confira o país antes de iniciar. Trocar exige rodar o processo novamente do zero.</span>
+                </div>
             </div>
         </div>
 
-        <div class="section">
-            <h2><span>Quantidade de artigos</span> <i class="fa-solid fa-chevron-down arrow"></i></h2>
-            <div class="section-content">
-                <p>O limite seguro é de <strong>50 artigos por vez</strong> para evitar bloqueios.</p>
+        <!-- SEÇÃO 3 -->
+        <div class="accordion-item">
+            <button type="button" class="accordion-toggle" aria-expanded="false">
+                <div class="accordion-toggle-left">
+                    <span class="acc-num">03</span>
+                    <span class="acc-title">Quantidade de artigos</span>
+                </div>
+                <div class="accordion-toggle-right">
+                    <span class="acc-tag accent">Configuração</span>
+                    <i class="fa-solid fa-chevron-down acc-arrow"></i>
+                </div>
+            </button>
+            <div class="accordion-body">
+                <div class="acc-row">
+                    <div class="acc-icon-wrap accent"><i class="fa-solid fa-file-lines"></i></div>
+                    <div>
+                        <div class="acc-row-title">Limite por execução</div>
+                        <div class="acc-row-desc">O sistema aceita de <strong>1 a 50 artigos por execução</strong>. Valores acima podem causar bloqueios temporários.</div>
+                    </div>
+                </div>
+                <div class="acc-row">
+                    <div class="acc-icon-wrap blue"><i class="fa-solid fa-gauge-high"></i></div>
+                    <div>
+                        <div class="acc-row-title">Processamento em lotes</div>
+                        <div class="acc-row-desc">Para grandes volumes, prefira lotes de 10–20 artigos para maior confiabilidade e velocidade.</div>
+                    </div>
+                </div>
+                <div class="acc-tip">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <span>Lotes menores são mais rápidos e menos propensos a falhas por timeout de rede.</span>
+                </div>
             </div>
         </div>
 
-        <div class="section">
-            <h2><span>Formato de Saída</span> <i class="fa-solid fa-chevron-down arrow"></i></h2>
-            <div class="section-content">
-                <p>Todos os artigos são exportados em formato <strong>.docx (Microsoft Word)</strong> com a formatação original preservada.</p>
+        <!-- SEÇÃO 4 -->
+        <div class="accordion-item">
+            <button type="button" class="accordion-toggle" aria-expanded="false">
+                <div class="accordion-toggle-left">
+                    <span class="acc-num">04</span>
+                    <span class="acc-title">Formato de saída</span>
+                </div>
+                <div class="accordion-toggle-right">
+                    <span class="acc-tag green">Saída</span>
+                    <i class="fa-solid fa-chevron-down acc-arrow"></i>
+                </div>
+            </button>
+            <div class="accordion-body">
+                <div class="acc-row">
+                    <div class="acc-icon-wrap accent"><i class="fa-solid fa-file-word"></i></div>
+                    <div>
+                        <div class="acc-row-title">Arquivo .docx</div>
+                        <div class="acc-row-desc">Todos os artigos são exportados em <strong>.docx (Microsoft Word)</strong> com a formatação original preservada.</div>
+                    </div>
+                </div>
+                <div class="acc-row">
+                    <div class="acc-icon-wrap green"><i class="fa-solid fa-download"></i></div>
+                    <div>
+                        <div class="acc-row-title">Download individual</div>
+                        <div class="acc-row-desc">Cada artigo gera um arquivo separado, disponível para download imediatamente após o processamento.</div>
+                    </div>
+                </div>
             </div>
         </div>
 
     </div>
 
     <script>
-        // Lógica para abrir/fechar as seções e ativar animação
-        const headers = document.querySelectorAll('.section h2');
-        
-        headers.forEach(header => {
-            header.addEventListener('click', () => {
-                const section = header.parentElement; // A div .section
-                const content = header.nextElementSibling; // A div .section-content
-                const arrow = header.querySelector('.arrow');
-                
-                // Verifica se a seção já está aberta (pela presença da classe active)
-                const isOpen = section.classList.contains('active');
-                
-                if (isOpen) {
-                    // FECHAR
-                    content.style.display = 'none';
-                    arrow.style.transform = 'rotate(0deg)';
-                    section.classList.remove('active'); // Remove a classe de animação
-                } else {
-                    // ABRIR
-                    content.style.display = 'block';
+        document.querySelectorAll('.accordion-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const item  = btn.closest('.accordion-item');
+                const body  = item.querySelector('.accordion-body');
+                const arrow = btn.querySelector('.acc-arrow');
+                const open  = item.classList.contains('open');
+
+                // Fechar todos
+                document.querySelectorAll('.accordion-item.open').forEach(el => {
+                    el.classList.remove('open');
+                    el.querySelector('.accordion-body').style.maxHeight = '0';
+                    el.querySelector('.acc-arrow').style.transform = 'rotate(0deg)';
+                    el.querySelector('.accordion-toggle').setAttribute('aria-expanded','false');
+                });
+
+                if (!open) {
+                    item.classList.add('open');
+                    body.style.maxHeight = body.scrollHeight + 'px';
                     arrow.style.transform = 'rotate(180deg)';
-                    section.classList.add('active'); // 🔥 ATIVA O SURGIMENTO DAS LETRAS
+                    btn.setAttribute('aria-expanded','true');
                 }
             });
         });
     </script>
-
 </body>
 </html>
