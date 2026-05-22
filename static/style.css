@@ -214,15 +214,20 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
 /* S960 — animações */
 .ride-group{animation:ride .52s ease-in-out infinite alternate;transform-origin:190px 148px}
 @keyframes ride{from{transform:translateY(0)}to{transform:translateY(-5px)}}
-.gnd-shadow{animation:gshadow .52s ease-in-out infinite alternate;transform-origin:190px 150px}
+.gnd-shadow{animation:gshadow .52s ease-in-out infinite alternate;transform-origin:190px 157px}
 @keyframes gshadow{from{transform:scaleX(1);opacity:.5}to{transform:scaleX(.82);opacity:.22}}
-.w-left {animation:wspin .46s linear infinite}
-.w-right{animation:wspin .46s linear infinite}
-.b-left {animation:wspin .28s linear infinite reverse;transform-origin:116px 142px}
-.b-right{animation:wspin .28s linear infinite;transform-origin:265px 142px}
-.ground-strip{animation:gslide .46s linear infinite}
+.w-left {animation:wspin .52s linear infinite}
+.w-right{animation:wspin .52s linear infinite}
+.b-left {animation:wspin .38s linear infinite reverse;transform-origin:158px 140px}
+.b-right{animation:wspin .38s linear infinite;transform-origin:222px 140px}
+.ground-strip{animation:gslide .52s linear infinite}
 @keyframes wspin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-@keyframes gslide{from{transform:translateX(0)}to{transform:translateX(-56px)}}
+@keyframes gslide{from{transform:translateX(0)}to{transform:translateX(-54px)}}
+/* scan ring do lidar */
+.scan-ring{animation:scanRotate 3s linear infinite}
+@keyframes scanRotate{from{transform:rotate(0deg);transform-box:fill-box;transform-origin:center}to{transform:rotate(360deg);transform-box:fill-box;transform-origin:center}}
+.eye-pulse{animation:eyePulse 2s ease-in-out infinite}
+@keyframes eyePulse{0%,100%{opacity:0;r:18}50%{opacity:0.5;r:22}}
 .dp1{animation:dust .9s ease-out 0.00s infinite}
 .dp2{animation:dust .9s ease-out 0.18s infinite}
 .dp3{animation:dust .9s ease-out 0.36s infinite}
