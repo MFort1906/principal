@@ -1,368 +1,372 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>W.S.T.B — Tennant Scraper</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-</head>
-<body>
-<canvas id="bg-canvas"></canvas>
-<div class="noise-overlay"></div>
+python3 << 'PYEOF'
+with open('/home/claude/projeto5/principal-main/templates/index.html', 'r', encoding='utf-8') as f:
+    content = f.read()
 
-<div class="container">
+# New X4 ROVR cartoon SVG - front 3/4 view like image 2
+x4_svg = '''<svg viewBox="0 0 360 240" xmlns="http://www.w3.org/2000/svg" class="machine-svg" style="overflow:visible">
+  <defs>
+    <linearGradient id="bodyG" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#1de8c8"/>
+      <stop offset="45%" stop-color="#00c4aa"/>
+      <stop offset="100%" stop-color="#00867a"/>
+    </linearGradient>
+    <linearGradient id="bodyGside" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00b89e"/>
+      <stop offset="100%" stop-color="#006558"/>
+    </linearGradient>
+    <linearGradient id="grayTop" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#d0d8e0"/>
+      <stop offset="100%" stop-color="#8a9aaa"/>
+    </linearGradient>
+    <linearGradient id="grayPanel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7a8898"/>
+      <stop offset="100%" stop-color="#3a4858"/>
+    </linearGradient>
+    <linearGradient id="screenG" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a2030"/>
+      <stop offset="100%" stop-color="#061420"/>
+    </linearGradient>
+    <linearGradient id="groundGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#00c8ff" stop-opacity="0"/>
+      <stop offset="50%"  stop-color="#00c8ff" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#00c8ff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="sensorG" cx="40%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#1a2a3a"/>
+      <stop offset="100%" stop-color="#050d14"/>
+    </radialGradient>
+    <radialGradient id="lidarG" cx="40%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#223344"/>
+      <stop offset="100%" stop-color="#0a1820"/>
+    </radialGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softglow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
 
-    <!-- LOGO / HEADER -->
-    <header class="site-header fade-in-logo">
-        <a href="#" class="logo-lockup">
-            <div class="logo-svg-wrap">
-                <!-- Logo Tennant vetorial — oval azul com borda dupla -->
-                <svg width="98" height="44" viewBox="0 0 98 44" xmlns="http://www.w3.org/2000/svg">
-                    <ellipse cx="49" cy="22" rx="47" ry="20" fill="none" stroke="#0099cc" stroke-width="2.2"/>
-                    <ellipse cx="49" cy="22" rx="41" ry="15.5" fill="white"/>
-                    <ellipse cx="49" cy="22" rx="41" ry="15.5" fill="none" stroke="#0099cc" stroke-width="1.8"/>
-                    <text x="49" y="26.5" text-anchor="middle"
-                          font-family="Arial Black, Impact, sans-serif"
-                          font-size="13.5" font-weight="900" fill="#0099cc" letter-spacing="1.5">TENNANT</text>
-                    <text x="89.5" y="11" font-family="Arial,sans-serif" font-size="6" fill="#0099cc">®</text>
-                </svg>
-            </div>
-        </a>
-        <a href="{{ url_for('manual') }}" target="_blank" class="manual-pill">
-            <i class="fa-regular fa-book-open"></i>
-            Manual
-        </a>
-    </header>
+  <!-- Ground glow -->
+  <ellipse cx="180" cy="222" rx="150" ry="9" fill="url(#groundGlow)"/>
+  <!-- Ground line -->
+  <rect x="20" y="220" width="320" height="1.5" rx="1" fill="#0d1a26" opacity="0.6"/>
 
-    <main class="fade-in-content">
+  <!-- Ground strips animated -->
+  <g class="ground-strip">
+    <rect x="-5"  y="223" width="38" height="2" rx="1" fill="#00c8ff" opacity="0.15"/>
+    <rect x="44"  y="223" width="38" height="2" rx="1" fill="#00c8ff" opacity="0.15"/>
+    <rect x="93"  y="223" width="38" height="2" rx="1" fill="#00c8ff" opacity="0.15"/>
+    <rect x="142" y="223" width="38" height="2" rx="1" fill="#00c8ff" opacity="0.15"/>
+    <rect x="191" y="223" width="38" height="2" rx="1" fill="#00c8ff" opacity="0.15"/>
+    <rect x="240" y="223" width="38" height="2" rx="1" fill="#00c8ff" opacity="0.15"/>
+    <rect x="289" y="223" width="38" height="2" rx="1" fill="#00c8ff" opacity="0.15"/>
+  </g>
 
-        <!-- HERO -->
-        <div class="hero-section">
-            <div class="hero-badge">
-                <span class="live-dot"></span>
-                Sistema operacional
-            </div>
-            <h1 class="hero-title">Scraper de<br><span class="gradient-text">Artigos</span></h1>
-            <p class="hero-desc">Extração e tradução automática de conteúdo dos blogs oficiais Tennant em qualquer idioma.</p>
-        </div>
+  <!-- ── MAIN GROUP ── -->
+  <g class="ride-group" filter="url(#shadow)">
 
-        <!-- CARD FORMULÁRIO -->
-        <div class="glass-card">
-            <form id="scraper-form">
+    <!-- ══════════════════════════════════════
+         TOPO / GUIA CINZA (handle bar topo)
+    ══════════════════════════════════════ -->
+    <!-- Plataforma topo cinza -->
+    <path d="M118,22 Q118,14 128,12 L232,12 Q244,12 244,22 L244,38 Q244,46 232,48 L128,48 Q116,46 116,38 Z"
+          fill="url(#grayTop)" stroke="#a0b0c0" stroke-width="1"/>
+    <!-- Reflexo topo -->
+    <path d="M126,14 L234,14 L234,22 Q208,18 180,18 Q152,18 126,22 Z" fill="white" opacity="0.35"/>
+    <!-- Detalhe lateral topo -->
+    <rect x="148" y="26" width="64" height="8" rx="3" fill="#b0c0cc" opacity="0.6"/>
+    <!-- Luz azul no topo (beacon) -->
+    <ellipse cx="180" cy="10" rx="12" ry="5" fill="#00aaff" opacity="0.3" filter="url(#softglow)"/>
+    <rect x="172" y="7" width="16" height="6" rx="3" fill="#0088ee"/>
+    <rect x="174" y="8" width="12" height="4" rx="2" fill="#44ccff" filter="url(#glow)"/>
 
-                <div class="field-group">
-                    <label for="pais" class="field-label">
-                        <i class="fa-solid fa-earth-americas"></i>
-                        País de origem
-                    </label>
-                    <div class="select-wrap">
-                        <select id="pais" name="pais" required></select>
-                    </div>
-                </div>
+    <!-- ══════════════════════════════════════
+         CORPO PRINCIPAL TEAL (frente + lado)
+    ══════════════════════════════════════ -->
+    <!-- Lado direito (perspectiva 3/4) -->
+    <path d="M244,36 L268,50 L268,178 L244,188 Z" fill="url(#bodyGside)"/>
+    <!-- Destaque lado direito -->
+    <path d="M244,36 L268,50 L268,80 L244,70 Z" fill="white" opacity="0.07"/>
+    <!-- Frente principal (corpo grande arredondado) -->
+    <path d="M116,36 Q116,28 124,26 L236,26 Q244,26 244,36 L244,188 Q244,196 236,198 L124,198 Q116,196 116,188 Z"
+          fill="url(#bodyG)"/>
+    <!-- Reflexo frontal superior -->
+    <path d="M124,28 L236,28 L236,60 Q208,52 180,52 Q152,52 124,60 Z" fill="white" opacity="0.14"/>
+    <!-- Reflexo frontal lateral esquerdo -->
+    <path d="M118,40 L130,40 L130,160 L118,155 Z" fill="white" opacity="0.06"/>
 
-                <div class="field-row">
-                    <div class="field-group" style="flex:1">
-                        <label for="quantidade" class="field-label">
-                            <i class="fa-regular fa-file-lines"></i>
-                            Quantidade
-                        </label>
-                        <div class="number-wrap">
-                            <input type="number" id="quantidade" name="quantidade" min="1" max="50" value="1" required>
-                            <div class="number-ctrl">
-                                <button type="button" class="num-btn" onclick="nudge(1)"><i class="fa-solid fa-chevron-up"></i></button>
-                                <button type="button" class="num-btn" onclick="nudge(-1)"><i class="fa-solid fa-chevron-down"></i></button>
-                            </div>
-                            <span class="num-max">/ 50</span>
-                        </div>
-                    </div>
-                    <div class="field-meta">
-                        <div class="meta-item"><i class="fa-solid fa-clock-rotate-left"></i> Fila ativa</div>
-                        <div class="meta-item"><i class="fa-solid fa-file-word"></i> Saída .docx</div>
-                    </div>
-                </div>
+    <!-- Separação visual corpo (faixa horizontal central) -->
+    <path d="M118,118 Q180,115 242,118" stroke="rgba(0,0,0,0.18)" stroke-width="2" fill="none"/>
+    <path d="M118,120 Q180,117 242,120" stroke="rgba(255,255,255,0.08)" stroke-width="1" fill="none"/>
 
-                <div id="aviso-quantidade" class="alert-bar" style="display:none;">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    Máximo de 50 artigos por execução
-                </div>
+    <!-- ══════════════════════════════════════
+         SENSOR FRONTAL CIRCULAR (câmera/lidar)
+         — elemento mais icônico da X4 ROVR —
+    ══════════════════════════════════════ -->
+    <!-- Moldura sensor -->
+    <rect x="142" y="52" width="76" height="90" rx="14" fill="#0a1420" stroke="#1a2a38" stroke-width="2"/>
+    <!-- Fundo sensor -->
+    <rect x="145" y="55" width="70" height="84" rx="12" fill="url(#sensorG)"/>
+    <!-- Anel externo lidar -->
+    <circle cx="180" cy="90" r="30" fill="url(#lidarG)" stroke="#1e3040" stroke-width="2"/>
+    <!-- Anel médio -->
+    <circle cx="180" cy="90" r="22" fill="#0a1820" stroke="#1a2e40" stroke-width="1.5"/>
+    <!-- Anel interno (lens) -->
+    <circle cx="180" cy="90" r="14" fill="#040c14"/>
+    <circle cx="180" cy="90" r="11" fill="#0a1820" stroke="#003040" stroke-width="1"/>
+    <!-- Espelho/câmera central -->
+    <circle cx="180" cy="90" r="7" fill="#000810"/>
+    <circle cx="180" cy="90" r="5" fill="#001428" stroke="#004468" stroke-width="0.8"/>
+    <!-- Reflexo câmera -->
+    <circle cx="177" cy="87" r="2" fill="white" opacity="0.25"/>
+    <!-- Marcadores radiais lidar -->
+    <g stroke="#1e4060" stroke-width="1.2" opacity="0.8">
+      <line x1="180" y1="60" x2="180" y2="68"/>
+      <line x1="180" y1="112" x2="180" y2="120"/>
+      <line x1="150" y1="90" x2="158" y2="90"/>
+      <line x1="202" y1="90" x2="210" y2="90"/>
+      <line x1="159" y1="69" x2="165" y2="75"/>
+      <line x1="201" y1="69" x2="195" y2="75"/>
+      <line x1="159" y1="111" x2="165" y2="105"/>
+      <line x1="201" y1="111" x2="195" y2="105"/>
+    </g>
+    <!-- Ponto laser/scan girando -->
+    <circle class="lidar-scan" cx="180" cy="65" r="3" fill="#00ffcc" opacity="0.9" filter="url(#glow)"/>
+    <!-- Texto brain -->
+    <text x="180" y="136" text-anchor="middle" font-family="Arial,sans-serif" font-size="6.5"
+          font-weight="700" fill="#ff6820" letter-spacing="0.3">&#9679;brain&#x1D40;</text>
 
-                <button type="submit" id="submit-btn" class="run-btn">
-                    <span class="run-btn-inner">
-                        <i class="fa-solid fa-bolt"></i>
-                        <span>Iniciar processamento</span>
-                    </span>
-                    <span class="run-btn-shine"></span>
-                </button>
+    <!-- ══════════════════════════════════════
+         LOGO TENNANT
+    ══════════════════════════════════════ -->
+    <ellipse cx="180" cy="152" rx="34" ry="15" fill="#004a58" stroke="#00c8d8" stroke-width="1.5"/>
+    <ellipse cx="180" cy="152" rx="31" ry="12" fill="#005868" stroke="none"/>
+    <text x="180" y="156" text-anchor="middle" font-family="Arial Black,sans-serif"
+          font-size="8" font-weight="900" fill="white" letter-spacing="0.8">TENNANT</text>
 
-            </form>
-        </div>
+    <!-- ══════════════════════════════════════
+         LABEL X4 ROVR
+    ══════════════════════════════════════ -->
+    <text x="250" y="72" font-family="Arial Black,sans-serif" font-size="12"
+          font-weight="900" fill="white" opacity="0.88">X4</text>
+    <text x="250" y="85" font-family="Arial,sans-serif" font-size="8"
+          font-weight="600" fill="rgba(255,255,255,0.55)" letter-spacing="1.5">ROVR</text>
 
-        <!-- LOADING — S960 Cartoon -->
-        <div id="status" class="loading-card" style="display:none;">
-            <div class="machine-scene">
+    <!-- ══════════════════════════════════════
+         BOTÃO EMERGÊNCIA VERMELHO (traseiro/lateral)
+         Visível na imagem 2 no topo do corpo
+    ══════════════════════════════════════ -->
+    <circle cx="135" cy="38" r="7" fill="#cc0010" stroke="#880008" stroke-width="1.5"/>
+    <circle cx="135" cy="38" r="5" fill="#ff1020"/>
+    <circle cx="133" cy="36" r="2" fill="white" opacity="0.3"/>
 
-                <svg viewBox="0 0 380 160" xmlns="http://www.w3.org/2000/svg" class="machine-svg">
-                    <defs>
-                        <!-- gradientes da S960 -->
-                        <linearGradient id="tealBody" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stop-color="#00d4e8"/>
-                            <stop offset="100%" stop-color="#007e92"/>
-                        </linearGradient>
-                        <linearGradient id="tealDark" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stop-color="#009fb5"/>
-                            <stop offset="100%" stop-color="#005f70"/>
-                        </linearGradient>
-                        <linearGradient id="grayFrame" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stop-color="#7a8fa0"/>
-                            <stop offset="100%" stop-color="#4a5a68"/>
-                        </linearGradient>
-                        <linearGradient id="brushGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stop-color="#c8a050"/>
-                            <stop offset="100%" stop-color="#8a6020"/>
-                        </linearGradient>
-                        <radialGradient id="gndGlow" cx="50%" cy="100%" r="50%">
-                            <stop offset="0%" stop-color="#00c8ff" stop-opacity="0.20"/>
-                            <stop offset="100%" stop-color="#00c8ff" stop-opacity="0"/>
-                        </radialGradient>
-                        <filter id="mShadow" x="-12%" y="-12%" width="124%" height="135%">
-                            <feDropShadow dx="0" dy="7" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/>
-                        </filter>
-                    </defs>
+    <!-- ══════════════════════════════════════
+         PAINEL TRASEIRO / TELA TOUCHSCREEN
+         (visível parcialmente no lado direito)
+    ══════════════════════════════════════ -->
+    <!-- Moldura painel -->
+    <rect x="245" y="72" width="28" height="52" rx="4" fill="#1a2838" stroke="#2a3848" stroke-width="1"/>
+    <!-- Tela -->
+    <rect x="248" y="76" width="22" height="36" rx="3" fill="url(#screenG)" stroke="#003040" stroke-width="0.8"/>
+    <!-- Mapa na tela -->
+    <rect x="249" y="77" width="20" height="24" rx="2" fill="#061828"/>
+    <!-- Path do mapa simulado -->
+    <path d="M252,90 Q258,84 263,87 Q267,90 263,95" stroke="#00c8ff" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <circle cx="264" cy="95" r="2.5" fill="#ff8800"/>
+    <!-- Botões abaixo da tela -->
+    <rect x="249" y="103" width="7" height="5" rx="1.5" fill="#22aa44"/>
+    <rect x="258" y="103" width="7" height="5" rx="1.5" fill="#2266cc"/>
+    <!-- LED indicador -->
+    <circle cx="257" cy="112" r="2" fill="#00e8a0" filter="url(#glow)"/>
 
-                    <!-- SOMBRA / CHÃO -->
-                    <ellipse class="gnd-shadow" cx="190" cy="151" rx="110" ry="7" fill="url(#gndGlow)"/>
-                    <rect x="0" y="148" width="380" height="3" rx="1.5" fill="#0c1820"/>
-                    <!-- trilha -->
-                    <g class="ground-strip">
-                        <rect x="-8"  y="150" width="36" height="2" rx="1" fill="#00c8ff" opacity="0.13"/>
-                        <rect x="46"  y="150" width="36" height="2" rx="1" fill="#00c8ff" opacity="0.13"/>
-                        <rect x="100" y="150" width="36" height="2" rx="1" fill="#00c8ff" opacity="0.13"/>
-                        <rect x="154" y="150" width="36" height="2" rx="1" fill="#00c8ff" opacity="0.13"/>
-                        <rect x="208" y="150" width="36" height="2" rx="1" fill="#00c8ff" opacity="0.13"/>
-                        <rect x="262" y="150" width="36" height="2" rx="1" fill="#00c8ff" opacity="0.13"/>
-                        <rect x="316" y="150" width="36" height="2" rx="1" fill="#00c8ff" opacity="0.13"/>
-                    </g>
+    <!-- Parafusos/pinos de montagem do painel lateral -->
+    <circle cx="248" cy="80" r="1.5" fill="#3a4858"/>
+    <circle cx="248" cy="118" r="1.5" fill="#3a4858"/>
+    <circle cx="270" cy="80" r="1.5" fill="#3a4858"/>
+    <circle cx="270" cy="118" r="1.5" fill="#3a4858"/>
 
-                    <!-- GRUPO BOUNCE -->
-                    <g class="ride-group" filter="url(#mShadow)">
+    <!-- ══════════════════════════════════════
+         CHASSI / BASE PRETA
+    ══════════════════════════════════════ -->
+    <!-- Bloco base frontal -->
+    <path d="M108,196 Q108,190 116,188 L244,188 L268,176 L268,196 Q268,204 258,206 L118,206 Q108,204 108,196 Z"
+          fill="#101820" stroke="#0a1018" stroke-width="1"/>
+    <!-- Frente do chassi (inferior) -->
+    <rect x="108" y="196" width="136" height="12" rx="4" fill="#1a2430" stroke="#0d1820" stroke-width="1"/>
+    <!-- Detalhes do chassi -->
+    <rect x="112" y="199" width="128" height="4" rx="1.5" fill="#2a3440" opacity="0.8"/>
 
-                        <!-- ═══ RODAS TRASEIRAS (grandes) ═══ -->
-                        <g class="w-left" transform-origin="128 130">
-                            <circle cx="128" cy="130" r="19" fill="#1a1a1a" stroke="#2a2a2a" stroke-width="1.5"/>
-                            <circle cx="128" cy="130" r="11" fill="#2a2a2a"/>
-                            <circle cx="128" cy="130" r="4"  fill="#3a3a3a"/>
-                            <line x1="128" y1="111" x2="128" y2="149" stroke="#3a3a3a" stroke-width="3"/>
-                            <line x1="109" y1="130" x2="147" y2="130" stroke="#3a3a3a" stroke-width="3"/>
-                            <line x1="115" y1="117" x2="141" y2="143" stroke="#3a3a3a" stroke-width="2.5"/>
-                            <line x1="141" y1="117" x2="115" y2="143" stroke="#3a3a3a" stroke-width="2.5"/>
-                            <circle cx="123" cy="126" r="3" fill="rgba(255,255,255,0.1)"/>
-                        </g>
-                        <g class="w-right" transform-origin="255 130">
-                            <circle cx="255" cy="130" r="19" fill="#1a1a1a" stroke="#2a2a2a" stroke-width="1.5"/>
-                            <circle cx="255" cy="130" r="11" fill="#2a2a2a"/>
-                            <circle cx="255" cy="130" r="4"  fill="#3a3a3a"/>
-                            <line x1="255" y1="111" x2="255" y2="149" stroke="#3a3a3a" stroke-width="3"/>
-                            <line x1="236" y1="130" x2="274" y2="130" stroke="#3a3a3a" stroke-width="3"/>
-                            <line x1="242" y1="117" x2="268" y2="143" stroke="#3a3a3a" stroke-width="2.5"/>
-                            <line x1="268" y1="117" x2="242" y2="143" stroke="#3a3a3a" stroke-width="2.5"/>
-                            <circle cx="250" cy="126" r="3" fill="rgba(255,255,255,0.1)"/>
-                        </g>
+    <!-- ══════════════════════════════════════
+         RODAS (2 rodas visíveis)
+    ══════════════════════════════════════ -->
+    <!-- Roda esquerda -->
+    <g class="w-rear" transform-origin="130 212">
+      <ellipse cx="130" cy="212" rx="20" ry="18" fill="#0c1520" stroke="#1a2530" stroke-width="1.5"/>
+      <ellipse cx="130" cy="212" rx="12" ry="11" fill="#141e2a"/>
+      <ellipse cx="130" cy="212" rx="5"  ry="4.5" fill="#1e2e3e"/>
+      <!-- raios -->
+      <line x1="130" y1="194" x2="130" y2="230" stroke="#1e2e3e" stroke-width="2.5"/>
+      <line x1="110" y1="212" x2="150" y2="212" stroke="#1e2e3e" stroke-width="2.5"/>
+      <line x1="116" y1="198" x2="144" y2="226" stroke="#1e2e3e" stroke-width="2"/>
+      <line x1="144" y1="198" x2="116" y2="226" stroke="#1e2e3e" stroke-width="2"/>
+      <circle cx="130" cy="212" r="19" fill="none" stroke="#080e18" stroke-width="1.5"/>
+    </g>
+    <!-- Roda direita (perspectiva) -->
+    <g class="w-front" transform-origin="240 214">
+      <ellipse cx="240" cy="214" rx="20" ry="17" fill="#0c1520" stroke="#1a2530" stroke-width="1.5"/>
+      <ellipse cx="240" cy="214" rx="12" ry="10" fill="#141e2a"/>
+      <ellipse cx="240" cy="214" rx="5"  ry="4.5" fill="#1e2e3e"/>
+      <line x1="240" y1="197" x2="240" y2="231" stroke="#1e2e3e" stroke-width="2.5"/>
+      <line x1="220" y1="214" x2="260" y2="214" stroke="#1e2e3e" stroke-width="2.5"/>
+      <line x1="226" y1="200" x2="254" y2="228" stroke="#1e2e3e" stroke-width="2"/>
+      <line x1="254" y1="200" x2="226" y2="228" stroke="#1e2e3e" stroke-width="2"/>
+      <circle cx="240" cy="214" r="19" fill="none" stroke="#080e18" stroke-width="1.5"/>
+    </g>
 
-                        <!-- ═══ CORPO INFERIOR / PLATAFORMA ═══ -->
-                        <rect x="96" y="108" width="192" height="26" rx="6" fill="#253545"/>
-                        <rect x="98" y="110" width="188" height="7" rx="2" fill="#2e4558" opacity="0.9"/>
-                        <!-- detalhe linha frontal -->
-                        <rect x="96" y="130" width="192" height="4" rx="2" fill="#1e2e3e"/>
+    <!-- ══════════════════════════════════════
+         ESCOVA FRONTAL (longa, borda inferior)
+    ══════════════════════════════════════ -->
+    <!-- Carcaça da escova -->
+    <path d="M95,202 Q95,196 103,194 L257,194 Q265,196 265,202 L265,208 Q265,212 257,212 L103,212 Q95,210 95,208 Z"
+          fill="#0e1820" stroke="#0a1018" stroke-width="1"/>
+    <!-- Escova frontal (cerdas) -->
+    <g class="brush" transform-origin="180 218">
+      <!-- Tira das cerdas -->
+      <rect x="98" y="210" width="164" height="5" rx="1" fill="#1a1a18"/>
+      <!-- Cerdas individuais (linhas verticais) -->
+      <g stroke="#2a2820" stroke-width="1.8" stroke-linecap="round">
+        <line x1="102" y1="214" x2="100" y2="222"/>
+        <line x1="107" y1="214" x2="105" y2="223"/>
+        <line x1="112" y1="214" x2="110" y2="222"/>
+        <line x1="117" y1="214" x2="115" y2="223"/>
+        <line x1="122" y1="214" x2="120" y2="222"/>
+        <line x1="127" y1="214" x2="125" y2="223"/>
+        <line x1="132" y1="214" x2="130" y2="222"/>
+        <line x1="137" y1="214" x2="135" y2="223"/>
+        <line x1="142" y1="214" x2="140" y2="222"/>
+        <line x1="147" y1="214" x2="145" y2="223"/>
+        <line x1="152" y1="214" x2="150" y2="222"/>
+        <line x1="157" y1="214" x2="155" y2="223"/>
+        <line x1="162" y1="214" x2="160" y2="222"/>
+        <line x1="167" y1="214" x2="165" y2="223"/>
+        <line x1="172" y1="214" x2="170" y2="222"/>
+        <line x1="177" y1="214" x2="175" y2="223"/>
+        <line x1="182" y1="214" x2="180" y2="222"/>
+        <line x1="187" y1="214" x2="185" y2="223"/>
+        <line x1="192" y1="214" x2="190" y2="222"/>
+        <line x1="197" y1="214" x2="195" y2="223"/>
+        <line x1="202" y1="214" x2="200" y2="222"/>
+        <line x1="207" y1="214" x2="205" y2="223"/>
+        <line x1="212" y1="214" x2="210" y2="222"/>
+        <line x1="217" y1="214" x2="215" y2="223"/>
+        <line x1="222" y1="214" x2="220" y2="222"/>
+        <line x1="227" y1="214" x2="225" y2="223"/>
+        <line x1="232" y1="214" x2="230" y2="222"/>
+        <line x1="237" y1="214" x2="235" y2="223"/>
+        <line x1="242" y1="214" x2="240" y2="222"/>
+        <line x1="247" y1="214" x2="245" y2="223"/>
+        <line x1="252" y1="214" x2="250" y2="222"/>
+        <line x1="257" y1="214" x2="255" y2="223"/>
+      </g>
+    </g>
 
-                        <!-- ═══ CORPO PRINCIPAL TEAL ═══ -->
-                        <!-- Bloco traseiro (cabine) -->
-                        <rect x="105" y="55" width="175" height="58" rx="8" fill="url(#tealBody)"/>
-                        <!-- Reflexo no topo -->
-                        <path d="M110,58 Q190,52 275,58 L275,66 Q190,62 110,66 Z" fill="white" opacity="0.12"/>
-                        <!-- Divisor do painel -->
-                        <rect x="105" y="90" width="175" height="3" rx="1" fill="#005f6e" opacity="0.6"/>
+    <!-- ══════════════════════════════════════
+         ESCOVA LATERAL ESQUERDA
+    ══════════════════════════════════════ -->
+    <g class="brush2" transform-origin="80 210">
+      <!-- Braço -->
+      <path d="M108,202 Q94,202 80,210" stroke="#1a2830" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <!-- Disco -->
+      <circle cx="78" cy="212" r="18" fill="#0e1818" stroke="#181e18" stroke-width="1.2"/>
+      <circle cx="78" cy="212" r="13" fill="#141a14"/>
+      <g stroke="#282820" stroke-width="2.2" stroke-linecap="round">
+        <line x1="78" y1="194" x2="78" y2="212"/>
+        <line x1="66" y1="198" x2="78" y2="212"/>
+        <line x1="60" y1="208" x2="78" y2="212"/>
+        <line x1="61" y1="220" x2="78" y2="212"/>
+        <line x1="68" y1="228" x2="78" y2="212"/>
+        <line x1="78" y1="230" x2="78" y2="212"/>
+        <line x1="88" y1="228" x2="78" y2="212"/>
+        <line x1="96" y1="220" x2="78" y2="212"/>
+        <line x1="96" y1="212" x2="78" y2="212"/>
+        <line x1="94" y1="202" x2="78" y2="212"/>
+        <line x1="88" y1="196" x2="78" y2="212"/>
+      </g>
+      <circle cx="78" cy="212" r="5" fill="#0a1010"/>
+      <circle cx="78" cy="212" r="2.5" fill="#003840"/>
+    </g>
 
-                        <!-- ═══ ESTRUTURA DA CABINE (aço cinza) ═══ -->
-                        <!-- Pilar traseiro esquerdo -->
-                        <rect x="112" y="22" width="9" height="58" rx="3" fill="url(#grayFrame)"/>
-                        <!-- Pilar traseiro direito -->
-                        <rect x="264" y="22" width="9" height="58" rx="3" fill="url(#grayFrame)"/>
-                        <!-- Pilar frontal esquerdo -->
-                        <rect x="138" y="32" width="8" height="50" rx="3" fill="url(#grayFrame)"/>
-                        <!-- Pilar frontal direito -->
-                        <rect x="239" y="32" width="8" height="50" rx="3" fill="url(#grayFrame)"/>
-                        <!-- Teto da cabine -->
-                        <rect x="110" y="20" width="165" height="10" rx="4" fill="url(#grayFrame)"/>
-                        <!-- Travessa frontal superior -->
-                        <rect x="136" y="30" width="113" height="8" rx="3" fill="url(#grayFrame)"/>
-                        <!-- Travessa lateral esq -->
-                        <line x1="113" y1="26" x2="140" y2="34" stroke="#6a7f90" stroke-width="6" stroke-linecap="round"/>
-                        <!-- Travessa lateral dir -->
-                        <line x1="272" y1="26" x2="245" y2="34" stroke="#6a7f90" stroke-width="6" stroke-linecap="round"/>
+    <!-- ══════════════════════════════════════
+         DETALHES EXTRAS
+    ══════════════════════════════════════ -->
+    <!-- Sensor lateral (pequeno, lado esquerdo) -->
+    <rect x="110" y="100" width="8" height="28" rx="3" fill="#0a1820" stroke="#1a2a38" stroke-width="1"/>
+    <rect x="112" y="105" width="4" height="6" rx="1" fill="#003848"/>
+    <rect x="112" y="114" width="4" height="6" rx="1" fill="#003848"/>
 
-                        <!-- ═══ VIDRO / CABINE TRANSPARENTE ═══ -->
-                        <rect x="140" y="34" width="105" height="48" rx="4" fill="#c8f0ff" opacity="0.12" stroke="#a0d0e8" stroke-width="0.8"/>
-                        <!-- brilho no vidro -->
-                        <path d="M142,36 L175,36 L170,50 L142,50 Z" fill="white" opacity="0.06"/>
+    <!-- Indicador de carga (amarelo) lado direito -->
+    <rect x="246" y="135" width="6" height="20" rx="2" fill="#0a1820" stroke="#1a2830" stroke-width="0.8"/>
+    <rect x="247" y="149" width="4" height="4" rx="1" fill="#f5c518" filter="url(#glow)"/>
+    <rect x="247" y="143" width="4" height="4" rx="1" fill="#22aa44" opacity="0.8"/>
 
-                        <!-- ═══ VOLANTE ═══ -->
-                        <!-- Coluna -->
-                        <rect x="188" y="65" width="7" height="22" rx="2" fill="#2a3a4a"/>
-                        <!-- Aro externo -->
-                        <circle cx="191" cy="58" r="14" fill="none" stroke="#2a3a4a" stroke-width="4"/>
-                        <!-- Raios -->
-                        <line x1="191" y1="44" x2="191" y2="72" stroke="#2a3a4a" stroke-width="2.5"/>
-                        <line x1="177" y1="58" x2="205" y2="58" stroke="#2a3a4a" stroke-width="2.5"/>
-                        <!-- Centro -->
-                        <circle cx="191" cy="58" r="4" fill="#1a2a3a"/>
-                        <!-- Detalhe acabamento -->
-                        <circle cx="191" cy="58" r="13" fill="none" stroke="#3a5060" stroke-width="1.5" opacity="0.6"/>
+    <!-- ══════════════════════════════════════
+         BOLHAS DE LIMPEZA (saindo da escova)
+    ══════════════════════════════════════ -->
+    <g class="bubbles">
+      <circle class="b1" cx="92"  cy="208" r="4"   fill="#00c8ff" opacity="0.7"/>
+      <circle class="b2" cx="82"  cy="198" r="2.8" fill="#00e8ff" opacity="0.55"/>
+      <circle class="b3" cx="86"  cy="188" r="2.2" fill="#00aacc" opacity="0.45"/>
+      <circle class="b4" cx="72"  cy="204" r="3.2" fill="#00c8ff" opacity="0.4"/>
+      <circle class="b5" cx="76"  cy="180" r="1.8" fill="#00e8ff" opacity="0.35"/>
+    </g>
 
-                        <!-- ═══ ASSENTO ═══ -->
-                        <rect x="160" y="70" width="32" height="14" rx="5" fill="#1a2a3a"/>
-                        <rect x="158" y="68" width="36" height="5" rx="2.5" fill="#253545"/>
-                        <!-- encosto -->
-                        <rect x="164" y="54" width="24" height="18" rx="4" fill="#1a2a3a"/>
-                        <rect x="166" y="55" width="20" height="3" rx="1.5" fill="#253545" opacity="0.7"/>
+  </g><!-- fim ride-group -->
 
-                        <!-- ═══ PAINEL / DASHBOARD ═══ -->
-                        <rect x="213" y="62" width="38" height="26" rx="4" fill="#071520" opacity="0.9" stroke="rgba(0,200,255,0.2)" stroke-width="1"/>
-                        <!-- tela display -->
-                        <rect x="216" y="65" width="20" height="12" rx="2" fill="#001525" stroke="#003850" stroke-width="0.7"/>
-                        <rect x="218" y="67" width="16" height="1.8" rx="0.9" fill="#00c8ff" opacity="0.6"/>
-                        <rect x="218" y="71" width="12" height="1.8" rx="0.9" fill="#00c8ff" opacity="0.35"/>
-                        <!-- LEDs -->
-                        <circle cx="240" cy="69" r="3.5" fill="#00e8a2"/>
-                        <circle cx="246" cy="66" r="2.5" fill="#ff3355" opacity="0.9"/>
-                        <circle cx="246" cy="73" r="2.5" fill="#f5c518" opacity="0.9"/>
+  <!-- Scan laser animado (ponto girando no lidar) -->
+  <animateTransform href=".lidar-scan" attributeName="transform" type="rotate"
+    from="0 180 90" to="360 180 90" dur="2s" repeatCount="indefinite"/>
+</svg>'''
 
-                        <!-- ═══ LOGO S960 NO CORPO ═══ -->
-                        <rect x="130" y="68" width="24" height="24" rx="3" fill="rgba(0,0,0,0.15)"/>
-                        <text x="142" y="85" text-anchor="middle"
-                              font-family="Arial Black,sans-serif" font-size="11" font-weight="900"
-                              fill="white" opacity="0.9">S960</text>
-                        <!-- Logo Tennant pequena no painel -->
-                        <ellipse cx="173" cy="100" rx="22" ry="10" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.2"/>
-                        <ellipse cx="173" cy="100" rx="19" ry="8" fill="white" opacity="0.9"/>
-                        <text x="173" y="103" text-anchor="middle"
-                              font-family="Arial Black,sans-serif" font-size="5.5" font-weight="900"
-                              fill="#0099cc" letter-spacing="0.8">TENNANT</text>
+# Replace old SVG in index.html
+import re
+old_svg = re.search(r'<svg viewBox="0 0 420 220".*?</svg>', content, re.DOTALL).group(0)
+content = content.replace(old_svg, x4_svg)
 
-                        <!-- ═══ BOTÃO AMARELO (amarelo no topo da cabine) ═══ -->
-                        <circle cx="180" cy="33" r="6" fill="#f5c518" stroke="#d4a800" stroke-width="1.2"/>
-                        <circle cx="180" cy="33" r="3" fill="#e6b800"/>
+# Update CSS: remove wheel anim transform-origin conflicts, keep brush spin
+old_css_block = re.search(r'/\* ── S960 SVG CARTOON ── \*/.*?\.brush2\s*\{[^}]*\}', content, re.DOTALL)
+if old_css_block:
+    content = content.replace(old_css_block.group(0), '''/* ── X4 ROVR SVG CARTOON ── */
+        .machine-svg { width:100%; max-width:380px; display:block; margin:0 auto; overflow:visible; }
 
-                        <!-- ═══ ESCOVAS FRONTAIS (2 grandes de palha) ═══ -->
-                        <!-- Braço da escova esquerda -->
-                        <path d="M112,120 Q95,128 80,138" stroke="#4a5a68" stroke-width="5" stroke-linecap="round" fill="none"/>
-                        <!-- Escova esquerda -->
-                        <g class="b-left">
-                            <!-- disco central -->
-                            <circle cx="116" cy="142" r="16" fill="#1a1a1a" stroke="#2a2a2a" stroke-width="1.5"/>
-                            <circle cx="116" cy="142" r="8"  fill="#2a2a2a"/>
-                            <!-- cerdas (palha) -->
-                            <g fill="url(#brushGrad)" opacity="0.88">
-                                <ellipse cx="116" cy="126" rx="5" ry="8" rx="4"/>
-                                <ellipse cx="130" cy="131" rx="4" ry="8" transform="rotate(50,130,131)"/>
-                                <ellipse cx="132" cy="145" rx="4" ry="8" transform="rotate(90,132,145)"/>
-                                <ellipse cx="125" cy="157" rx="4" ry="8" transform="rotate(135,125,157)"/>
-                                <ellipse cx="116" cy="158" rx="4" ry="8" transform="rotate(180,116,158)"/>
-                                <ellipse cx="103" cy="155" rx="4" ry="8" transform="rotate(225,103,155)"/>
-                                <ellipse cx="100" cy="143" rx="4" ry="8" transform="rotate(270,100,143)"/>
-                                <ellipse cx="104" cy="130" rx="4" ry="8" transform="rotate(315,104,130)"/>
-                            </g>
-                            <circle cx="116" cy="142" r="5" fill="#1e1e1e"/>
-                        </g>
+        /* Bounce da máquina */
+        .ride-group {
+            animation: ride-bounce 0.6s ease-in-out infinite alternate;
+            transform-origin: 180px 220px;
+        }
+        @keyframes ride-bounce {
+            from { transform: translateY(0px); }
+            to   { transform: translateY(-7px); }
+        }
+        /* Ground strips deslizando */
+        .ground-strip { animation: gslide .55s linear infinite; }
+        @keyframes gslide { from{transform:translateX(0)} to{transform:translateX(-49px)} }
 
-                        <!-- Braço da escova direita -->
-                        <path d="M272,120 Q290,128 304,138" stroke="#4a5a68" stroke-width="5" stroke-linecap="round" fill="none"/>
-                        <!-- Escova direita -->
-                        <g class="b-right">
-                            <circle cx="265" cy="142" r="16" fill="#1a1a1a" stroke="#2a2a2a" stroke-width="1.5"/>
-                            <circle cx="265" cy="142" r="8"  fill="#2a2a2a"/>
-                            <g fill="url(#brushGrad)" opacity="0.88">
-                                <ellipse cx="265" cy="126" rx="4" ry="8"/>
-                                <ellipse cx="279" cy="131" rx="4" ry="8" transform="rotate(50,279,131)"/>
-                                <ellipse cx="281" cy="145" rx="4" ry="8" transform="rotate(90,281,145)"/>
-                                <ellipse cx="274" cy="157" rx="4" ry="8" transform="rotate(135,274,157)"/>
-                                <ellipse cx="265" cy="158" rx="4" ry="8" transform="rotate(180,265,158)"/>
-                                <ellipse cx="252" cy="155" rx="4" ry="8" transform="rotate(225,252,155)"/>
-                                <ellipse cx="249" cy="143" rx="4" ry="8" transform="rotate(270,249,143)"/>
-                                <ellipse cx="253" cy="130" rx="4" ry="8" transform="rotate(315,253,130)"/>
-                            </g>
-                            <circle cx="265" cy="142" r="5" fill="#1e1e1e"/>
-                        </g>
+        /* Rodas girando */
+        .w-rear  { animation: wspin .5s linear infinite; }
+        .w-front { animation: wspin .5s linear infinite; }
+        /* Escovas girando */
+        .brush   { animation: bspin .35s linear infinite; }
+        .brush2  { animation: bspin .35s linear infinite reverse; }
+        @keyframes wspin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes bspin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }''')
 
-                        <!-- ═══ PARTÍCULAS DE POEIRA VARRENDO ═══ -->
-                        <g class="dp1"><circle cx="78" cy="138" r="4.5" fill="#c8a050" opacity="0.7"/></g>
-                        <g class="dp2"><circle cx="70" cy="130" r="3"   fill="#d4aa55" opacity="0.55"/></g>
-                        <g class="dp3"><circle cx="74" cy="122" r="2.2" fill="#b89040" opacity="0.45"/></g>
-                        <g class="dp4"><circle cx="64" cy="134" r="3.5" fill="#c8a050" opacity="0.4"/></g>
-                        <g class="dp5"><circle cx="68" cy="118" r="1.8" fill="#d4aa55" opacity="0.35"/></g>
-
-                    </g><!-- fim ride-group -->
-                </svg>
-
-                <div class="machine-label">
-                    <div class="machine-label-dot"></div>
-                    <span id="status-text">Processando artigos</span>
-                    <span class="dots"><span>.</span><span>.</span><span>.</span></span>
-                </div>
-            </div>
-        </div>
-
-        <!-- RESULTADO -->
-        <div id="resultado" class="result-panel" style="display:none;">
-            <div class="result-header">
-                <div class="result-icon"><i class="fa-solid fa-check"></i></div>
-                <div>
-                    <div class="result-title">Processamento concluído</div>
-                    <div class="result-sub">Seus arquivos estão prontos</div>
-                </div>
-                <div class="result-count" id="result-count">— arquivos</div>
-            </div>
-            <div id="downloads" class="file-list"></div>
-        </div>
-
-    </main>
-</div>
-
-<script src="{{ url_for('static', filename='script.js') }}"></script>
-<script>
-function nudge(dir) {
-    const inp = document.getElementById('quantidade');
-    const v = parseInt(inp.value) + dir;
-    if (v >= 1 && v <= 50) inp.value = v;
-}
-
-const canvas = document.getElementById('bg-canvas');
-const ctx = canvas.getContext('2d');
-let W, H, particles = [];
-
-function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
-function initP() {
-    particles = Array.from({length: 60}, () => ({
-        x: Math.random()*W, y: Math.random()*H,
-        r: Math.random()*1.3+0.3,
-        vx: (Math.random()-.5)*.2, vy: (Math.random()-.5)*.2,
-        o: Math.random()*.3+.04
-    }));
-}
-function draw() {
-    ctx.clearRect(0,0,W,H);
-    for(const p of particles){
-        ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-        ctx.fillStyle=`rgba(0,200,255,${p.o})`;ctx.fill();
-        p.x+=p.vx;p.y+=p.vy;
-        if(p.x<0)p.x=W;if(p.x>W)p.x=0;
-        if(p.y<0)p.y=H;if(p.y>H)p.y=0;
-    }
-    requestAnimationFrame(draw);
-}
-resize();initP();draw();
-window.addEventListener('resize',()=>{resize();initP();});
-</script>
-</body>
-</html>
+with open('/home/claude/projeto5/principal-main/templates/index.html', 'w', encoding='utf-8') as f:
+    f.write(content)
+print("Done, length:", len(content))
+PYEOF
