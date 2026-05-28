@@ -2,7 +2,8 @@ from flask import Flask, render_template, request, jsonify, send_file, session, 
 import os
 import asyncio
 from dotenv import load_dotenv
-from pipeline import executar_pipeline
+from pipeline import executar_pipeline, executar_pipeline_selecionados
+from scraper import coletar_links_artigos
 
 # 🔌 Carregar .env APENAS localmente
 if os.environ.get("RENDER") is None:
@@ -164,6 +165,84 @@ def download(nome_arquivo):
     else:
         print("❌ Arquivo não encontrado")
         return jsonify({"erro": "Arquivo não encontrado"}), 404
+
+
+# 🔍 Página de pesquisa de artigos
+@app.route("/pesquisar")
+def pesquisar():
+    if not session.get("logado"):
+        return redirect(url_for("login"))
+    return render_template("pesquisar.html")
+
+
+# 🔍 API: buscar lista de artigos disponíveis
+@app.route("/buscar-artigos", methods=["POST"])
+def buscar_artigos():
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+
+    try:
+        data = request.get_json()
+        pais = data.get("pais")
+        busca = data.get("busca", "").strip().lower()
+
+        if pais not in MAPA_PAISES:
+            return jsonify({"sucesso": False, "erro": "País inválido"}), 400
+
+        url_blog = f"https://www.tennantco.com/{pais}/blog.html"
+        links = coletar_links_artigos(url_blog, pais)
+
+        # Filtrar por busca textual se fornecida
+        if busca:
+            links = [l for l in links if busca in l.get("title", "").lower() or busca in l.get("href", "").lower()]
+
+        return jsonify({
+            "sucesso": True,
+            "artigos": links,
+            "total": len(links),
+            "pais_nome": MAPA_PAISES.get(pais, pais)
+        })
+
+    except Exception as e:
+        print("❌ Erro no /buscar-artigos:", str(e))
+        return jsonify({"sucesso": False, "erro": str(e)}), 500
+
+
+# 🚀 Traduzir artigos selecionados
+@app.route("/traduzir-selecionados", methods=["POST"])
+def traduzir_selecionados():
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+
+    try:
+        data = request.get_json()
+        pais = data.get("pais")
+        urls_selecionadas = data.get("urls", [])
+
+        if pais not in MAPA_PAISES:
+            return jsonify({"sucesso": False, "erro": "País inválido"}), 400
+
+        if not urls_selecionadas:
+            return jsonify({"sucesso": False, "erro": "Nenhum artigo selecionado"}), 400
+
+        print(f"🎯 Traduzindo {len(urls_selecionadas)} artigos selecionados do país {pais}")
+
+        status, arquivos = asyncio.run(
+            executar_pipeline_selecionados(
+                pais_input=pais,
+                urls_selecionadas=urls_selecionadas
+            )
+        )
+
+        return jsonify({
+            "sucesso": True,
+            "status": status,
+            "arquivos": arquivos
+        })
+
+    except Exception as e:
+        print("❌ Erro no /traduzir-selecionados:", str(e))
+        return jsonify({"sucesso": False, "erro": str(e)}), 500
 
 
 # 🚪 Logout
