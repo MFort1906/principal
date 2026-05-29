@@ -2,21 +2,25 @@ import asyncio
 import random
 import re
 import difflib
+import os
 from openai import AsyncOpenAI
 
-# Carrega a chave da API — tenta ENV primeiro, depois secret file
-import os as _os
+# Carrega OPENAI_KEY — variável de ambiente (conforme render.yaml)
+OPENAI_KEY = os.environ.get("OPENAI_KEY", "")
 
-OPENAI_KEY = _os.environ.get("OPENAI_KEY", "")
 if not OPENAI_KEY:
+    # Fallback: secret file (caso use Secret Files no Render)
     try:
-        with open("/etc/secrets/OPENAI_KEY") as _f:
-            OPENAI_KEY = _f.read().strip()
+        with open("/etc/secrets/OPENAI_KEY") as f:
+            OPENAI_KEY = f.read().strip()
         print("[tradução] ✅ OPENAI_KEY carregada via secret file", flush=True)
     except FileNotFoundError:
-        print("[tradução] ❌ OPENAI_KEY não encontrada em ENV nem em /etc/secrets/OPENAI_KEY", flush=True)
+        print("[tradução] ❌ OPENAI_KEY não encontrada! Configure em Environment Variables no Render.", flush=True)
 else:
-    print("[tradução] ✅ OPENAI_KEY carregada via variável de ambiente", flush=True)
+    print(f"[tradução] ✅ OPENAI_KEY carregada via ENV (começa com: {OPENAI_KEY[:8]}...)", flush=True)
+
+if not OPENAI_KEY:
+    raise RuntimeError("OPENAI_KEY não configurada. Adicione em Environment Variables no Render.")
 
 client = AsyncOpenAI(api_key=OPENAI_KEY)
 
@@ -41,8 +45,8 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
                 "1) Não adicione chamadas promocionais, CTAs ou frases comerciais.\n"
                 "2) Preserve nomes técnicos, marcas, modelos e siglas exatamente como no original.\n"
                 "3) Ignore menus, rodapés, formulários, avisos legais e conteúdos de navegação.\n"
-                "4) Traduza “scrubber” como “lavadora de pisos”.\n"
-                "5) Traduza “squeegee” como “rodo”.\n"
+                "4) Traduza \"scrubber\" como \"lavadora de pisos\".\n"
+                "5) Traduza \"squeegee\" como \"rodo\".\n"
                 "6) Evite repetições excessivas e traduções literais artificiais.\n"
                 "7) Preserve perguntas, subtítulos e tópicos curtos quando fizerem sentido.\n"
                 "8) Não resuma, não interprete e não acrescente informações.\n"
@@ -61,6 +65,7 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
         user_msg = {"role": "user", "content": bloco}
 
         try:
+            print(f"[tradução] 🔄 Enviando bloco para GPT ({len(bloco)} chars)...", flush=True)
             resposta = await client.chat.completions.create(
                 model=modelo,
                 messages=[system_msg, user_msg],
@@ -75,14 +80,15 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
             total_prompt_tokens += prompt
             total_completion_tokens += complete
 
+            print(f"[tradução] ✅ Bloco traduzido ({prompt}+{complete} tokens)", flush=True)
+
             paragrafos = limpar_duplicados(texto)
             resultados.extend(paragrafos)
 
             await asyncio.sleep(random.uniform(1.2, 2.0))
 
         except Exception as e:
-            print(f"[Erro GPT] ❌ Falha na tradução: {e}", flush=True)
-            print(f"[Erro GPT] OPENAI_KEY presente: {bool(OPENAI_KEY)}", flush=True)
+            print(f"[tradução] ❌ Erro GPT: {e}", flush=True)
             resultados.append(bloco)
 
     return resultados, {
@@ -97,7 +103,7 @@ def agrupar_em_blocos(paragrafos, max_chars=1200):
     buffer = ""
 
     for par in paragrafos:
-        if re.match(r'^\d+\.', par):  # título com número
+        if re.match(r'^\d+\.', par):
             if buffer:
                 blocos.append(buffer.strip())
             buffer = par
