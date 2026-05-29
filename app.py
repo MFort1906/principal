@@ -331,7 +331,7 @@ FORMATO DA RESPOSTA (JSON puro, sem markdown, sem ```):
 
         # ── Chama a API do Gemini ──
         # Prioridade: variável de ambiente > chave hardcoded de fallback
-        api_key = os.getenv("GEMINI_API_KEY", "AIzaSyAb8RN6KuAuLQxRu_T6WdnZ_L-yLtN2enlmsq5QUQ2z8zEmzmDQ")
+        api_key = os.getenv("GEMINI_API_KEY", "AQ.Ab8RN6iF-xLWetb8J3gxHBxQcAiaUnxLrx7IXMH62O8MqAGojw")
 
         if not api_key:
             return jsonify({
