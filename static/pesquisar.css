@@ -423,6 +423,63 @@
   50%       { opacity: 1;   transform: scale(1.1); }
 }
 
+/* ── VER TODOS TOGGLE ── */
+.todos-row {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+.todos-toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.todos-toggle-wrap input[type="checkbox"] {
+  display: none;
+}
+.todos-slider {
+  position: relative;
+  width: 38px;
+  height: 21px;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 99px;
+  flex-shrink: 0;
+  transition: all 0.22s var(--e);
+}
+.todos-slider::after {
+  content: '';
+  position: absolute;
+  left: 3px; top: 3px;
+  width: 13px; height: 13px;
+  background: var(--ts);
+  border-radius: 50%;
+  transition: all 0.22s var(--e);
+}
+.todos-toggle-wrap input:checked + .todos-slider {
+  background: var(--cyan-dim);
+  border-color: var(--cyan-rng);
+}
+.todos-toggle-wrap input:checked + .todos-slider::after {
+  left: calc(100% - 16px);
+  background: var(--cyan);
+}
+.todos-label {
+  font-size: 13px;
+  color: var(--ts);
+  transition: color 0.18s;
+}
+.todos-toggle-wrap:has(input:checked) .todos-label {
+  color: var(--cyan);
+}
+.todos-toggle-wrap:has(input:checked) ~ .search-wrap,
+.todos-field-hidden {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 /* ── RESPONSIVO ── */
 @media (max-width: 600px) {
   .filter-row { flex-direction: column; }

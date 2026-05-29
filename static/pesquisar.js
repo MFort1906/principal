@@ -48,6 +48,23 @@ async function carregarPaises() {
     }
 }
 
+// ─── TOGGLE VER TODOS ─────────────────────────────────────────
+const toggleTodos = document.getElementById('toggle-todos');
+const searchWrapEl = document.querySelector('.search-wrap');
+const termoBuscaWrap = document.getElementById('termo-busca')?.closest('.field-group');
+
+toggleTodos.addEventListener('change', () => {
+  const ativo = toggleTodos.checked;
+  if (termoBuscaWrap) {
+    termoBuscaWrap.style.opacity = ativo ? '0.4' : '1';
+    termoBuscaWrap.style.pointerEvents = ativo ? 'none' : '';
+  }
+  if (ativo) {
+    inputBusca.value = '';
+    clearSearchBtn.style.display = 'none';
+  }
+});
+
 // ─── CLEAR SEARCH ─────────────────────────────────────────────
 inputBusca.addEventListener('input', () => {
     clearSearchBtn.style.display = inputBusca.value ? 'block' : 'none';
@@ -64,7 +81,7 @@ inputBusca.addEventListener('keydown', (e) => { if (e.key === 'Enter') buscarArt
 
 async function buscarArtigos() {
     const pais = selectPais.value;
-    const busca = inputBusca.value.trim();
+    const busca = toggleTodos.checked ? '' : inputBusca.value.trim();
 
     // reset
     listaArtigos.style.display = 'none';
