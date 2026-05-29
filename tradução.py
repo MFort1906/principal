@@ -4,9 +4,15 @@ import re
 import difflib
 from openai import AsyncOpenAI
 
-# Carrega a chave da API do ambiente
-with open("/etc/secrets/OPENAI_KEY") as f:
-    OPENAI_KEY = f.read().strip()
+# Carrega a chave da API — configure OPENAI_KEY no Render (Environment Variables)
+import os as _os
+OPENAI_KEY = _os.environ.get("OPENAI_KEY", "")
+if not OPENAI_KEY:
+    try:
+        with open("/etc/secrets/OPENAI_KEY") as _f:
+            OPENAI_KEY = _f.read().strip()
+    except FileNotFoundError:
+        raise RuntimeError("Variável OPENAI_KEY não configurada. Adicione em Environment Variables no Render.")
 
 client = AsyncOpenAI(api_key=OPENAI_KEY)
 
