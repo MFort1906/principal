@@ -307,71 +307,60 @@ FORMATO DA RESPOSTA (JSON puro, sem markdown, sem ```):
 - "texto": sempre preenchido com uma resposta clara e útil.
 """
 
-        # ── Monta histórico para o Gemini ──
-        # Gemini usa "contents" com role "user" e "model"
-        contents = []
+        # ── Monta histórico para o Groq (formato OpenAI-compatible) ──
+        messages = [{"role": "system", "content": system_prompt}]
 
         for h in historico[-8:]:
             role = h.get("role", "")
             content = h.get("content", "")
             if not content:
                 continue
-            # Gemini usa "model" em vez de "assistant"
-            gemini_role = "model" if role == "assistant" else "user"
-            contents.append({
-                "role": gemini_role,
-                "parts": [{"text": content}]
-            })
+            # Groq usa "assistant" igual ao padrão OpenAI
+            messages.append({"role": role, "content": content})
 
         # Adiciona a mensagem atual
-        contents.append({
-            "role": "user",
-            "parts": [{"text": mensagem}]
-        })
+        messages.append({"role": "user", "content": mensagem})
 
-        # ── Chama a API do Gemini ──
+        # ── Chama a API do Groq ──
         # Prioridade: variável de ambiente > chave hardcoded de fallback
-        api_key = os.getenv("GEMINI_API_KEY", "AQ.Ab8RN6iF-xLWetb8J3gxHBxQcAiaUnxLrx7IXMH62O8MqAGojw")
+        api_key = os.getenv("GROQ_API_KEY", "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")
 
         if not api_key:
             return jsonify({
-                "texto": "⚠️ Chave de API do Gemini não configurada. Configure a variável GEMINI_API_KEY.",
+                "texto": "⚠️ Chave de API do Groq não configurada. Configure a variável GROQ_API_KEY.",
                 "artigos_filtrados": [],
                 "acao": None
             })
 
-        gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+        groq_url = "https://api.groq.com/openai/v1/chat/completions"
 
         payload = {
-            "system_instruction": {
-                "parts": [{"text": system_prompt}]
-            },
-            "contents": contents,
-            "generationConfig": {
-                "maxOutputTokens": 2000,
-                "temperature": 0.3
-            }
+            "model": "llama-3.3-70b-versatile",
+            "messages": messages,
+            "max_tokens": 2000,
+            "temperature": 0.3
         }
 
         resp = req_lib.post(
-            gemini_url,
-            headers={"Content-Type": "application/json"},
+            groq_url,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            },
             json=payload,
             timeout=30
         )
         resp.raise_for_status()
         result = resp.json()
 
-        # ── Extrai texto da resposta do Gemini ──
+        # ── Extrai texto da resposta do Groq ──
         raw_text = ""
         try:
-            candidates = result.get("candidates", [])
-            if candidates:
-                parts = candidates[0].get("content", {}).get("parts", [])
-                for part in parts:
-                    raw_text += part.get("text", "")
+            choices = result.get("choices", [])
+            if choices:
+                raw_text = choices[0].get("message", {}).get("content", "")
         except Exception as e:
-            print("❌ Erro ao extrair texto do Gemini:", e)
+            print("❌ Erro ao extrair texto do Groq:", e)
 
         # ── Parse JSON da resposta ──
         try:
