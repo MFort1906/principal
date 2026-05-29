@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alfa — Assistente Inteligente</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='alfa.css') }}">
+</head>
+<body>
+
+<div class="alfa-shell">
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="alfa-sidebar">
+        <div class="sidebar-logo">
+            <img src="{{ url_for('static', filename='../assets/alfa_logo.png') }}" alt="Alfa" class="logo-img">
+            <div class="logo-line"></div>
+        </div>
+
+        <div class="sidebar-section">
+            <span class="sidebar-label"><i class="fa-solid fa-earth-americas"></i> País de origem</span>
+            <div class="select-wrap">
+                <select id="pais-alfa"></select>
+                <i class="fa-solid fa-chevron-down select-icon"></i>
+            </div>
+            <button id="btn-carregar" class="load-btn">
+                <i class="fa-solid fa-rotate"></i> Carregar artigos
+            </button>
+            <div id="artigos-status" class="artigos-status" style="display:none"></div>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-section">
+            <span class="sidebar-label"><i class="fa-solid fa-lightbulb"></i> Sugestões</span>
+            <div class="chips-wrap" id="chips-sugestoes">
+                <button class="chip" onclick="usarSugestao('Mostre artigos sobre limpeza industrial')">🧹 Limpeza industrial</button>
+                <button class="chip" onclick="usarSugestao('Quero artigos sobre sustentabilidade')">♻️ Sustentabilidade</button>
+                <button class="chip" onclick="usarSugestao('Artigos sobre produtos e equipamentos')">🔧 Produtos</button>
+                <button class="chip" onclick="usarSugestao('Dicas de manutenção preventiva')">⚙️ Manutenção</button>
+                <button class="chip" onclick="usarSugestao('Mostre todos os artigos disponíveis')">📋 Ver todos</button>
+            </div>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-section">
+            <span class="sidebar-label"><i class="fa-regular fa-circle-question"></i> Sobre a Alfa</span>
+            <p class="sidebar-about">Assistente com IA que entende pedidos em português e encontra artigos em qualquer idioma dos blogs globais Tennant.</p>
+        </div>
+
+        <div class="sidebar-footer">
+            <a href="{{ url_for('pesquisar') }}" class="sidebar-link">
+                <i class="fa-solid fa-magnifying-glass"></i> Modo manual
+            </a>
+            <a href="{{ url_for('home') }}" class="sidebar-link">
+                <i class="fa-solid fa-house"></i> Início
+            </a>
+        </div>
+    </aside>
+
+    <!-- ── CHAT MAIN ── -->
+    <main class="alfa-chat">
+
+        <!-- Top bar -->
+        <div class="chat-topbar">
+            <div class="topbar-identity">
+                <div class="topbar-avatar">
+                    <span>A</span>
+                    <div class="avatar-online"></div>
+                </div>
+                <div>
+                    <div class="topbar-name">Alfa</div>
+                    <div class="topbar-sub">by Tennant Company · Assistente IA</div>
+                </div>
+            </div>
+            <div class="topbar-actions">
+                <div id="selecao-badge" class="selecao-badge" style="display:none">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span id="selecao-count">0</span> selecionados
+                </div>
+                <button id="btn-traduzir" class="traduzir-btn" style="display:none" onclick="traduzirSelecionados()">
+                    <i class="fa-solid fa-language"></i> Traduzir selecionados
+                </button>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages" id="chat-messages">
+            <!-- Welcome message injected by JS -->
+        </div>
+
+        <!-- Input -->
+        <div class="chat-input-area">
+            <div class="input-wrap">
+                <textarea
+                    id="chat-input"
+                    placeholder="Pergunte à Alfa... ex: 'Quero artigos sobre limpeza industrial'"
+                    rows="1"
+                    autocomplete="off"
+                ></textarea>
+                <button id="btn-send" class="send-btn" onclick="enviarMensagem()">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+            <div class="input-hint">Pressione <kbd>Enter</kbd> para enviar · <kbd>Shift+Enter</kbd> para nova linha</div>
+        </div>
+    </main>
+
+</div>
+
+<!-- Loading overlay for translation -->
+<div id="loading-overlay" class="loading-overlay" style="display:none">
+    <div class="loading-card">
+        <div class="loading-anim">
+            <div class="lang-pill from">EN</div>
+            <div class="arrow-spin"><i class="fa-solid fa-arrows-rotate fa-spin"></i></div>
+            <div class="lang-pill to">PT</div>
+        </div>
+        <div class="loading-text">Traduzindo artigos selecionados...</div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='alfa.js') }}"></script>
+</body>
+</html>
