@@ -4,15 +4,19 @@ import re
 import difflib
 from openai import AsyncOpenAI
 
-# Carrega a chave da API — configure OPENAI_KEY no Render (Environment Variables)
+# Carrega a chave da API — tenta ENV primeiro, depois secret file
 import os as _os
+
 OPENAI_KEY = _os.environ.get("OPENAI_KEY", "")
 if not OPENAI_KEY:
     try:
         with open("/etc/secrets/OPENAI_KEY") as _f:
             OPENAI_KEY = _f.read().strip()
+        print("[tradução] ✅ OPENAI_KEY carregada via secret file", flush=True)
     except FileNotFoundError:
-        raise RuntimeError("Variável OPENAI_KEY não configurada. Adicione em Environment Variables no Render.")
+        print("[tradução] ❌ OPENAI_KEY não encontrada em ENV nem em /etc/secrets/OPENAI_KEY", flush=True)
+else:
+    print("[tradução] ✅ OPENAI_KEY carregada via variável de ambiente", flush=True)
 
 client = AsyncOpenAI(api_key=OPENAI_KEY)
 
@@ -77,7 +81,8 @@ async def traduzir_e_formatar_gpt(textos, destino='português Brasil'):
             await asyncio.sleep(random.uniform(1.2, 2.0))
 
         except Exception as e:
-            print(f"[Erro GPT] {e}", flush=True)
+            print(f"[Erro GPT] ❌ Falha na tradução: {e}", flush=True)
+            print(f"[Erro GPT] OPENAI_KEY presente: {bool(OPENAI_KEY)}", flush=True)
             resultados.append(bloco)
 
     return resultados, {
