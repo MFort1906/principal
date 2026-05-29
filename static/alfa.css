@@ -700,3 +700,77 @@ body {
   .chat-messages { padding: 16px; }
   .chat-input-area { padding: 12px 16px 16px; }
 }
+
+/* ── ARTIGOS ACOES (botões inline da Alfa) ── */
+.artigos-acoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 12px 4px;
+}
+
+.traduzir-grupo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--ag);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .18s, transform .1s;
+  font-family: 'DM Sans', sans-serif;
+}
+.traduzir-grupo-btn:hover { background: #155e35; transform: translateY(-1px); }
+.traduzir-grupo-btn:disabled { background: #9cbaaa; cursor: not-allowed; transform: none; }
+
+.selecionar-grupo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+  color: var(--ag);
+  border: 1.5px solid var(--ag);
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .18s, color .18s;
+  font-family: 'DM Sans', sans-serif;
+}
+.selecionar-grupo-btn:hover { background: var(--ag3); }
+.selecionar-grupo-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.traduzido-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ag);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 4px;
+}
+
+/* ── ARTIGOS CHAT LISTA ── */
+.artigos-chat-lista {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── SEL ALL BTN ── */
+.sel-all-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: var(--ag);
+  cursor: pointer;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  text-decoration: underline;
+  padding: 0;
+}
+.sel-all-btn:hover { color: #155e35; }

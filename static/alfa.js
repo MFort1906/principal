@@ -4,9 +4,9 @@
 ═════════════════════════════════════════ */
 
 // ─── ESTADO ───────────────────────────────
-let historico = [];           // histórico de mensagens para a API
-let artigosDisponiveis = [];  // todos artigos carregados
-let selecionados = new Set(); // URLs selecionadas
+let historico = [];
+let artigosDisponiveis = [];
+let selecionados = new Set();
 let paisAtual = '';
 let paisNomeAtual = '';
 let enviando = false;
@@ -51,11 +51,9 @@ async function carregarPaises() {
 
 // ─── WELCOME ──────────────────────────────
 function mostrarBemVindo() {
-    const now = horaAtual();
     chatMessages.innerHTML = '';
     adicionarMsgAlfa(
-        `Olá! Sou a **Alfa**, sua assistente inteligente da Tennant. 👋\n\nPosso te ajudar a encontrar artigos dos blogs globais Tennant com base em temas, independente do idioma em que estão publicados.\n\n**Como começar:**\n1. Selecione um país na barra lateral\n2. Clique em **"Carregar artigos"**\n3. Me diga o que você precisa — por exemplo: *"quero artigos sobre limpeza industrial"* ou *"mostre posts sobre sustentabilidade"*\n\nEstou pronta para ajudar! 🌿`,
-        now
+        `Olá! Sou a **Alfa**, sua assistente inteligente da Tennant. 👋\n\nPosso te ajudar a encontrar artigos dos blogs globais Tennant com base em temas, independente do idioma em que estão publicados.\n\n**Como começar:**\n1. Selecione um país na barra lateral\n2. Clique em **"Carregar artigos"**\n3. Me diga o que você precisa — por exemplo: *"quero artigos sobre limpeza industrial"* ou *"mostre posts sobre sustentabilidade"*\n\nEstou pronta para ajudar! 🌿`
     );
 }
 
@@ -134,13 +132,12 @@ window.enviarMensagem = async function() {
     adicionarMsgUsuario(texto);
     adicionarTyping();
 
-    // Build context for Alfa
     const contexto = {
         mensagem: texto,
-        historico: historico.slice(-10), // últimas 10 trocas
+        historico: historico.slice(-10),
         pais: paisAtual,
         pais_nome: paisNomeAtual,
-        artigos: artigosDisponiveis  // envia lista para o backend filtrar com IA
+        artigos: artigosDisponiveis
     };
 
     try {
@@ -159,14 +156,13 @@ window.enviarMensagem = async function() {
         if (data.erro) {
             adicionarMsgAlfa('⚠️ ' + data.erro);
         } else {
-            // Adiciona ao histórico
             historico.push({ role: 'user', content: texto });
             historico.push({ role: 'assistant', content: data.texto || '' });
 
-            // Renderiza resposta
-            adicionarMsgAlfa(data.texto || '', null, data.artigos_filtrados || null);
+            const artigos = data.artigos_filtrados || [];
+            adicionarMsgAlfa(data.texto || '', null, artigos);
 
-            // Se tinha sugestões do tipo "selecionar todos"
+            // Selecionar todos automaticamente se a ação for selecionar_todos
             if (data.acao === 'selecionar_todos' && artigosDisponiveis.length > 0) {
                 artigosDisponiveis.forEach(a => selecionados.add(a.href));
                 atualizarSelecaoBadge();
@@ -193,21 +189,25 @@ window.usarSugestao = function(texto) {
 };
 
 // ─── RENDERIZAR ARTIGOS ───────────────────
-function renderizarArtigosNoChat(artigos) {
+function renderizarArtigosNoChat(artigos, grupoId) {
     if (!artigos || artigos.length === 0) return null;
 
     const wrap = document.createElement('div');
     wrap.className = 'artigos-chat-wrap';
+    wrap.dataset.grupoId = grupoId;
 
-    // Barra select all
+    // Barra de ações
     const bar = document.createElement('div');
     bar.className = 'artigos-select-bar';
     bar.innerHTML = `
         <span><i class="fa-solid fa-file-lines"></i> ${artigos.length} artigo${artigos.length !== 1 ? 's' : ''} encontrado${artigos.length !== 1 ? 's' : ''}</span>
-        <button onclick="selecionarTodosDoGrupo(this)">Selecionar todos</button>
+        <button class="sel-all-btn" onclick="selecionarTodosDoGrupo(this)">Selecionar todos</button>
     `;
     wrap.appendChild(bar);
 
+    // Lista de artigos
+    const lista = document.createElement('div');
+    lista.className = 'artigos-chat-lista';
     artigos.forEach((art, i) => {
         const card = document.createElement('div');
         card.className = 'artigo-chat-card';
@@ -217,7 +217,7 @@ function renderizarArtigosNoChat(artigos) {
         card.style.animationDelay = `${Math.min(i * 0.04, 0.5)}s`;
 
         const slug = (() => {
-            try { return new URL(art.href).pathname.split('/').slice(-1)[0].replace('.html',''); }
+            try { return new URL(art.href).pathname.split('/').slice(-1)[0].replace('.html', ''); }
             catch { return art.href; }
         })();
 
@@ -231,63 +231,41 @@ function renderizarArtigosNoChat(artigos) {
                 <i class="fa-solid fa-arrow-up-right-from-square"></i>
             </a>
         `;
-
         card.addEventListener('click', () => toggleCard(card, art.href));
-        wrap.appendChild(card);
+        lista.appendChild(card);
     });
+    wrap.appendChild(lista);
+
+    // ── Botão "Traduzir estes artigos" inline ──
+    const urlsDeste = artigos.map(a => a.href);
+    const acoesBtns = document.createElement('div');
+    acoesBtns.className = 'artigos-acoes';
+    acoesBtns.innerHTML = `
+        <button class="traduzir-grupo-btn" onclick="traduzirGrupo(this, ${JSON.stringify(urlsDeste).replace(/"/g, '&quot;')})">
+            <i class="fa-solid fa-language"></i> Traduzir estes ${artigos.length} artigo${artigos.length !== 1 ? 's' : ''}
+        </button>
+        <button class="selecionar-grupo-btn" onclick="selecionarGrupoParaTraduzir(this, ${JSON.stringify(urlsDeste).replace(/"/g, '&quot;')})">
+            <i class="fa-solid fa-layer-group"></i> Adicionar à seleção
+        </button>
+    `;
+    wrap.appendChild(acoesBtns);
 
     return wrap;
 }
 
-window.selecionarTodosDoGrupo = function(btn) {
-    const wrap = btn.closest('.artigos-select-bar').nextSibling
-        ? btn.closest('.artigos-chat-wrap') : null;
-    if (!wrap) return;
-
-    const cards = wrap.querySelectorAll('.artigo-chat-card');
-    const todosSelected = Array.from(cards).every(c => c.classList.contains('selecionado'));
-
-    cards.forEach(card => {
-        const url = card.dataset.url;
-        if (todosSelected) {
-            selecionados.delete(url);
-            card.classList.remove('selecionado');
-        } else {
-            selecionados.add(url);
-            card.classList.add('selecionado');
-        }
-    });
-
-    btn.textContent = todosSelected ? 'Selecionar todos' : 'Desmarcar todos';
-    atualizarSelecaoBadge();
-};
-
-function toggleCard(card, url) {
-    if (selecionados.has(url)) {
-        selecionados.delete(url);
-        card.classList.remove('selecionado');
-    } else {
-        selecionados.add(url);
-        card.classList.add('selecionado');
+// ─── TRADUZIR GRUPO DIRETO ────────────────
+window.traduzirGrupo = async function(btn, urls) {
+    if (!paisAtual) {
+        adicionarMsgAlfa('⚠️ Selecione um país antes de traduzir.');
+        return;
     }
-    atualizarSelecaoBadge();
-}
 
-function atualizarSelecaoBadge() {
-    const n = selecionados.size;
-    selecaoCount.textContent = n;
-    selecaoBadge.style.display = n > 0 ? 'flex' : 'none';
-    btnTraduzir.style.display = n > 0 ? 'flex' : 'none';
-}
-
-// ─── TRADUZIR ────────────────────────────
-window.traduzirSelecionados = async function() {
-    if (selecionados.size === 0 || !paisAtual) return;
-
-    const urls = Array.from(selecionados);
+    // Desabilita botão e mostra loading inline
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Traduzindo...';
     loadingOverlay.style.display = 'flex';
 
-    adicionarMsgUsuario(`Traduzir ${urls.length} artigo${urls.length !== 1 ? 's' : ''} selecionado${urls.length !== 1 ? 's' : ''}`);
+    adicionarMsgUsuario(`Traduzir ${urls.length} artigo${urls.length !== 1 ? 's' : ''}`);
 
     try {
         const r = await fetch('/traduzir-selecionados', {
@@ -302,38 +280,114 @@ window.traduzirSelecionados = async function() {
         loadingOverlay.style.display = 'none';
 
         if (data.sucesso) {
-            const arquivos = data.arquivos || [];
-            const dlWrap = document.createElement('div');
-            dlWrap.className = 'downloads-chat-wrap';
+            mostrarDownloads(data.arquivos || []);
+            btn.closest('.artigos-acoes').innerHTML = `<span class="traduzido-ok"><i class="fa-solid fa-circle-check"></i> Tradução concluída!</span>`;
+        } else {
+            adicionarMsgAlfa('⚠️ Erro ao traduzir: ' + (data.erro || 'falha desconhecida'));
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-language"></i> Tentar novamente';
+        }
 
-            arquivos.forEach((arq, i) => {
-                const nome = arq.includes('/') ? arq.split('/').pop() : arq;
-                const a = document.createElement('a');
-                a.href = `/download/${encodeURIComponent(arq)}`;
-                a.className = 'dl-chat-item';
-                a.innerHTML = `
-                    <span class="dl-chat-icon"><i class="fa-regular fa-file-word"></i></span>
-                    <span class="dl-chat-info">
-                        <span class="dl-chat-label">Artigo ${i + 1}</span>
-                        <span class="dl-chat-name">${escHtml(nome)}</span>
-                    </span>
-                    <i class="fa-solid fa-arrow-down dl-chat-arrow"></i>
-                `;
-                dlWrap.appendChild(a);
-            });
+    } catch (err) {
+        loadingOverlay.style.display = 'none';
+        adicionarMsgAlfa('⚠️ Erro de conexão durante a tradução.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-language"></i> Tentar novamente';
+    }
+};
 
-            adicionarMsgAlfa(
-                `✅ Tradução concluída! **${arquivos.length} arquivo${arquivos.length !== 1 ? 's' : ''}** pronto${arquivos.length !== 1 ? 's' : ''} para download:`,
-                null, null, dlWrap
-            );
+// ─── ADICIONAR GRUPO À SELEÇÃO ────────────
+window.selecionarGrupoParaTraduzir = function(btn, urls) {
+    urls.forEach(url => selecionados.add(url));
+    atualizarSelecaoBadge();
+    // Marca visualmente os cards
+    document.querySelectorAll('.artigo-chat-card').forEach(card => {
+        if (urls.includes(card.dataset.url)) card.classList.add('selecionado');
+    });
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Adicionados à seleção';
+    btn.disabled = true;
+};
 
+// ─── MOSTRAR DOWNLOADS ────────────────────
+function mostrarDownloads(arquivos) {
+    const dlWrap = document.createElement('div');
+    dlWrap.className = 'downloads-chat-wrap';
+
+    arquivos.forEach((arq, i) => {
+        const nome = arq.includes('/') ? arq.split('/').pop() : arq;
+        const a = document.createElement('a');
+        a.href = `/download/${encodeURIComponent(arq)}`;
+        a.className = 'dl-chat-item';
+        a.innerHTML = `
+            <span class="dl-chat-icon"><i class="fa-regular fa-file-word"></i></span>
+            <span class="dl-chat-info">
+                <span class="dl-chat-label">Artigo ${i + 1}</span>
+                <span class="dl-chat-name">${escHtml(nome)}</span>
+            </span>
+            <i class="fa-solid fa-arrow-down dl-chat-arrow"></i>
+        `;
+        dlWrap.appendChild(a);
+    });
+
+    adicionarMsgAlfa(
+        `✅ Tradução concluída! **${arquivos.length} arquivo${arquivos.length !== 1 ? 's' : ''}** pronto${arquivos.length !== 1 ? 's' : ''} para download:`,
+        null, null, dlWrap
+    );
+}
+
+// ─── SELECT ALL DO GRUPO ──────────────────
+window.selecionarTodosDoGrupo = function(btn) {
+    const wrap = btn.closest('.artigos-chat-wrap');
+    if (!wrap) return;
+    const cards = wrap.querySelectorAll('.artigo-chat-card');
+    const todosSelected = Array.from(cards).every(c => c.classList.contains('selecionado'));
+    cards.forEach(card => {
+        const url = card.dataset.url;
+        if (todosSelected) { selecionados.delete(url); card.classList.remove('selecionado'); }
+        else { selecionados.add(url); card.classList.add('selecionado'); }
+    });
+    btn.textContent = todosSelected ? 'Selecionar todos' : 'Desmarcar todos';
+    atualizarSelecaoBadge();
+};
+
+function toggleCard(card, url) {
+    if (selecionados.has(url)) { selecionados.delete(url); card.classList.remove('selecionado'); }
+    else { selecionados.add(url); card.classList.add('selecionado'); }
+    atualizarSelecaoBadge();
+}
+
+function atualizarSelecaoBadge() {
+    const n = selecionados.size;
+    selecaoCount.textContent = n;
+    selecaoBadge.style.display = n > 0 ? 'flex' : 'none';
+    btnTraduzir.style.display = n > 0 ? 'flex' : 'none';
+}
+
+// ─── TRADUZIR SELECIONADOS (botão topo) ───
+window.traduzirSelecionados = async function() {
+    if (selecionados.size === 0 || !paisAtual) return;
+    const urls = Array.from(selecionados);
+    loadingOverlay.style.display = 'flex';
+    adicionarMsgUsuario(`Traduzir ${urls.length} artigo${urls.length !== 1 ? 's' : ''} selecionado${urls.length !== 1 ? 's' : ''}`);
+
+    try {
+        const r = await fetch('/traduzir-selecionados', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ pais: paisAtual, urls })
+        });
+        if (r.status === 401) { window.location.href = '/'; return; }
+        const data = await r.json();
+        loadingOverlay.style.display = 'none';
+
+        if (data.sucesso) {
+            mostrarDownloads(data.arquivos || []);
             selecionados.clear();
             atualizarSelecaoBadge();
-
         } else {
             adicionarMsgAlfa('⚠️ Erro ao traduzir: ' + (data.erro || 'falha desconhecida'));
         }
-
     } catch (err) {
         loadingOverlay.style.display = 'none';
         adicionarMsgAlfa('⚠️ Erro de conexão durante a tradução.');
@@ -362,9 +416,21 @@ function adicionarMsgAlfa(texto, hora = null, artigosFiltrados = null, extraEl =
     const bubble = document.createElement('div');
     bubble.className = 'msg-bubble';
 
+    // ── Limpar JSON vazado no texto ──
+    let textoLimpo = texto || '';
+    // Remove blocos JSON que possam ter vazado na resposta
+    textoLimpo = textoLimpo.replace(/```json[\s\S]*?```/gi, '').trim();
+    // Se o texto inteiro é um JSON (começa com { e termina com }), extrai só o campo "texto"
+    if (/^\s*\{[\s\S]*\}\s*$/.test(textoLimpo)) {
+        try {
+            const parsed = JSON.parse(textoLimpo);
+            if (parsed.texto) textoLimpo = parsed.texto;
+        } catch (_) { /* mantém texto original */ }
+    }
+
     const msgText = document.createElement('div');
     msgText.className = 'msg-text';
-    msgText.innerHTML = formatarMarkdown(texto);
+    msgText.innerHTML = formatarMarkdown(textoLimpo);
     bubble.appendChild(msgText);
 
     const msgTime = document.createElement('div');
@@ -372,18 +438,24 @@ function adicionarMsgAlfa(texto, hora = null, artigosFiltrados = null, extraEl =
     msgTime.textContent = hora || horaAtual();
     bubble.appendChild(msgTime);
 
-    // Renderizar artigos filtrados
+    // ── Renderizar artigos filtrados como cards ──
     if (artigosFiltrados && artigosFiltrados.length > 0) {
-        // Mapear URLs para objetos completos
-        const artigosObj = artigosFiltrados.map(url => {
-            const found = artigosDisponiveis.find(a => a.href === url);
-            return found || { href: url, title: url };
-        });
-        const cardsEl = renderizarArtigosNoChat(artigosObj);
-        if (cardsEl) bubble.appendChild(cardsEl);
+        // artigosFiltrados pode ser array de strings (URLs) ou objetos {href, title}
+        const artigosObj = artigosFiltrados.map(item => {
+            if (typeof item === 'string') {
+                const found = artigosDisponiveis.find(a => a.href === item);
+                return found || { href: item, title: extrairTituloSlug(item) };
+            }
+            return item;
+        }).filter(a => a && a.href);
+
+        if (artigosObj.length > 0) {
+            const grupoId = 'grupo_' + Date.now();
+            const cardsEl = renderizarArtigosNoChat(artigosObj, grupoId);
+            if (cardsEl) bubble.appendChild(cardsEl);
+        }
     }
 
-    // Extra element (downloads, etc)
     if (extraEl) bubble.appendChild(extraEl);
 
     row.innerHTML = `<div class="msg-avatar">A</div>`;
@@ -397,9 +469,7 @@ function adicionarTyping() {
     row.className = 'msg-row alfa typing-row';
     row.innerHTML = `
         <div class="msg-avatar">A</div>
-        <div class="typing-dots">
-            <span></span><span></span><span></span>
-        </div>
+        <div class="typing-dots"><span></span><span></span><span></span></div>
     `;
     chatMessages.appendChild(row);
     scrollBottom();
@@ -410,18 +480,25 @@ function removerTyping() {
     if (t) t.remove();
 }
 
-// ─── FORMATAÇÃO MARKDOWN SIMPLES ─────────
+// ─── UTILITÁRIOS ─────────────────────────
+function extrairTituloSlug(url) {
+    try {
+        const slug = new URL(url).pathname.split('/').pop().replace('.html', '').replace(/-/g, ' ');
+        return slug.charAt(0).toUpperCase() + slug.slice(1);
+    } catch { return url; }
+}
+
 function formatarMarkdown(text) {
     if (!text) return '';
     return text
-        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.+?)\*/g, '<em>$1</em>')
         .replace(/\n/g, '<br>');
 }
 
 function escHtml(str) {
-    return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function horaAtual() {
@@ -429,7 +506,5 @@ function horaAtual() {
 }
 
 function scrollBottom() {
-    requestAnimationFrame(() => {
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    });
+    requestAnimationFrame(() => { chatMessages.scrollTop = chatMessages.scrollHeight; });
 }
