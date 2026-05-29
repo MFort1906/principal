@@ -6,4 +6,3 @@ pillow
 openai
 python-dotenv
 pytz
-anthropic

@@ -65,17 +65,14 @@ def login():
     if request.method == "POST":
         senha = request.form.get("password")
 
-        # 🔎 DEBUG seguro
         print("🔎 DEBUG - senha digitada:", "OK" if senha else "VAZIA")
         print("🔎 DEBUG - senha sistema:", "OK" if APP_PASSWORD else "NÃO CARREGADA")
 
-        # 🚨 Verificação crítica
         if not APP_PASSWORD:
             print("🚨 ERRO CRÍTICO: senha não carregada")
             erro = "Erro interno no servidor"
             return render_template("login.html", erro=erro)
 
-        # ✅ Comparação
         if senha and senha.strip() == APP_PASSWORD.strip():
             print("✅ LOGIN OK")
             session["logado"] = True
@@ -192,7 +189,6 @@ def buscar_artigos():
         url_blog = f"https://www.tennantco.com/{pais}/blog.html"
         links = coletar_links_artigos(url_blog, pais)
 
-        # Filtrar por busca textual se fornecida
         if busca:
             links = [l for l in links if busca in l.get("title", "").lower() or busca in l.get("href", "").lower()]
 
@@ -253,7 +249,7 @@ def alfa():
     return render_template("alfa.html")
 
 
-# 🤖 Alfa — Chat endpoint com IA
+# 🤖 Alfa — Chat endpoint com IA (Gemini)
 @app.route("/alfa-chat", methods=["POST"])
 def alfa_chat():
     if not session.get("logado"):
@@ -311,49 +307,74 @@ FORMATO DA RESPOSTA (JSON puro, sem markdown, sem ```):
 - "texto": sempre preenchido com uma resposta clara e útil.
 """
 
-        # ── Monta mensagens para a API ──
-        messages = []
-        for h in historico[-8:]:
-            if h.get("role") in ("user", "assistant") and h.get("content"):
-                messages.append({"role": h["role"], "content": h["content"]})
-        messages.append({"role": "user", "content": mensagem})
+        # ── Monta histórico para o Gemini ──
+        # Gemini usa "contents" com role "user" e "model"
+        contents = []
 
-        # ── Chama Anthropic API ──
-        api_key = os.getenv("ANTHROPIC_API_KEY")
+        for h in historico[-8:]:
+            role = h.get("role", "")
+            content = h.get("content", "")
+            if not content:
+                continue
+            # Gemini usa "model" em vez de "assistant"
+            gemini_role = "model" if role == "assistant" else "user"
+            contents.append({
+                "role": gemini_role,
+                "parts": [{"text": content}]
+            })
+
+        # Adiciona a mensagem atual
+        contents.append({
+            "role": "user",
+            "parts": [{"text": mensagem}]
+        })
+
+        # ── Chama a API do Gemini ──
+        # Prioridade: variável de ambiente > chave hardcoded de fallback
+        api_key = os.getenv("GEMINI_API_KEY", "AIzaSyAb8RN6KuAuLQxRu_T6WdnZ_L-yLtN2enlmsq5QUQ2z8zEmzmDQ")
+
         if not api_key:
-            # Fallback: resposta sem IA
             return jsonify({
-                "texto": "⚠️ Chave de API da Alfa não configurada. Configure a variável ANTHROPIC_API_KEY.",
+                "texto": "⚠️ Chave de API do Gemini não configurada. Configure a variável GEMINI_API_KEY.",
                 "artigos_filtrados": [],
                 "acao": None
             })
 
+        gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+
+        payload = {
+            "system_instruction": {
+                "parts": [{"text": system_prompt}]
+            },
+            "contents": contents,
+            "generationConfig": {
+                "maxOutputTokens": 2000,
+                "temperature": 0.3
+            }
+        }
+
         resp = req_lib.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "Content-Type": "application/json",
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01"
-            },
-            json={
-                "model": "claude-sonnet-4-20250514",
-                "max_tokens": 2000,
-                "system": system_prompt,
-                "messages": messages
-            },
+            gemini_url,
+            headers={"Content-Type": "application/json"},
+            json=payload,
             timeout=30
         )
         resp.raise_for_status()
         result = resp.json()
 
+        # ── Extrai texto da resposta do Gemini ──
         raw_text = ""
-        for block in result.get("content", []):
-            if block.get("type") == "text":
-                raw_text += block.get("text", "")
+        try:
+            candidates = result.get("candidates", [])
+            if candidates:
+                parts = candidates[0].get("content", {}).get("parts", [])
+                for part in parts:
+                    raw_text += part.get("text", "")
+        except Exception as e:
+            print("❌ Erro ao extrair texto do Gemini:", e)
 
         # ── Parse JSON da resposta ──
         try:
-            # Remove possíveis ```json``` wrappers
             clean = raw_text.strip()
             if clean.startswith("```"):
                 clean = clean.split("```")[1]
