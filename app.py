@@ -317,7 +317,8 @@ Campos obrigatórios:
         messages.append({"role": "user", "content": mensagem})
 
         # ── Chama a API da Anthropic ──
-        api_key = os.getenv("ANTHROPIC_API_KEY", "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")
+        api_key = os.getenv("ANTHROPIC_API_KEY", "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").strip()
+        print(f"🔑 Source: {'ENV' if os.getenv('ANTHROPIC_API_KEY') else 'CODE'} | prefixo: {api_key[:20]}...")
 
         if not api_key:
             return jsonify({
@@ -346,7 +347,7 @@ Campos obrigatórios:
             timeout=30
         )
         if not resp.ok:
-            print("❌ Anthropic API error body:", resp.text)
+            print("❌ Anthropic error:", resp.status_code, resp.text[:300])
         resp.raise_for_status()
         result = resp.json()
 
