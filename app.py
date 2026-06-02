@@ -304,63 +304,60 @@ Campos obrigatórios:
 - "acao": null, ou "selecionar_todos" se o usuário quiser todos os artigos
 """
  
-        # ── Monta histórico para o Groq (formato OpenAI-compatible) ──
-        messages = [{"role": "system", "content": system_prompt}]
- 
+        # ── Monta histórico para a Anthropic ──
+        messages = []
         for h in historico[-8:]:
             role = h.get("role", "")
-            content = h.get("content", "")
-            if not content:
+            content_h = h.get("content", "")
+            if not content_h or role not in ("user", "assistant"):
                 continue
-            # Groq usa "assistant" igual ao padrão OpenAI
-            messages.append({"role": role, "content": content})
- 
+            messages.append({"role": role, "content": content_h})
+
         # Adiciona a mensagem atual
         messages.append({"role": "user", "content": mensagem})
- 
-        # ── Chama a API do Groq ──
-        # Prioridade: variável de ambiente > chave hardcoded de fallback
-        api_key = os.getenv("GROQ_API_KEY", "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")
- 
+
+        # ── Chama a API da Anthropic ──
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+
         if not api_key:
             return jsonify({
-                "texto": "⚠️ Chave de API do Groq não configurada. Configure a variável GROQ_API_KEY.",
+                "texto": "⚠️ Chave ANTHROPIC_API_KEY não configurada no servidor.",
                 "artigos_filtrados": [],
                 "acao": None
             })
- 
-        groq_url = "https://api.groq.com/openai/v1/chat/completions"
- 
+
+        anthropic_url = "https://api.anthropic.com/v1/messages"
+
         payload = {
-            "model": "llama-3.3-70b-versatile",
-            "messages": messages,
+            "model": "claude-haiku-4-5-20251001",
             "max_tokens": 2000,
-            "temperature": 0.3,
-            "response_format": {"type": "json_object"}
+            "system": system_prompt,
+            "messages": messages
         }
- 
+
         resp = req_lib.post(
-            groq_url,
+            anthropic_url,
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}"
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01"
             },
             json=payload,
             timeout=30
         )
         resp.raise_for_status()
         result = resp.json()
- 
-        # ── Extrai texto da resposta do Groq ──
+
+        # ── Extrai texto da resposta da Anthropic ──
         raw_text = ""
         try:
-            choices = result.get("choices", [])
-            if choices:
-                raw_text = choices[0].get("message", {}).get("content", "")
+            for block in result.get("content", []):
+                if block.get("type") == "text":
+                    raw_text += block.get("text", "")
         except Exception as e:
-            print("❌ Erro ao extrair texto do Groq:", e)
- 
-        print("📨 Groq raw_text:", raw_text[:300])
+            print("❌ Erro ao extrair texto da Anthropic:", e)
+
+        print("📨 Anthropic raw_text:", raw_text[:300])
  
         # ── Parse JSON robusto ──
         # Tenta várias estratégias para extrair o JSON mesmo que o modelo
