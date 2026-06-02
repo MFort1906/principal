@@ -329,7 +329,7 @@ Campos obrigatórios:
         anthropic_url = "https://api.anthropic.com/v1/messages"
 
         payload = {
-            "model": "claude-haiku-4-5-20251001",
+            "model": "claude-haiku-4-5",
             "max_tokens": 2000,
             "system": system_prompt,
             "messages": messages
