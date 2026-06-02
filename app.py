@@ -304,8 +304,8 @@ Campos obrigatórios:
 - "acao": null, ou "selecionar_todos" se o usuário quiser todos os artigos
 """
  
-        # ── Monta histórico para a Anthropic ──
-        messages = []
+        # ── Monta histórico para a OpenAI ──
+        messages = [{"role": "system", "content": system_prompt}]
         for h in historico[-8:]:
             role = h.get("role", "")
             content_h = h.get("content", "")
@@ -316,51 +316,45 @@ Campos obrigatórios:
         # Adiciona a mensagem atual
         messages.append({"role": "user", "content": mensagem})
 
-        # ── Chama a API da Anthropic ──
-        api_key = os.getenv("ANTHROPIC_API_KEY", "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").strip()
-        print(f"🔑 Source: {'ENV' if os.getenv('ANTHROPIC_API_KEY') else 'CODE'} | prefixo: {api_key[:20]}...")
+        # ── Chama a API da OpenAI ──
+        api_key = os.getenv("OPENAI_API_KEY", "").strip()
+        print(f"🔑 OPENAI_API_KEY: {'OK' if api_key else 'NÃO CONFIGURADA'}")
 
         if not api_key:
             return jsonify({
-                "texto": "⚠️ Chave ANTHROPIC_API_KEY não configurada no servidor.",
+                "texto": "⚠️ Chave de API da Alfa não configurada. Configure a variável OPENAI_API_KEY no Render.",
                 "artigos_filtrados": [],
                 "acao": None
             })
 
-        anthropic_url = "https://api.anthropic.com/v1/messages"
-
-        payload = {
-            "model": "claude-3-5-haiku-20241022",
-            "max_tokens": 2000,
-            "system": system_prompt,
-            "messages": messages
-        }
-
         resp = req_lib.post(
-            anthropic_url,
+            "https://api.openai.com/v1/chat/completions",
             headers={
                 "Content-Type": "application/json",
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01"
+                "Authorization": f"Bearer {api_key}"
             },
-            json=payload,
+            json={
+                "model": "gpt-4o-mini",
+                "max_tokens": 2000,
+                "temperature": 0.2,
+                "response_format": {"type": "json_object"},
+                "messages": messages
+            },
             timeout=30
         )
         if not resp.ok:
-            print("❌ Anthropic error:", resp.status_code, resp.text[:300])
+            print("❌ OpenAI error:", resp.status_code, resp.text[:300])
         resp.raise_for_status()
         result = resp.json()
 
-        # ── Extrai texto da resposta da Anthropic ──
+        # ── Extrai texto da resposta da OpenAI ──
         raw_text = ""
         try:
-            for block in result.get("content", []):
-                if block.get("type") == "text":
-                    raw_text += block.get("text", "")
+            raw_text = result["choices"][0]["message"]["content"]
         except Exception as e:
-            print("❌ Erro ao extrair texto da Anthropic:", e)
+            print("❌ Erro ao extrair texto da OpenAI:", e)
 
-        print("📨 Anthropic raw_text:", raw_text[:300])
+        print("📨 OpenAI raw_text:", raw_text[:300])
  
         # ── Parse JSON robusto ──
         # Tenta várias estratégias para extrair o JSON mesmo que o modelo
