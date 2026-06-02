@@ -1,17 +1,19 @@
 /* ═════════════════════════════════════════
-   ALFA.JS — Lógica do chat assistente
-   Alfa by Tennant Company
+   ALFA.JS — Assistente Inteligente Tennant
+   v2.0 — Marketing Edition
 ═════════════════════════════════════════ */
 
-// ─── ESTADO ───────────────────────────────
-let historico = [];
+// ─── ESTADO ──────────────────────────────
+let historico       = [];
 let artigosDisponiveis = [];
-let selecionados = new Set();
-let paisAtual = '';
-let paisNomeAtual = '';
-let enviando = false;
+let selecionados    = new Set();
+let paisAtual       = '';
+let paisNomeAtual   = '';
+let enviando        = false;
+let historicoSessao = []; // [{pais, tema, artigos, timestamp}]
+let todosOsPaises   = {};
 
-// ─── REFS ─────────────────────────────────
+// ─── REFS ────────────────────────────────
 const chatMessages   = document.getElementById('chat-messages');
 const chatInput      = document.getElementById('chat-input');
 const btnSend        = document.getElementById('btn-send');
@@ -22,42 +24,54 @@ const selecaoBadge   = document.getElementById('selecao-badge');
 const selecaoCount   = document.getElementById('selecao-count');
 const btnTraduzir    = document.getElementById('btn-traduzir');
 const loadingOverlay = document.getElementById('loading-overlay');
+const loadingText    = document.getElementById('loading-text');
 
-// ─── INIT ─────────────────────────────────
+// ─── INIT ────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
     await carregarPaises();
     mostrarBemVindo();
     chatInput.focus();
 });
 
-// ─── CARREGAR PAÍSES ──────────────────────
+// ─── PAÍSES ──────────────────────────────
 async function carregarPaises() {
     try {
         const r = await fetch('/paises', { credentials: 'include' });
         if (r.status === 401) { window.location.href = '/'; return; }
-        const paises = await r.json();
+        todosOsPaises = await r.json();
+
+        const sorted = Object.entries(todosOsPaises).sort((a,b) => a[1].localeCompare(b[1]));
         selectPais.innerHTML = '';
-        Object.entries(paises)
-            .sort((a, b) => a[1].localeCompare(b[1]))
-            .forEach(([cod, nome]) => {
+        sorted.forEach(([cod, nome]) => {
+            const o = document.createElement('option');
+            o.value = cod; o.textContent = nome;
+            selectPais.appendChild(o);
+        });
+
+        // Popula select do modal comparar
+        const selectB = document.getElementById('comparar-pais-b');
+        if (selectB) {
+            selectB.innerHTML = '';
+            sorted.forEach(([cod, nome]) => {
                 const o = document.createElement('option');
                 o.value = cod; o.textContent = nome;
-                selectPais.appendChild(o);
+                selectB.appendChild(o);
             });
+        }
     } catch {
         selectPais.innerHTML = '<option>Erro ao carregar</option>';
     }
 }
 
-// ─── WELCOME ──────────────────────────────
+// ─── WELCOME ─────────────────────────────
 function mostrarBemVindo() {
     chatMessages.innerHTML = '';
     adicionarMsgAlfa(
-        `Olá! Sou a **Alfa**, sua assistente inteligente da Tennant. 👋\n\nPosso te ajudar a encontrar artigos dos blogs globais Tennant com base em temas, independente do idioma em que estão publicados.\n\n**Como começar:**\n1. Selecione um país na barra lateral\n2. Clique em **"Carregar artigos"**\n3. Me diga o que você precisa — por exemplo: *"quero artigos sobre limpeza industrial"* ou *"mostre posts sobre sustentabilidade"*\n\nEstou pronta para ajudar! 🌿`
+        `Olá! Sou a **Alfa**, sua assistente de marketing da Tennant. 👋\n\nAlém de encontrar e traduzir artigos, agora tenho novas ferramentas para o seu dia a dia:\n\n**📝 Briefing** — gero uma pauta de conteúdo a partir dos artigos\n**🔍 Resumir** — resumo qualquer artigo em português\n**🌍 Comparar** — identifico lacunas de conteúdo entre países\n**📋 Exportar** — baixe a lista de artigos em CSV\n**🕐 Histórico** — reveja buscas anteriores desta sessão\n\nPara começar: selecione um país e clique em **"Carregar artigos"**! 🌿`
     );
 }
 
-// ─── CARREGAR ARTIGOS ─────────────────────
+// ─── CARREGAR ARTIGOS ────────────────────
 btnCarregar.addEventListener('click', async () => {
     const pais = selectPais.value;
     const paisNome = selectPais.options[selectPais.selectedIndex].text;
@@ -65,8 +79,7 @@ btnCarregar.addEventListener('click', async () => {
     btnCarregar.disabled = true;
     btnCarregar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Carregando...';
     artigosStatus.style.display = 'none';
-
-    adicionarMsgUsuario(`Carregar artigos disponíveis de: ${paisNome}`);
+    adicionarMsgUsuario(`Carregar artigos de: ${paisNome}`);
     adicionarTyping();
 
     try {
@@ -77,12 +90,11 @@ btnCarregar.addEventListener('click', async () => {
             body: JSON.stringify({ pais, busca: '' })
         });
         if (r.status === 401) { window.location.href = '/'; return; }
-
         const data = await r.json();
         removerTyping();
 
         if (!data.sucesso) {
-            adicionarMsgAlfa(`⚠️ Não consegui carregar os artigos de **${paisNome}**. Verifique a conexão e tente novamente.`);
+            adicionarMsgAlfa(`⚠️ Não consegui carregar os artigos de **${paisNome}**. Verifique a conexão.`);
             return;
         }
 
@@ -95,25 +107,26 @@ btnCarregar.addEventListener('click', async () => {
         artigosStatus.style.display = 'flex';
         artigosStatus.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${artigosDisponiveis.length} artigos carregados`;
 
+        // Atualiza label do modal comparar
+        const labelA = document.getElementById('comparar-pais-a');
+        if (labelA) labelA.textContent = paisNome;
+
         adicionarMsgAlfa(
-            `✅ Carreguei **${artigosDisponiveis.length} artigos** do blog da Tennant em **${paisNome}**.\n\nAgora me diga o que você está procurando! Por exemplo:\n- *"Filtre apenas artigos sobre limpeza"*\n- *"Quero posts sobre sustentabilidade"*\n- *"Mostre todos os artigos"*`
+            `✅ Carreguei **${artigosDisponiveis.length} artigos** do blog da Tennant em **${paisNome}**.\n\nO que deseja fazer?\n- *"Filtre artigos sobre limpeza"* — para buscar por tema\n- Clique em **Briefing** na sidebar — para gerar uma pauta\n- Clique em **Comparar** — para ver diferenças com outro país`
         );
 
-    } catch (err) {
+    } catch {
         removerTyping();
-        adicionarMsgAlfa('⚠️ Erro de conexão ao carregar os artigos. Tente novamente.');
+        adicionarMsgAlfa('⚠️ Erro de conexão ao carregar os artigos.');
     } finally {
         btnCarregar.disabled = false;
         btnCarregar.innerHTML = '<i class="fa-solid fa-rotate"></i> Carregar artigos';
     }
 });
 
-// ─── ENVIAR MENSAGEM ──────────────────────
+// ─── ENVIAR MENSAGEM ─────────────────────
 chatInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        enviarMensagem();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarMensagem(); }
 });
 chatInput.addEventListener('input', () => {
     chatInput.style.height = 'auto';
@@ -123,7 +136,6 @@ chatInput.addEventListener('input', () => {
 window.enviarMensagem = async function() {
     const texto = chatInput.value.trim();
     if (!texto || enviando) return;
-
     enviando = true;
     btnSend.disabled = true;
     chatInput.value = '';
@@ -132,24 +144,20 @@ window.enviarMensagem = async function() {
     adicionarMsgUsuario(texto);
     adicionarTyping();
 
-    const contexto = {
-        mensagem: texto,
-        historico: historico.slice(-10),
-        pais: paisAtual,
-        pais_nome: paisNomeAtual,
-        artigos: artigosDisponiveis
-    };
-
     try {
         const r = await fetch('/alfa-chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify(contexto)
+            body: JSON.stringify({
+                mensagem: texto,
+                historico: historico.slice(-10),
+                pais: paisAtual,
+                pais_nome: paisNomeAtual,
+                artigos: artigosDisponiveis
+            })
         });
-
         if (r.status === 401) { window.location.href = '/'; return; }
-
         const data = await r.json();
         removerTyping();
 
@@ -158,19 +166,15 @@ window.enviarMensagem = async function() {
         } else {
             historico.push({ role: 'user', content: texto });
             historico.push({ role: 'assistant', content: data.texto || '' });
-
             const artigos = data.artigos_filtrados || [];
             adicionarMsgAlfa(data.texto || '', null, artigos);
 
-            // Selecionar todos automaticamente se a ação for selecionar_todos
-            if (data.acao === 'selecionar_todos' && artigosDisponiveis.length > 0) {
-                artigosDisponiveis.forEach(a => selecionados.add(a.href));
-                atualizarSelecaoBadge();
-                document.querySelectorAll('.artigo-chat-card').forEach(c => c.classList.add('selecionado'));
+            // Salva no histórico de sessão se filtrou artigos
+            if (artigos.length > 0) {
+                salvarHistoricoSessao(texto, artigos);
             }
         }
-
-    } catch (err) {
+    } catch {
         removerTyping();
         adicionarMsgAlfa('⚠️ Erro de conexão. Verifique o servidor e tente novamente.');
     } finally {
@@ -180,7 +184,6 @@ window.enviarMensagem = async function() {
     }
 };
 
-// ─── SUGESTÕES ────────────────────────────
 window.usarSugestao = function(texto) {
     chatInput.value = texto;
     chatInput.style.height = 'auto';
@@ -188,7 +191,345 @@ window.usarSugestao = function(texto) {
     enviarMensagem();
 };
 
-// ─── RENDERIZAR ARTIGOS ───────────────────
+// ─── HISTÓRICO DE SESSÃO ─────────────────
+function salvarHistoricoSessao(tema, artigos) {
+    historicoSessao.unshift({
+        tema,
+        artigos: artigos.slice(),
+        pais: paisNomeAtual,
+        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    });
+    if (historicoSessao.length > 20) historicoSessao.pop();
+}
+
+window.verHistorico = function() {
+    if (historicoSessao.length === 0) {
+        adicionarMsgAlfa('📭 Nenhuma busca registrada nesta sessão ainda. Filtre artigos por tema e elas aparecerão aqui!');
+        return;
+    }
+    const wrap = document.createElement('div');
+    wrap.className = 'historico-wrap';
+
+    historicoSessao.forEach((item, i) => {
+        const row = document.createElement('div');
+        row.className = 'historico-item';
+        row.innerHTML = `
+            <div class="hist-meta">
+                <span class="hist-time">${item.timestamp}</span>
+                <span class="hist-pais"><i class="fa-solid fa-earth-americas"></i> ${escHtml(item.pais)}</span>
+                <span class="hist-count">${item.artigos.length} artigo${item.artigos.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div class="hist-tema">${escHtml(item.tema)}</div>
+            <button class="hist-recarregar" onclick="recarregarBusca(${i})">
+                <i class="fa-solid fa-rotate-right"></i> Usar esta busca
+            </button>
+        `;
+        wrap.appendChild(row);
+    });
+
+    adicionarMsgAlfa(`🕐 **Histórico desta sessão** (${historicoSessao.length} busca${historicoSessao.length !== 1 ? 's' : ''}):`, null, null, wrap);
+};
+
+window.recarregarBusca = function(idx) {
+    const item = historicoSessao[idx];
+    if (!item) return;
+    const artigosObj = item.artigos.map(url => {
+        if (typeof url === 'string') {
+            const found = artigosDisponiveis.find(a => a.href === url);
+            return found || { href: url, title: extrairTituloSlug(url) };
+        }
+        return url;
+    });
+    adicionarMsgAlfa(`🔁 Recarregando busca: *"${item.tema}"* — **${artigosObj.length} artigos**`, null, artigosObj);
+};
+
+// ─── EXPORTAR LISTA CSV ──────────────────
+window.exportarLista = function() {
+    const fonte = selecionados.size > 0
+        ? artigosDisponiveis.filter(a => selecionados.has(a.href))
+        : artigosDisponiveis;
+
+    if (fonte.length === 0) {
+        adicionarMsgAlfa('⚠️ Carregue artigos antes de exportar. Se quiser exportar apenas alguns, selecione-os primeiro.');
+        return;
+    }
+
+    const label = selecionados.size > 0 ? `${selecionados.size} selecionados` : `${fonte.length} artigos`;
+    adicionarMsgUsuario(`Exportar lista — ${label}`);
+
+    // Gera CSV
+    const linhas = ['Título,URL,País'];
+    fonte.forEach(a => {
+        const titulo = (a.title || '').replace(/"/g, '""');
+        const url = a.href || '';
+        linhas.push(`"${titulo}","${url}","${paisNomeAtual}"`);
+    });
+    const csv = linhas.join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `artigos_tennant_${paisAtual}_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    // Mostra confirmação no chat
+    const dlWrap = document.createElement('div');
+    dlWrap.className = 'export-confirm';
+    dlWrap.innerHTML = `
+        <div class="export-icon"><i class="fa-solid fa-file-csv"></i></div>
+        <div class="export-info">
+            <div class="export-title">Lista exportada com sucesso!</div>
+            <div class="export-sub">${fonte.length} artigos · ${paisNomeAtual} · CSV UTF-8</div>
+        </div>
+    `;
+    adicionarMsgAlfa(`✅ Arquivo CSV gerado e baixado! Compatível com Excel e Google Sheets.`, null, null, dlWrap);
+};
+
+// ─── MODAL: BRIEFING ─────────────────────
+window.abrirModalBriefing = function() {
+    if (artigosDisponiveis.length === 0) {
+        adicionarMsgAlfa('⚠️ Carregue os artigos de um país antes de gerar um briefing!');
+        return;
+    }
+    document.getElementById('briefing-tema').value = '';
+    document.getElementById('modal-briefing').style.display = 'flex';
+    setTimeout(() => document.getElementById('briefing-tema').focus(), 100);
+};
+
+window.gerarBriefing = async function() {
+    const tema = document.getElementById('briefing-tema').value.trim();
+    const tom = document.querySelector('input[name="briefing-tom"]:checked')?.value || 'profissional';
+    fecharModal('modal-briefing');
+
+    if (!tema) {
+        adicionarMsgAlfa('⚠️ Informe o tema do briefing.');
+        return;
+    }
+
+    adicionarMsgUsuario(`📝 Gerar briefing de pauta — tema: "${tema}" · tom: ${tom}`);
+    adicionarTyping();
+
+    // Filtra artigos relevantes ao tema via IA
+    const prompt = `Você é especialista em marketing de conteúdo da Tennant Company.
+
+Analise os artigos disponíveis abaixo e gere um BRIEFING DE PAUTA COMPLETO em português brasileiro para o tema: "${tema}".
+Tom desejado: ${tom}.
+
+ARTIGOS DISPONÍVEIS (${artigosDisponiveis.length} total):
+${artigosDisponiveis.slice(0, 100).map((a, i) => `${i+1}. [${a.title || 'sem título'}] (${a.href})`).join('\n')}
+
+O briefing deve conter:
+1. **Objetivo do conteúdo** (2-3 linhas)
+2. **Público-alvo** 
+3. **Artigos de referência** (liste os mais relevantes para o tema, com URL)
+4. **Ângulos sugeridos** (3-4 ideias de abordagem)
+5. **Palavras-chave** sugeridas
+6. **Call-to-action** recomendado
+
+Responda em JSON: {"texto": "briefing completo formatado em markdown"}`;
+
+    try {
+        const r = await fetch('/alfa-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                mensagem: prompt,
+                historico: [],
+                pais: paisAtual,
+                pais_nome: paisNomeAtual,
+                artigos: artigosDisponiveis
+            })
+        });
+        if (r.status === 401) { window.location.href = '/'; return; }
+        const data = await r.json();
+        removerTyping();
+
+        const texto = data.texto || '⚠️ Não foi possível gerar o briefing.';
+
+        // Botão de copiar
+        const copyWrap = document.createElement('div');
+        copyWrap.className = 'copy-wrap';
+        copyWrap.innerHTML = `<button class="copy-btn" onclick="copiarTexto(this)"><i class="fa-regular fa-copy"></i> Copiar briefing</button>`;
+        copyWrap._texto = texto;
+
+        adicionarMsgAlfa(texto, null, null, copyWrap);
+
+    } catch {
+        removerTyping();
+        adicionarMsgAlfa('⚠️ Erro ao gerar briefing. Tente novamente.');
+    }
+};
+
+window.copiarTexto = function(btn) {
+    const wrap = btn.closest('.copy-wrap');
+    // Pega o texto do bubble pai
+    const bubble = btn.closest('.msg-bubble');
+    const msgText = bubble?.querySelector('.msg-text');
+    const texto = msgText ? msgText.innerText : '';
+    navigator.clipboard.writeText(texto).then(() => {
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+        btn.style.color = 'var(--ag)';
+        setTimeout(() => { btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copiar briefing'; btn.style.color = ''; }, 2000);
+    });
+};
+
+// ─── MODAL: COMPARAR PAÍSES ──────────────
+window.abrirComparacao = function() {
+    if (!paisAtual) {
+        adicionarMsgAlfa('⚠️ Carregue os artigos de um país primeiro. Ele será o "País A" na comparação.');
+        return;
+    }
+    document.getElementById('comparar-pais-a').textContent = paisNomeAtual;
+    document.getElementById('modal-comparar').style.display = 'flex';
+};
+
+window.compararPaises = async function() {
+    const paisB = document.getElementById('comparar-pais-b').value;
+    const paisBNome = document.getElementById('comparar-pais-b').options[document.getElementById('comparar-pais-b').selectedIndex].text;
+    fecharModal('modal-comparar');
+
+    if (paisB === paisAtual) {
+        adicionarMsgAlfa('⚠️ Selecione um país diferente do atual para comparar.');
+        return;
+    }
+
+    adicionarMsgUsuario(`🌍 Comparar conteúdo: ${paisNomeAtual} vs ${paisBNome}`);
+    adicionarTyping();
+
+    loadingText.textContent = `Carregando artigos de ${paisBNome}...`;
+    loadingOverlay.style.display = 'flex';
+
+    try {
+        // Carrega artigos do País B
+        const r = await fetch('/buscar-artigos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ pais: paisB, busca: '' })
+        });
+        if (r.status === 401) { window.location.href = '/'; return; }
+        const data = await r.json();
+        loadingOverlay.style.display = 'none';
+        removerTyping();
+
+        if (!data.sucesso) {
+            adicionarMsgAlfa(`⚠️ Não consegui carregar artigos de ${paisBNome}.`);
+            return;
+        }
+
+        const artigosB = data.artigos || [];
+
+        // Manda para IA comparar
+        adicionarTyping();
+        const prompt = `Você é especialista em marketing de conteúdo global da Tennant.
+
+Compare os blogs de dois países e identifique lacunas de conteúdo.
+
+PAÍS A — ${paisNomeAtual} (${artigosDisponiveis.length} artigos):
+${artigosDisponiveis.slice(0,80).map(a => `- ${a.title || a.href}`).join('\n')}
+
+PAÍS B — ${paisBNome} (${artigosB.length} artigos):
+${artigosB.slice(0,80).map(a => `- ${a.title || a.href}`).join('\n')}
+
+Analise e responda em JSON: {"texto": "análise completa em markdown com: 1) Temas exclusivos do País A, 2) Temas exclusivos do País B, 3) Temas em comum, 4) Recomendações de adaptação de conteúdo"}`;
+
+        const r2 = await fetch('/alfa-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ mensagem: prompt, historico: [], pais: paisAtual, pais_nome: paisNomeAtual, artigos: [] })
+        });
+        if (r2.status === 401) { window.location.href = '/'; return; }
+        const data2 = await r2.json();
+        removerTyping();
+
+        // Badge de comparação
+        const badgeWrap = document.createElement('div');
+        badgeWrap.className = 'comparar-badge';
+        badgeWrap.innerHTML = `
+            <span class="cb-pais">${escHtml(paisNomeAtual)} <small>${artigosDisponiveis.length} arts.</small></span>
+            <span class="cb-vs">⟷</span>
+            <span class="cb-pais">${escHtml(paisBNome)} <small>${artigosB.length} arts.</small></span>
+        `;
+        adicionarMsgAlfa(data2.texto || '⚠️ Erro na análise.', null, null, badgeWrap);
+
+    } catch {
+        loadingOverlay.style.display = 'none';
+        removerTyping();
+        adicionarMsgAlfa('⚠️ Erro ao comparar países. Tente novamente.');
+    }
+};
+
+// ─── MODAL: RESUMIR ARTIGO ────────────────
+window.abrirResumir = function() {
+    document.getElementById('resumir-url').value = '';
+    document.getElementById('modal-resumir').style.display = 'flex';
+    setTimeout(() => document.getElementById('resumir-url').focus(), 100);
+};
+
+window.resumirArtigo = async function() {
+    const url = document.getElementById('resumir-url').value.trim();
+    const tamanho = document.querySelector('input[name="resumo-tamanho"]:checked')?.value || 'medio';
+    fecharModal('modal-resumir');
+
+    if (!url || !url.startsWith('http')) {
+        adicionarMsgAlfa('⚠️ Informe uma URL válida do blog Tennant.');
+        return;
+    }
+
+    adicionarMsgUsuario(`📖 Resumir artigo: ${url}`);
+    adicionarTyping();
+
+    const instrucaoTamanho = tamanho === 'curto'
+        ? 'Liste apenas 3 pontos principais em bullets.'
+        : tamanho === 'completo'
+        ? 'Faça um resumo completo com introdução, pontos principais e conclusão.'
+        : 'Escreva um parágrafo de 4-6 linhas com os pontos principais.';
+
+    const prompt = `Você é especialista em marketing de conteúdo da Tennant.
+
+O usuário quer um resumo do artigo em: ${url}
+
+Como você não tem acesso direto à URL, use o título/slug da URL para inferir o conteúdo do artigo e gere um resumo útil baseado no que você sabe sobre o tema.
+
+Instruções: ${instrucaoTamanho}
+Responda sempre em português brasileiro.
+Inclua no final: "🔗 Artigo original: ${url}"
+
+Responda em JSON: {"texto": "resumo em markdown"}`;
+
+    try {
+        const r = await fetch('/alfa-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ mensagem: prompt, historico: [], pais: paisAtual, pais_nome: paisNomeAtual, artigos: [] })
+        });
+        if (r.status === 401) { window.location.href = '/'; return; }
+        const data = await r.json();
+        removerTyping();
+
+        const copyWrap = document.createElement('div');
+        copyWrap.className = 'copy-wrap';
+        copyWrap.innerHTML = `<button class="copy-btn" onclick="copiarTexto(this)"><i class="fa-regular fa-copy"></i> Copiar resumo</button>`;
+        adicionarMsgAlfa(data.texto || '⚠️ Erro ao gerar resumo.', null, null, copyWrap);
+
+    } catch {
+        removerTyping();
+        adicionarMsgAlfa('⚠️ Erro ao resumir. Tente novamente.');
+    }
+};
+
+// ─── LIMPAR CHAT ─────────────────────────
+window.limparChat = function() {
+    historico = [];
+    mostrarBemVindo();
+};
+
+// ─── RENDERIZAR ARTIGOS ──────────────────
 function renderizarArtigosNoChat(artigos, grupoId) {
     if (!artigos || artigos.length === 0) return null;
 
@@ -196,7 +537,6 @@ function renderizarArtigosNoChat(artigos, grupoId) {
     wrap.className = 'artigos-chat-wrap';
     wrap.dataset.grupoId = grupoId;
 
-    // Barra de ações
     const bar = document.createElement('div');
     bar.className = 'artigos-select-bar';
     bar.innerHTML = `
@@ -205,7 +545,6 @@ function renderizarArtigosNoChat(artigos, grupoId) {
     `;
     wrap.appendChild(bar);
 
-    // Lista de artigos
     const lista = document.createElement('div');
     lista.className = 'artigos-chat-lista';
     artigos.forEach((art, i) => {
@@ -213,7 +552,6 @@ function renderizarArtigosNoChat(artigos, grupoId) {
         card.className = 'artigo-chat-card';
         if (selecionados.has(art.href)) card.classList.add('selecionado');
         card.dataset.url = art.href;
-        card.dataset.titulo = art.title || art.href;
         card.style.animationDelay = `${Math.min(i * 0.04, 0.5)}s`;
 
         const slug = (() => {
@@ -236,35 +574,48 @@ function renderizarArtigosNoChat(artigos, grupoId) {
     });
     wrap.appendChild(lista);
 
-    // ── Botão "Traduzir estes artigos" inline ──
     const urlsDeste = artigos.map(a => a.href);
     const acoesBtns = document.createElement('div');
     acoesBtns.className = 'artigos-acoes';
     acoesBtns.innerHTML = `
         <button class="traduzir-grupo-btn" onclick="traduzirGrupo(this, ${JSON.stringify(urlsDeste).replace(/"/g, '&quot;')})">
-            <i class="fa-solid fa-language"></i> Traduzir estes ${artigos.length} artigo${artigos.length !== 1 ? 's' : ''}
+            <i class="fa-solid fa-language"></i> Traduzir estes ${artigos.length}
         </button>
         <button class="selecionar-grupo-btn" onclick="selecionarGrupoParaTraduzir(this, ${JSON.stringify(urlsDeste).replace(/"/g, '&quot;')})">
             <i class="fa-solid fa-layer-group"></i> Adicionar à seleção
         </button>
+        <button class="exportar-grupo-btn" onclick="exportarGrupo(${JSON.stringify(artigos).replace(/"/g, '&quot;')})">
+            <i class="fa-solid fa-table-list"></i> Exportar CSV
+        </button>
     `;
     wrap.appendChild(acoesBtns);
-
     return wrap;
 }
 
-// ─── TRADUZIR GRUPO DIRETO ────────────────
-window.traduzirGrupo = async function(btn, urls) {
-    if (!paisAtual) {
-        adicionarMsgAlfa('⚠️ Selecione um país antes de traduzir.');
-        return;
-    }
+// ─── EXPORTAR GRUPO ──────────────────────
+window.exportarGrupo = function(artigos) {
+    const linhas = ['Título,URL,País'];
+    artigos.forEach(a => {
+        const titulo = (a.title || '').replace(/"/g, '""');
+        linhas.push(`"${titulo}","${a.href || ''}","${paisNomeAtual}"`);
+    });
+    const csv = linhas.join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const el = document.createElement('a');
+    el.href = url;
+    el.download = `artigos_filtrados_${Date.now()}.csv`;
+    el.click();
+    URL.revokeObjectURL(url);
+};
 
-    // Desabilita botão e mostra loading inline
+// ─── TRADUZIR GRUPO ──────────────────────
+window.traduzirGrupo = async function(btn, urls) {
+    if (!paisAtual) { adicionarMsgAlfa('⚠️ Selecione um país antes de traduzir.'); return; }
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Traduzindo...';
+    loadingText.textContent = 'Traduzindo artigos selecionados...';
     loadingOverlay.style.display = 'flex';
-
     adicionarMsgUsuario(`Traduzir ${urls.length} artigo${urls.length !== 1 ? 's' : ''}`);
 
     try {
@@ -274,21 +625,20 @@ window.traduzirGrupo = async function(btn, urls) {
             credentials: 'include',
             body: JSON.stringify({ pais: paisAtual, urls })
         });
-
         if (r.status === 401) { window.location.href = '/'; return; }
         const data = await r.json();
         loadingOverlay.style.display = 'none';
 
         if (data.sucesso) {
             mostrarDownloads(data.arquivos || []);
-            btn.closest('.artigos-acoes').innerHTML = `<span class="traduzido-ok"><i class="fa-solid fa-circle-check"></i> Tradução concluída!</span>`;
+            btn.closest('.artigos-acoes').querySelector('.traduzir-grupo-btn').outerHTML =
+                `<span class="traduzido-ok"><i class="fa-solid fa-circle-check"></i> Tradução concluída!</span>`;
         } else {
             adicionarMsgAlfa('⚠️ Erro ao traduzir: ' + (data.erro || 'falha desconhecida'));
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-language"></i> Tentar novamente';
         }
-
-    } catch (err) {
+    } catch {
         loadingOverlay.style.display = 'none';
         adicionarMsgAlfa('⚠️ Erro de conexão durante a tradução.');
         btn.disabled = false;
@@ -296,23 +646,19 @@ window.traduzirGrupo = async function(btn, urls) {
     }
 };
 
-// ─── ADICIONAR GRUPO À SELEÇÃO ────────────
 window.selecionarGrupoParaTraduzir = function(btn, urls) {
     urls.forEach(url => selecionados.add(url));
     atualizarSelecaoBadge();
-    // Marca visualmente os cards
     document.querySelectorAll('.artigo-chat-card').forEach(card => {
         if (urls.includes(card.dataset.url)) card.classList.add('selecionado');
     });
-    btn.innerHTML = '<i class="fa-solid fa-check"></i> Adicionados à seleção';
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Adicionados';
     btn.disabled = true;
 };
 
-// ─── MOSTRAR DOWNLOADS ────────────────────
 function mostrarDownloads(arquivos) {
     const dlWrap = document.createElement('div');
     dlWrap.className = 'downloads-chat-wrap';
-
     arquivos.forEach((arq, i) => {
         const nome = arq.includes('/') ? arq.split('/').pop() : arq;
         const a = document.createElement('a');
@@ -328,25 +674,23 @@ function mostrarDownloads(arquivos) {
         `;
         dlWrap.appendChild(a);
     });
-
     adicionarMsgAlfa(
         `✅ Tradução concluída! **${arquivos.length} arquivo${arquivos.length !== 1 ? 's' : ''}** pronto${arquivos.length !== 1 ? 's' : ''} para download:`,
         null, null, dlWrap
     );
 }
 
-// ─── SELECT ALL DO GRUPO ──────────────────
 window.selecionarTodosDoGrupo = function(btn) {
     const wrap = btn.closest('.artigos-chat-wrap');
     if (!wrap) return;
     const cards = wrap.querySelectorAll('.artigo-chat-card');
-    const todosSelected = Array.from(cards).every(c => c.classList.contains('selecionado'));
+    const todos = Array.from(cards).every(c => c.classList.contains('selecionado'));
     cards.forEach(card => {
         const url = card.dataset.url;
-        if (todosSelected) { selecionados.delete(url); card.classList.remove('selecionado'); }
+        if (todos) { selecionados.delete(url); card.classList.remove('selecionado'); }
         else { selecionados.add(url); card.classList.add('selecionado'); }
     });
-    btn.textContent = todosSelected ? 'Selecionar todos' : 'Desmarcar todos';
+    btn.textContent = todos ? 'Selecionar todos' : 'Desmarcar todos';
     atualizarSelecaoBadge();
 };
 
@@ -363,13 +707,12 @@ function atualizarSelecaoBadge() {
     btnTraduzir.style.display = n > 0 ? 'flex' : 'none';
 }
 
-// ─── TRADUZIR SELECIONADOS (botão topo) ───
 window.traduzirSelecionados = async function() {
     if (selecionados.size === 0 || !paisAtual) return;
     const urls = Array.from(selecionados);
+    loadingText.textContent = 'Traduzindo artigos selecionados...';
     loadingOverlay.style.display = 'flex';
-    adicionarMsgUsuario(`Traduzir ${urls.length} artigo${urls.length !== 1 ? 's' : ''} selecionado${urls.length !== 1 ? 's' : ''}`);
-
+    adicionarMsgUsuario(`Traduzir ${urls.length} selecionado${urls.length !== 1 ? 's' : ''}`);
     try {
         const r = await fetch('/traduzir-selecionados', {
             method: 'POST',
@@ -380,7 +723,6 @@ window.traduzirSelecionados = async function() {
         if (r.status === 401) { window.location.href = '/'; return; }
         const data = await r.json();
         loadingOverlay.style.display = 'none';
-
         if (data.sucesso) {
             mostrarDownloads(data.arquivos || []);
             selecionados.clear();
@@ -388,11 +730,23 @@ window.traduzirSelecionados = async function() {
         } else {
             adicionarMsgAlfa('⚠️ Erro ao traduzir: ' + (data.erro || 'falha desconhecida'));
         }
-    } catch (err) {
+    } catch {
         loadingOverlay.style.display = 'none';
         adicionarMsgAlfa('⚠️ Erro de conexão durante a tradução.');
     }
 };
+
+// ─── MODALS ──────────────────────────────
+window.fecharModal = function(id) {
+    document.getElementById(id).style.display = 'none';
+};
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        ['modal-briefing','modal-comparar','modal-resumir'].forEach(id => {
+            document.getElementById(id).style.display = 'none';
+        });
+    }
+});
 
 // ─── HELPERS DE MENSAGEM ─────────────────
 function adicionarMsgUsuario(texto) {
@@ -412,20 +766,14 @@ function adicionarMsgUsuario(texto) {
 function adicionarMsgAlfa(texto, hora = null, artigosFiltrados = null, extraEl = null) {
     const row = document.createElement('div');
     row.className = 'msg-row alfa';
-
     const bubble = document.createElement('div');
     bubble.className = 'msg-bubble';
 
-    // ── Limpar JSON vazado no texto ──
+    // Limpa JSON vazado
     let textoLimpo = texto || '';
-    // Remove blocos JSON que possam ter vazado na resposta
     textoLimpo = textoLimpo.replace(/```json[\s\S]*?```/gi, '').trim();
-    // Se o texto inteiro é um JSON (começa com { e termina com }), extrai só o campo "texto"
     if (/^\s*\{[\s\S]*\}\s*$/.test(textoLimpo)) {
-        try {
-            const parsed = JSON.parse(textoLimpo);
-            if (parsed.texto) textoLimpo = parsed.texto;
-        } catch (_) { /* mantém texto original */ }
+        try { const p = JSON.parse(textoLimpo); if (p.texto) textoLimpo = p.texto; } catch(_) {}
     }
 
     const msgText = document.createElement('div');
@@ -438,9 +786,7 @@ function adicionarMsgAlfa(texto, hora = null, artigosFiltrados = null, extraEl =
     msgTime.textContent = hora || horaAtual();
     bubble.appendChild(msgTime);
 
-    // ── Renderizar artigos filtrados como cards ──
     if (artigosFiltrados && artigosFiltrados.length > 0) {
-        // artigosFiltrados pode ser array de strings (URLs) ou objetos {href, title}
         const artigosObj = artigosFiltrados.map(item => {
             if (typeof item === 'string') {
                 const found = artigosDisponiveis.find(a => a.href === item);
@@ -448,10 +794,8 @@ function adicionarMsgAlfa(texto, hora = null, artigosFiltrados = null, extraEl =
             }
             return item;
         }).filter(a => a && a.href);
-
         if (artigosObj.length > 0) {
-            const grupoId = 'grupo_' + Date.now();
-            const cardsEl = renderizarArtigosNoChat(artigosObj, grupoId);
+            const cardsEl = renderizarArtigosNoChat(artigosObj, 'grupo_' + Date.now());
             if (cardsEl) bubble.appendChild(cardsEl);
         }
     }
@@ -467,14 +811,10 @@ function adicionarMsgAlfa(texto, hora = null, artigosFiltrados = null, extraEl =
 function adicionarTyping() {
     const row = document.createElement('div');
     row.className = 'msg-row alfa typing-row';
-    row.innerHTML = `
-        <div class="msg-avatar">A</div>
-        <div class="typing-dots"><span></span><span></span><span></span></div>
-    `;
+    row.innerHTML = `<div class="msg-avatar">A</div><div class="typing-dots"><span></span><span></span><span></span></div>`;
     chatMessages.appendChild(row);
     scrollBottom();
 }
-
 function removerTyping() {
     const t = chatMessages.querySelector('.typing-row');
     if (t) t.remove();
@@ -483,28 +823,26 @@ function removerTyping() {
 // ─── UTILITÁRIOS ─────────────────────────
 function extrairTituloSlug(url) {
     try {
-        const slug = new URL(url).pathname.split('/').pop().replace('.html', '').replace(/-/g, ' ');
+        const slug = new URL(url).pathname.split('/').pop().replace('.html','').replace(/-/g,' ');
         return slug.charAt(0).toUpperCase() + slug.slice(1);
     } catch { return url; }
 }
-
 function formatarMarkdown(text) {
     if (!text) return '';
     return text
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        .replace(/\n/g, '<br>');
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g,'<em>$1</em>')
+        .replace(/^#{1,3} (.+)$/gm, '<strong>$1</strong>')
+        .replace(/^[-•] (.+)$/gm, '• $1')
+        .replace(/\n/g,'<br>');
 }
-
 function escHtml(str) {
-    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
 function horaAtual() {
-    return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 }
-
 function scrollBottom() {
     requestAnimationFrame(() => { chatMessages.scrollTop = chatMessages.scrollHeight; });
 }
