@@ -329,7 +329,7 @@ Campos obrigatórios:
         anthropic_url = "https://api.anthropic.com/v1/messages"
 
         payload = {
-            "model": "claude-haiku-4-5",
+            "model": "claude-3-5-haiku-20241022",
             "max_tokens": 2000,
             "system": system_prompt,
             "messages": messages
@@ -345,6 +345,8 @@ Campos obrigatórios:
             json=payload,
             timeout=30
         )
+        if not resp.ok:
+            print("❌ Anthropic API error body:", resp.text)
         resp.raise_for_status()
         result = resp.json()
 
