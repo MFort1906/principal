@@ -317,7 +317,7 @@ Campos obrigatórios:
         messages.append({"role": "user", "content": mensagem})
 
         # ── Chama a API da Anthropic ──
-        api_key = os.getenv("ANTHROPIC_API_KEY", "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")
+        api_key = os.getenv("ANTHROPIC_API_KEY", "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")
 
         if not api_key:
             return jsonify({
