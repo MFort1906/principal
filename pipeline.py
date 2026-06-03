@@ -1,207 +1,188 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[codz]
-*$py.class
+import os
+from scraper import coletar_links_artigos, get_article_content
+from tradução import traduzir_e_formatar_gpt
+from exporter import salvar_conteudo_em_docx
+from utils import normalizar, limpar_pasta_resultados
+from paises import resolver_pais, MAPA_PAISES
 
-# C extensions
-*.so
+URL_BASE = "https://www.tennantco.com"
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+async def executar_pipeline(pais_input, alias_input, qtd_artigos):
+    try:
+        codigo = resolver_pais(pais_input, alias_input)
+    except ValueError as e:
+        return f"❌ Erro: {str(e)}", []
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+    nome_pais = MAPA_PAISES.get(codigo, "Desconhecido")
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+    # 📂 Caminho absoluto da pasta resultados
+    pasta_base_resultados = os.path.abspath("resultados")
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py.cover
-.hypothesis/
-.pytest_cache/
-cover/
+    # 📂 Pasta específica do país
+    pasta_saida = os.path.join(pasta_base_resultados, nome_pais)
 
-# Translations
-*.mo
-*.pot
+    # 🧹 Limpa antes de gerar novos arquivos
+    limpar_pasta_resultados(pasta_saida)
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+    url_blog = f"{URL_BASE}/{codigo}/blog.html"
+    links = coletar_links_artigos(url_blog, codigo)
 
-# Flask stuff:
-instance/
-.webassets-cache
+    vistos_hash = set()
+    arquivos_gerados = []
+    artigos_processados = 0
 
-# Scrapy stuff:
-.scrapy
+    for artigo in links:
+        if artigos_processados >= int(qtd_artigos):
+            break
 
-# Sphinx documentation
-docs/_build/
+        try:
+            titulo_original, conteudo, _ = get_article_content(artigo['href'])
 
-# PyBuilder
-.pybuilder/
-target/
+            # 🧠 Traduzir título
+            titulo_traduzido, _ = await traduzir_e_formatar_gpt([titulo_original])
+            titulo = titulo_traduzido[0] if titulo_traduzido else titulo_original
 
-# Jupyter Notebook
-.ipynb_checkpoints
+            if not conteudo:
+                print(f"[⚠️ Artigo ignorado: sem conteúdo] {artigo['href']}", flush=True)
+                continue
 
-# IPython
-profile_default/
-ipython_config.py
+            # 🧠 Evitar duplicados
+            texto_bruto = " ".join([
+                item['conteudo']
+                for item in conteudo
+                if item['tipo'] in ['p', 'h2', 'h3']
+            ])
 
-# pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
-# .python-version
+            hash_artigo = hash(texto_bruto.strip().lower())
 
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
+            if hash_artigo in vistos_hash:
+                print(f"[⚠️ Artigo ignorado: duplicado] {artigo['href']}", flush=True)
+                continue
 
-# UV
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#uv.lock
+            # 🌍 Preparar tradução
+            texto_para_traduzir = [
+                item['conteudo']
+                for item in conteudo
+                if item['tipo'] in ['p', 'h2', 'h3']
+            ]
 
-# poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
-#poetry.lock
-#poetry.toml
+            traducao, _ = await traduzir_e_formatar_gpt(texto_para_traduzir)
 
-# pdm
-#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
-#   pdm recommends including project-wide configuration in pdm.toml, but excluding .pdm-python.
-#   https://pdm-project.org/en/latest/usage/project/#working-with-version-control
-#pdm.lock
-#pdm.toml
-.pdm-python
-.pdm-build/
+            # 🧱 Reconstruir conteúdo formatado
+            traduzido_formatado = []
+            i = 0
 
-# pixi
-#   Similar to Pipfile.lock, it is generally recommended to include pixi.lock in version control.
-#pixi.lock
-#   Pixi creates a virtual environment in the .pixi directory, just like venv module creates one
-#   in the .venv directory. It is recommended not to include this directory in version control.
-.pixi
+            for item in conteudo:
+                if item['tipo'] in ['p', 'h2', 'h3']:
+                    if i < len(traducao):
+                        traduzido_formatado.append({
+                            'tipo': item['tipo'],
+                            'conteudo': traducao[i]
+                        })
+                        i += 1
+                else:
+                    traduzido_formatado.append(item)
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
-__pypackages__/
+            # 💾 Salvar DOCX
+            caminho = salvar_conteudo_em_docx(
+                titulo=titulo,
+                elementos=traduzido_formatado,
+                pasta_saida=pasta_saida,
+                url_origem=artigo['href']
+            )
 
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
+            # 🔥 CORREÇÃO PRINCIPAL (RELATIVO + PADRÃO WEB)
+            caminho_relativo = os.path.relpath(caminho, pasta_base_resultados)
+            caminho_relativo = caminho_relativo.replace("\\", "/")
 
-# SageMath parsed files
-*.sage.py
+            arquivos_gerados.append(caminho_relativo)
 
-# Environments
-.env
-.envrc
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+            vistos_hash.add(hash_artigo)
+            artigos_processados += 1
 
-# Spyder project settings
-.spyderproject
-.spyproject
+        except Exception as e:
+            print(f"[❌ Erro ao processar artigo] {artigo['href']}: {e}", flush=True)
+            continue
 
-# Rope project settings
-.ropeproject
+    return "✅ Tradução concluída!", arquivos_gerados
 
-# mkdocs documentation
-/site
 
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
+async def executar_pipeline_selecionados(pais_input, urls_selecionadas):
+    """Pipeline para traduzir apenas artigos selecionados pelo usuário."""
+    try:
+        codigo = resolver_pais(pais_input, None)
+    except ValueError as e:
+        return f"❌ Erro: {str(e)}", []
 
-# Pyre type checker
-.pyre/
+    nome_pais = MAPA_PAISES.get(codigo, "Desconhecido")
 
-# pytype static type analyzer
-.pytype/
+    pasta_base_resultados = os.path.abspath("resultados")
+    pasta_saida = os.path.join(pasta_base_resultados, nome_pais)
+    limpar_pasta_resultados(pasta_saida)
 
-# Cython debug symbols
-cython_debug/
+    vistos_hash = set()
+    arquivos_gerados = []
 
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+    for url in urls_selecionadas:
+        try:
+            titulo_original, conteudo, _ = get_article_content(url)
 
-# Abstra
-# Abstra is an AI-powered process automation framework.
-# Ignore directories containing user credentials, local state, and settings.
-# Learn more at https://abstra.io/docs
-.abstra/
+            titulo_traduzido, _ = await traduzir_e_formatar_gpt([titulo_original])
+            titulo = titulo_traduzido[0] if titulo_traduzido else titulo_original
 
-# Visual Studio Code
-#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
-#  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
-#  you could uncomment the following to ignore the entire vscode folder
-# .vscode/
+            if not conteudo:
+                print(f"[⚠️ Artigo ignorado: sem conteúdo] {url}", flush=True)
+                continue
 
-# Ruff stuff:
-.ruff_cache/
+            texto_bruto = " ".join([
+                item['conteudo']
+                for item in conteudo
+                if item['tipo'] in ['p', 'h2', 'h3']
+            ])
 
-# PyPI configuration file
-.pypirc
+            hash_artigo = hash(texto_bruto.strip().lower())
 
-# Cursor
-#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
-#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
-#  refer to https://docs.cursor.com/context/ignore-files
-.cursorignore
-.cursorindexingignore
+            if hash_artigo in vistos_hash:
+                print(f"[⚠️ Artigo ignorado: duplicado] {url}", flush=True)
+                continue
 
-# Marimo
-marimo/_static/
-marimo/_lsp/
-__marimo__/
+            texto_para_traduzir = [
+                item['conteudo']
+                for item in conteudo
+                if item['tipo'] in ['p', 'h2', 'h3']
+            ]
+
+            traducao, _ = await traduzir_e_formatar_gpt(texto_para_traduzir)
+
+            traduzido_formatado = []
+            i = 0
+
+            for item in conteudo:
+                if item['tipo'] in ['p', 'h2', 'h3']:
+                    if i < len(traducao):
+                        traduzido_formatado.append({
+                            'tipo': item['tipo'],
+                            'conteudo': traducao[i]
+                        })
+                        i += 1
+                else:
+                    traduzido_formatado.append(item)
+
+            caminho = salvar_conteudo_em_docx(
+                titulo=titulo,
+                elementos=traduzido_formatado,
+                pasta_saida=pasta_saida,
+                url_origem=url
+            )
+
+            caminho_relativo = os.path.relpath(caminho, pasta_base_resultados)
+            caminho_relativo = caminho_relativo.replace("\\", "/")
+
+            arquivos_gerados.append(caminho_relativo)
+            vistos_hash.add(hash_artigo)
+
+        except Exception as e:
+            print(f"[❌ Erro ao processar artigo] {url}: {e}", flush=True)
+            continue
+
+    return "✅ Tradução concluída!", arquivos_gerados
