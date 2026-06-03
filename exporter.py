@@ -1,207 +1,137 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[codz]
-*$py.class
+import os
+import requests
+import mimetypes
+from urllib.parse import urlparse
+from docx import Document
+from docx.shared import Inches, RGBColor
+from PIL import Image
+from utils import clean_filename, limpar_xml
 
-# C extensions
-*.so
+HEADERS = {
+    'User-Agent': (
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+        'AppleWebKit/537.36 (KHTML, like Gecko) '
+        'Chrome/91.0.4472.124 Safari/537.36'
+    )
+}
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+def baixar_imagem(url, pasta_destino):
+    try:
+        print(f"\n🔽 Tentando baixar imagem: {url}", flush=True)
+        response = requests.get(url, headers=HEADERS, stream=True, timeout=10)
+        response.raise_for_status()
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+        content_type = response.headers.get('Content-Type')
+        if not content_type or not content_type.lower().startswith("image/"):
+            print(f"[⚠️ Tipo de conteúdo inválido ou ausente] {url}")
+            return None
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+        ext = mimetypes.guess_extension(content_type.lower()) or '.jpg'
+        nome_url = os.path.basename(urlparse(url).path).split("?")[0]
+        if not nome_url:
+            nome_url = f"img_{hash(url)}"
+        if not os.path.splitext(nome_url)[1]:
+            nome_url += ext
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py.cover
-.hypothesis/
-.pytest_cache/
-cover/
+        nome_arquivo = clean_filename(nome_url)
+        caminho = os.path.join(pasta_destino, nome_arquivo)
 
-# Translations
-*.mo
-*.pot
+        with open(caminho, 'wb') as f:
+            f.write(response.content)
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+        try:
+            with Image.open(caminho) as img:
+                img.verify()
+        except Exception as e:
+            print(f"[⚠️ Imagem corrompida ou inválida] {url}: {e}")
+            return None
 
-# Flask stuff:
-instance/
-.webassets-cache
+        print(f"✅ Imagem salva em: {caminho}", flush=True)
+        return caminho
 
-# Scrapy stuff:
-.scrapy
+    except Exception as e:
+        print(f"[❌ Erro ao baixar imagem] {url}: {e}", flush=True)
+        return None
 
-# Sphinx documentation
-docs/_build/
+def reparar_imagem(caminho_original):
+    try:
+        with Image.open(caminho_original) as img:
+            rgb = img.convert('RGB')
+            caminho_corrigido = caminho_original.replace(".", "_reparada.", 1)
+            rgb.save(caminho_corrigido, format="JPEG")
+            print(f"[🛠️ Imagem reparada e salva como] {caminho_corrigido}", flush=True)
+            return caminho_corrigido
+    except Exception as e:
+        print(f"[⚠️ Erro ao reparar imagem] {caminho_original}: {e}", flush=True)
+        return None
 
-# PyBuilder
-.pybuilder/
-target/
+def salvar_conteudo_em_docx(titulo, elementos, pasta_saida, url_origem=None):
+    nome_arquivo = clean_filename(titulo)
+    caminho = os.path.join(pasta_saida, f"{nome_arquivo}.docx")
+    os.makedirs(pasta_saida, exist_ok=True)
 
-# Jupyter Notebook
-.ipynb_checkpoints
+    doc = Document()
 
-# IPython
-profile_default/
-ipython_config.py
+    # Adiciona link do artigo original
+    if url_origem:
+        p = doc.add_paragraph(f"🔗 Artigo original: {url_origem}", style="Intense Quote")
+        for run in p.runs:
+            run.font.color.rgb = RGBColor(0, 0, 0)
 
-# pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
-# .python-version
+    # Adiciona título principal
+    p = doc.add_heading(limpar_xml(titulo), level=1)
+    for run in p.runs:
+        run.font.color.rgb = RGBColor(0, 0, 0)
 
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
+    print(f"\n📝 Iniciando documento: {nome_arquivo}", flush=True)
+    total_imgs = 0
+    total_paragrafos = 0
 
-# UV
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#uv.lock
+    for item in elementos:
+        tipo = item['tipo']
+        conteudo = item['conteudo']
 
-# poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
-#poetry.lock
-#poetry.toml
+        if tipo == 'h2':
+            p = doc.add_paragraph(conteudo, style='Heading 1')
+            for run in p.runs:
+                run.font.color.rgb = RGBColor(0, 0, 0)
+            print(f"🔹 H2: {conteudo[:50]}...", flush=True)
 
-# pdm
-#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
-#   pdm recommends including project-wide configuration in pdm.toml, but excluding .pdm-python.
-#   https://pdm-project.org/en/latest/usage/project/#working-with-version-control
-#pdm.lock
-#pdm.toml
-.pdm-python
-.pdm-build/
+        elif tipo == 'h3':
+            p = doc.add_paragraph(conteudo, style='Heading 3')
+            for run in p.runs:
+                run.font.color.rgb = RGBColor(0, 0, 0)
+            print(f"🔸 H3: {conteudo[:50]}...", flush=True)
 
-# pixi
-#   Similar to Pipfile.lock, it is generally recommended to include pixi.lock in version control.
-#pixi.lock
-#   Pixi creates a virtual environment in the .pixi directory, just like venv module creates one
-#   in the .venv directory. It is recommended not to include this directory in version control.
-.pixi
+        elif tipo == 'p':
+            p = doc.add_paragraph(f"• {conteudo}")
+            for run in p.runs:
+                run.font.color.rgb = RGBColor(0, 0, 0)
+            total_paragrafos += 1
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
-__pypackages__/
+        elif tipo == 'img':
+            img_path = baixar_imagem(conteudo, pasta_saida)
+            if img_path:
+                try:
+                    paragraph = doc.add_paragraph()
+                    run = paragraph.add_run()
+                    run.add_picture(img_path, width=Inches(5.5))
+                    total_imgs += 1
+                    print(f"🖼️ Imagem inserida: {img_path}", flush=True)
+                except Exception as e1:
+                    print(f"[⚠️ Falha ao inserir imagem original] {img_path}: {e1}", flush=True)
+                    img_corrigida = reparar_imagem(img_path)
+                    if img_corrigida:
+                        try:
+                            paragraph = doc.add_paragraph()
+                            run = paragraph.add_run()
+                            run.add_picture(img_corrigida, width=Inches(5.5))
+                            total_imgs += 1
+                            print(f"🖼️ Imagem reparada inserida: {img_corrigida}", flush=True)
+                        except Exception as e2:
+                            print(f"[❌ Erro ao inserir imagem reparada] {img_corrigida}: {e2}", flush=True)
 
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.envrc
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# pytype static type analyzer
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
-
-# Abstra
-# Abstra is an AI-powered process automation framework.
-# Ignore directories containing user credentials, local state, and settings.
-# Learn more at https://abstra.io/docs
-.abstra/
-
-# Visual Studio Code
-#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
-#  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
-#  you could uncomment the following to ignore the entire vscode folder
-# .vscode/
-
-# Ruff stuff:
-.ruff_cache/
-
-# PyPI configuration file
-.pypirc
-
-# Cursor
-#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
-#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
-#  refer to https://docs.cursor.com/context/ignore-files
-.cursorignore
-.cursorindexingignore
-
-# Marimo
-marimo/_static/
-marimo/_lsp/
-__marimo__/
+    doc.save(caminho)
+    print(f"\n💾 Arquivo salvo com sucesso: {caminho}", flush=True)
+    print(f"📊 Estatísticas: {total_paragrafos} parágrafos | {total_imgs} imagens\n", flush=True)
+    return caminho
