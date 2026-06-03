@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for
 import os
 import asyncio
+import json
+from datetime import datetime, date
 from dotenv import load_dotenv
 from pipeline import executar_pipeline, executar_pipeline_selecionados
 from scraper import coletar_links_artigos
@@ -137,6 +139,11 @@ def rodar():
  
         print("📂 Arquivos gerados:", arquivos)
  
+        _enfileirar_notificacao(
+            "sucesso",
+            "Tradução concluída!",
+            f"{len(arquivos)} arquivo(s) gerado(s) para {MAPA_PAISES.get(pais, pais)}."
+        )
         return jsonify({
             "sucesso": True,
             "status": status,
@@ -145,6 +152,7 @@ def rodar():
  
     except Exception as e:
         print("❌ Erro no /rodar:", str(e))
+        _enfileirar_notificacao("erro", "Erro na tradução", str(e)[:120])
         return jsonify({"sucesso": False, "erro": str(e)}), 500
  
  
@@ -230,6 +238,11 @@ def traduzir_selecionados():
             )
         )
  
+        _enfileirar_notificacao(
+            "sucesso",
+            "Artigos traduzidos!",
+            f"{len(arquivos)} arquivo(s) gerado(s)."
+        )
         return jsonify({
             "sucesso": True,
             "status": status,
@@ -238,6 +251,7 @@ def traduzir_selecionados():
  
     except Exception as e:
         print("❌ Erro no /traduzir-selecionados:", str(e))
+        _enfileirar_notificacao("erro", "Erro ao traduzir selecionados", str(e)[:120])
         return jsonify({"sucesso": False, "erro": str(e)}), 500
  
  
@@ -256,7 +270,6 @@ def alfa_chat():
         return jsonify({"erro": "Não autorizado"}), 401
  
     try:
-        import json
         import requests as req_lib
  
         data = request.get_json()
@@ -296,12 +309,13 @@ REGRA CRÍTICA DE FORMATO:
 Sua resposta deve ser EXCLUSIVAMENTE um objeto JSON válido. Nada antes, nada depois.
 NÃO escreva texto livre. NÃO use markdown. NÃO use ```. APENAS o JSON abaixo:
  
-{{"texto": "sua resposta amigável em português aqui", "acao": null, "artigos_filtrados": ["url1", "url2"]}}
+{{"texto": "sua resposta amigável em português aqui", "acao": null, "artigos_filtrados": ["url1", "url2"], "tipo_filtro": null}}
  
 Campos obrigatórios:
 - "texto": string com resposta clara em português (ex: "Encontrei 6 artigos sobre limpeza industrial:")
 - "artigos_filtrados": array de URLs relevantes, ou [] se nenhum
 - "acao": null, ou "selecionar_todos" se o usuário quiser todos os artigos
+- "tipo_filtro": null, ou um dos valores "produto","dica","case","feriado","conteudo","outro" se o usuário filtrar por tipo
 """
  
         # ── Monta histórico para a OpenAI ──
@@ -398,9 +412,10 @@ Campos obrigatórios:
             }
  
         return jsonify({
-            "texto": parsed.get("texto", ""),
+            "texto":             parsed.get("texto", ""),
             "artigos_filtrados": parsed.get("artigos_filtrados", []),
-            "acao": parsed.get("acao", None)
+            "acao":              parsed.get("acao", None),
+            "tipo_filtro":       parsed.get("tipo_filtro", None),
         })
  
     except Exception as e:
@@ -408,6 +423,248 @@ Campos obrigatórios:
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
  
  
+# ─────────────────────────────────────────────────────────────
+# 📅 CRONOGRAMA — tipos de conteúdo reconhecidos pelo CSS
+# ─────────────────────────────────────────────────────────────
+TIPOS_CONTEUDO = ["produto", "dica", "case", "feriado", "conteudo", "outro"]
+
+# 📅 CRONOGRAMA — listar posts do cronograma
+@app.route("/cronograma", methods=["GET"])
+def get_cronograma():
+    """Retorna todos os posts do cronograma.
+    Suporta filtros: ?mes=6&ano=2026&tipo=produto
+    """
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+
+    mes  = request.args.get("mes",  type=int)
+    ano  = request.args.get("ano",  type=int, default=date.today().year)
+    tipo = request.args.get("tipo", "").strip().lower()
+
+    caminho = os.path.join(os.getcwd(), "cronograma.json")
+    if not os.path.exists(caminho):
+        return jsonify({"sucesso": True, "posts": [], "total": 0})
+
+    with open(caminho, encoding="utf-8") as f:
+        posts = json.load(f)
+
+    # Filtra por ano
+    posts = [p for p in posts if p.get("ano", ano) == ano]
+
+    # Filtra por mês se informado
+    if mes:
+        posts = [p for p in posts if p.get("mes") == mes]
+
+    # Filtra por tipo se informado e válido
+    if tipo and tipo in TIPOS_CONTEUDO:
+        posts = [p for p in posts if p.get("tipo", "outro") == tipo]
+
+    return jsonify({"sucesso": True, "posts": posts, "total": len(posts)})
+
+
+# 📅 CRONOGRAMA — salvar / substituir posts
+@app.route("/cronograma", methods=["POST"])
+def salvar_cronograma():
+    """Recebe lista de posts e persiste em cronograma.json.
+    Body: { "posts": [ { dia, mes, ano, tema, conteudo, tipo, status }, ... ] }
+    """
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+
+    try:
+        data = request.get_json()
+        posts = data.get("posts", [])
+
+        # Valida e normaliza cada post
+        normalizados = []
+        for p in posts:
+            tipo   = p.get("tipo", "outro").lower()
+            status = p.get("status", "pendente").lower()
+            normalizados.append({
+                "dia":      int(p.get("dia", 1)),
+                "mes":      int(p.get("mes", 1)),
+                "ano":      int(p.get("ano", date.today().year)),
+                "tema":     str(p.get("tema", "")).strip(),
+                "conteudo": str(p.get("conteudo", "")).strip(),
+                "tipo":     tipo   if tipo   in TIPOS_CONTEUDO          else "outro",
+                "status":   status if status in ("publicado", "agendado", "pendente") else "pendente",
+            })
+
+        caminho = os.path.join(os.getcwd(), "cronograma.json")
+        with open(caminho, "w", encoding="utf-8") as f:
+            json.dump(normalizados, f, ensure_ascii=False, indent=2)
+
+        print(f"📅 Cronograma salvo: {len(normalizados)} posts")
+        return jsonify({"sucesso": True, "total": len(normalizados)})
+
+    except Exception as e:
+        print("❌ Erro no /cronograma POST:", e)
+        return jsonify({"sucesso": False, "erro": str(e)}), 500
+
+
+# 📅 CRONOGRAMA — atualizar status de um post (publicado / agendado / pendente)
+@app.route("/cronograma/status", methods=["PATCH"])
+def atualizar_status_post():
+    """Body: { "dia": 10, "mes": 6, "ano": 2026, "status": "publicado" }"""
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+
+    try:
+        data   = request.get_json()
+        dia    = int(data.get("dia"))
+        mes    = int(data.get("mes"))
+        ano    = int(data.get("ano", date.today().year))
+        status = data.get("status", "pendente").lower()
+
+        if status not in ("publicado", "agendado", "pendente"):
+            return jsonify({"sucesso": False, "erro": "Status inválido"}), 400
+
+        caminho = os.path.join(os.getcwd(), "cronograma.json")
+        if not os.path.exists(caminho):
+            return jsonify({"sucesso": False, "erro": "Cronograma não encontrado"}), 404
+
+        with open(caminho, encoding="utf-8") as f:
+            posts = json.load(f)
+
+        atualizados = 0
+        for p in posts:
+            if p.get("dia") == dia and p.get("mes") == mes and p.get("ano") == ano:
+                p["status"] = status
+                atualizados += 1
+
+        with open(caminho, "w", encoding="utf-8") as f:
+            json.dump(posts, f, ensure_ascii=False, indent=2)
+
+        return jsonify({"sucesso": True, "atualizados": atualizados})
+
+    except Exception as e:
+        print("❌ Erro no /cronograma/status:", e)
+        return jsonify({"sucesso": False, "erro": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────
+# 📊 MÉTRICAS — painel rápido da sidebar
+# ─────────────────────────────────────────────────────────────
+@app.route("/metricas", methods=["GET"])
+def get_metricas():
+    """Retorna métricas agregadas para os cards da sidebar."""
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+
+    hoje = date.today()
+    ano  = hoje.year
+
+    # Conta arquivos gerados
+    total_arquivos = 0
+    try:
+        total_arquivos = len([
+            f for f in os.listdir(PASTA_RESULTADOS)
+            if os.path.isfile(os.path.join(PASTA_RESULTADOS, f))
+        ])
+    except Exception:
+        pass
+
+    # Lê cronograma para calcular métricas de posts
+    posts_publicados = 0
+    posts_agendados  = 0
+    posts_total_ano  = 0
+    proximo_post     = None
+
+    caminho = os.path.join(os.getcwd(), "cronograma.json")
+    if os.path.exists(caminho):
+        try:
+            with open(caminho, encoding="utf-8") as f:
+                posts = json.load(f)
+
+            posts_ano = [p for p in posts if p.get("ano") == ano]
+            posts_total_ano  = len(posts_ano)
+            posts_publicados = sum(1 for p in posts_ano if p.get("status") == "publicado")
+            posts_agendados  = sum(1 for p in posts_ano if p.get("status") == "agendado")
+
+            # Próximo post: menor data >= hoje com status agendado ou pendente
+            futuros = [
+                p for p in posts_ano
+                if p.get("status") in ("agendado", "pendente")
+                and date(p.get("ano", ano), p.get("mes", 1), p.get("dia", 1)) >= hoje
+            ]
+            if futuros:
+                futuros.sort(key=lambda p: date(p["ano"], p["mes"], p["dia"]))
+                prox = futuros[0]
+                data_prox = date(prox["ano"], prox["mes"], prox["dia"])
+                delta = (data_prox - hoje).days
+                proximo_post = {
+                    "dia":    prox["dia"],
+                    "mes":    prox["mes"],
+                    "ano":    prox["ano"],
+                    "tema":   prox.get("tema", ""),
+                    "tipo":   prox.get("tipo", "outro"),
+                    "status": prox.get("status", "pendente"),
+                    "dias_restantes": delta,
+                    "data_fmt": data_prox.strftime("%d/%m/%Y"),
+                }
+        except Exception as e:
+            print("⚠️ Erro ao ler cronograma para métricas:", e)
+
+    # Progresso anual (% de posts publicados em relação ao total)
+    pct_anual = round((posts_publicados / posts_total_ano * 100) if posts_total_ano else 0, 1)
+
+    return jsonify({
+        "sucesso": True,
+        "metricas": {
+            "arquivos_gerados": total_arquivos,
+            "posts_publicados": posts_publicados,
+            "posts_agendados":  posts_agendados,
+            "posts_total_ano":  posts_total_ano,
+            "progresso_anual_pct": pct_anual,
+        },
+        "proximo_post": proximo_post,
+    })
+
+
+# ─────────────────────────────────────────────────────────────
+# 🏷️  FILTROS — tipos de conteúdo disponíveis
+# ─────────────────────────────────────────────────────────────
+@app.route("/tipos-conteudo", methods=["GET"])
+def get_tipos_conteudo():
+    """Retorna os tipos disponíveis para os filtro-chips do CSS."""
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+
+    labels = {
+        "produto":  {"label": "Produto",   "icone": "fa-box"},
+        "dica":     {"label": "Dica",      "icone": "fa-lightbulb"},
+        "case":     {"label": "Case",      "icone": "fa-star"},
+        "feriado":  {"label": "Feriado",   "icone": "fa-calendar"},
+        "conteudo": {"label": "Conteúdo",  "icone": "fa-file-alt"},
+        "outro":    {"label": "Outro",     "icone": "fa-tag"},
+    }
+    return jsonify({"sucesso": True, "tipos": labels})
+
+
+# ─────────────────────────────────────────────────────────────
+# 🔔 TOAST — endpoint para notificações server-side (opcional)
+# Permite que o back-end enfileire toasts a serem exibidos
+# na próxima requisição do front-end.
+# ─────────────────────────────────────────────────────────────
+@app.route("/notificacoes", methods=["GET"])
+def get_notificacoes():
+    """Retorna notificações pendentes para a sessão e as limpa."""
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+
+    notifs = session.pop("notificacoes", [])
+    return jsonify({"sucesso": True, "notificacoes": notifs})
+
+
+def _enfileirar_notificacao(tipo: str, titulo: str, mensagem: str = ""):
+    """Helper interno: adiciona toast à sessão Flask.
+    tipo: 'sucesso' | 'aviso' | 'erro' | 'info'
+    """
+    notifs = session.get("notificacoes", [])
+    notifs.append({"tipo": tipo, "titulo": titulo, "mensagem": mensagem})
+    session["notificacoes"] = notifs
+
+
 # 🚪 Logout
 @app.route("/logout")
 def logout():
