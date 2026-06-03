@@ -1,4 +1,4 @@
-rom flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for
 import os
 import asyncio
 import json
