@@ -4,6 +4,7 @@ import asyncio
 from dotenv import load_dotenv
 from pipeline import executar_pipeline, executar_pipeline_selecionados
 from scraper import coletar_links_artigos
+from cronograma import get_cronograma, get_posts_hoje, get_posts_semana, get_posts_mes
  
 # 🔌 Carregar .env APENAS localmente
 if os.environ.get("RENDER") is None:
@@ -312,21 +313,21 @@ Campos obrigatórios:
             if not content_h or role not in ("user", "assistant"):
                 continue
             messages.append({"role": role, "content": content_h})
-
+ 
         # Adiciona a mensagem atual
         messages.append({"role": "user", "content": mensagem})
-
+ 
         # ── Chama a API da OpenAI ──
         api_key = os.getenv("OPENAI_API_KEY", "").strip()
         print(f"🔑 OPENAI_API_KEY: {'OK' if api_key else 'NÃO CONFIGURADA'}")
-
+ 
         if not api_key:
             return jsonify({
                 "texto": "⚠️ Chave de API da Alfa não configurada. Configure a variável OPENAI_API_KEY no Render.",
                 "artigos_filtrados": [],
                 "acao": None
             })
-
+ 
         resp = req_lib.post(
             "https://api.openai.com/v1/chat/completions",
             headers={
@@ -346,14 +347,14 @@ Campos obrigatórios:
             print("❌ OpenAI error:", resp.status_code, resp.text[:300])
         resp.raise_for_status()
         result = resp.json()
-
+ 
         # ── Extrai texto da resposta da OpenAI ──
         raw_text = ""
         try:
             raw_text = result["choices"][0]["message"]["content"]
         except Exception as e:
             print("❌ Erro ao extrair texto da OpenAI:", e)
-
+ 
         print("📨 OpenAI raw_text:", raw_text[:300])
  
         # ── Parse JSON robusto ──
@@ -408,6 +409,77 @@ Campos obrigatórios:
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
  
  
+# 📅 Cronograma — Página
+@app.route("/cronograma")
+def cronograma():
+    if not session.get("logado"):
+        return redirect(url_for("login"))
+    return render_template("cronograma.html")
+ 
+# 📅 Cronograma — API: todos os posts (com filtro opcional de mes/ano)
+@app.route("/api/cronograma", methods=["GET"])
+def api_cronograma():
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+    mes = request.args.get("mes", type=int)
+    ano = request.args.get("ano", type=int)
+    if mes and ano:
+        posts = get_posts_mes(mes, ano)
+    else:
+        posts = get_cronograma()
+    return jsonify({"sucesso": True, "posts": posts, "total": len(posts)})
+ 
+# 📅 Cronograma — API: próximos 7 dias
+@app.route("/api/cronograma/semana", methods=["GET"])
+def api_cronograma_semana():
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+    return jsonify({"sucesso": True, "posts": get_posts_semana()})
+ 
+# 📅 Cronograma — API: hoje
+@app.route("/api/cronograma/hoje", methods=["GET"])
+def api_cronograma_hoje():
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+    return jsonify({"sucesso": True, "posts": get_posts_hoje()})
+ 
+# ✍️ Gerador de Copy para post (via IA)
+@app.route("/api/gerar-copy", methods=["POST"])
+def gerar_copy():
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+    try:
+        import requests as req_lib, json
+        data = request.get_json()
+        tema = data.get("tema", "")
+        conteudo = data.get("conteudo", "")
+        modelo = data.get("modelo", "")
+        formato = data.get("formato", "instagram")
+        api_key = os.getenv("OPENAI_API_KEY", "").strip()
+        if not api_key:
+            return jsonify({"erro": "API não configurada"}), 500
+        prompt = f"""Você é especialista em marketing B2B para a Tennant Company (máquinas de limpeza de piso).
+Crie um post para {formato.upper()}:
+- Tema: {tema}
+- Tipo: {modelo}
+- Foco: {conteudo}
+Regras: profissional, B2B acessível, emojis moderados, call-to-action clara.
+LinkedIn: formal, até 1200 chars. Instagram: dinâmico, até 500 chars. Facebook: intermediário, até 800 chars.
+Retorne APENAS JSON: {{"copy": "texto", "hashtags": ["tag1","tag2"], "dica_visual": "sugestão de visual"}}"""
+        resp = req_lib.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
+            json={"model": "gpt-4o-mini", "max_tokens": 1000, "temperature": 0.7,
+                  "response_format": {"type": "json_object"},
+                  "messages": [{"role": "user", "content": prompt}]},
+            timeout=30
+        )
+        resp.raise_for_status()
+        parsed = json.loads(resp.json()["choices"][0]["message"]["content"])
+        return jsonify({"sucesso": True, **parsed})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+ 
 # 🚪 Logout
 @app.route("/logout")
 def logout():
@@ -419,4 +491,3 @@ def logout():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
- 
