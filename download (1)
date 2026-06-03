@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>W.S.T.B — Pesquisar Artigos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='pesquisar.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+    <div class="noise-overlay"></div>
+
+    <div class="container pesquisa-container">
+
+        <!-- HEADER -->
+        <header class="site-header fade-in-logo">
+            <div class="logo-lockup">
+                <a href="{{ url_for('home') }}" class="back-btn" title="Voltar">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </a>
+                <div class="logo-icon" style="margin-left:10px;">
+                    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACUCAYAAAAUJCKWAAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAABFXklEQVR4nO29WbBk123f9/kvZ+v17rMPMIMBAQIEQAIkIIoiKUqWRFGy1lhSKY5VZVcqy4srcVWcyktSyVMe/OKK/eCkklQiWyVbZclStFgSSVEkSHDDQhDgYLANZr1z99vrWf5LHv6n+/adhSIJWVeU+zvV0263T58+53++57f/f3/hvWeOOY4K8qgPYI7/uDEn4BxHijkB5zhSzAk4x5FiTsA5jhRzAs5xpJgTcI4jxZyAcxwp5gSc40gxJ+AcR4o5Aec4UswJOMeRYk7AOY4UcwLOcaSYE3COI8WcgHMcKeYEnONIMSfgHEeKOQHnOFLMCTjHkWJOwDmOFHMCznGkmBNwjiPFnIBzHCnmBJzjSDEn4BxHijkB5zhSzAk4x5FiTsA5jhRzAs5xpJgTcI4jxZyAcxwp5gSc40gxJ+AcR4o5Aec4UswJOMeR4v8HKvIzwqtOl6QAAAABJRU5ErkJggg==" alt="Tennant" style="height:40px; width:auto; filter: drop-shadow(0 0 8px rgba(0,200,255,0.4));"/>
+                </div>
+            </div>
+            <a href="{{ url_for('manual') }}" target="_blank" class="manual-pill">
+                <i class="fa-regular fa-book-open"></i>
+                Manual
+            </a>
+            <a href="{{ url_for('alfa') }}" class="manual-pill" style="background:rgba(27,92,56,0.08);border-color:rgba(27,92,56,0.22);color:#1B5C38;">
+                <i class="fa-solid fa-robot"></i>
+                Alfa IA
+            </a>
+        </header>
+
+        <main class="fade-in-content">
+
+            <!-- HERO -->
+            <div class="hero-section" style="margin-bottom:24px;">
+                <div class="hero-badge">
+                    <span class="live-dot"></span>
+                    Modo de filtragem
+                </div>
+                <h1 class="hero-title">Pesquisar<br><span class="gradient-text">Artigos</span></h1>
+                <p class="hero-desc">Explore os blogs disponíveis, filtre pelo que interessa e escolha exatamente quais artigos traduzir.</p>
+            </div>
+
+            <!-- PAINEL DE FILTROS -->
+            <div class="glass-card filter-panel">
+                <div class="filter-row">
+                    <div class="field-group" style="flex:1">
+                        <label for="pais-busca" class="field-label">
+                            <i class="fa-solid fa-earth-americas"></i>
+                            País de origem
+                        </label>
+                        <div class="select-wrap">
+                            <select id="pais-busca" required></select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
+                    </div>
+
+                    <div class="field-group" style="flex:1.5">
+                        <label for="termo-busca" class="field-label">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            Filtrar por palavra-chave
+                        </label>
+                        <div class="search-wrap">
+                            <input type="text" id="termo-busca" placeholder="Ex: limpeza, industrial, sustentabilidade..." autocomplete="off">
+                            <button type="button" id="clear-search" class="clear-btn" style="display:none;" title="Limpar busca">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TOGGLE VER TODOS -->
+                <div class="todos-row">
+                    <label class="todos-toggle-wrap" title="Buscar sem filtro de palavra-chave">
+                        <input type="checkbox" id="toggle-todos">
+                        <span class="todos-slider"></span>
+                        <span class="todos-label"><i class="fa-solid fa-layer-group"></i> Ver todos os artigos</span>
+                    </label>
+                </div>
+
+                <button id="btn-buscar" class="run-btn" type="button">
+                    <span class="run-btn-inner">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <span>Buscar artigos</span>
+                    </span>
+                    <span class="run-btn-shine"></span>
+                </button>
+            </div>
+
+            <!-- LOADING BUSCA -->
+            <div id="loading-busca" style="display:none;" class="loading-busca">
+                <div class="spinner-ring"></div>
+                <span>Buscando artigos disponíveis...</span>
+            </div>
+
+            <!-- BARRA DE RESULTADOS + AÇÕES -->
+            <div id="barra-resultados" class="result-bar" style="display:none;">
+                <div class="result-bar-left">
+                    <span id="total-encontrado" class="result-count-tag">0 artigos</span>
+                    <span id="pais-nome-label" class="pais-tag"></span>
+                    <span id="filtro-ativo-label" class="filtro-tag" style="display:none;"></span>
+                </div>
+                <div class="result-bar-right">
+                    <button id="btn-selecionar-todos" class="action-pill" type="button">
+                        <i class="fa-solid fa-check-double"></i> Selecionar todos
+                    </button>
+                    <button id="btn-limpar-selecao" class="action-pill danger" type="button">
+                        <i class="fa-solid fa-xmark"></i> Limpar seleção
+                    </button>
+                </div>
+            </div>
+
+            <!-- FILTRO INLINE DE TÍTULO -->
+            <div id="filtro-inline" class="filtro-inline-bar" style="display:none;">
+                <i class="fa-solid fa-filter"></i>
+                <input type="text" id="filtro-titulo" placeholder="Filtrar títulos na lista...">
+                <span id="filtro-count"></span>
+            </div>
+
+            <!-- LISTA DE ARTIGOS -->
+            <div id="lista-artigos" class="artigos-grid" style="display:none;"></div>
+
+            <!-- RODAPÉ DE SELEÇÃO -->
+            <div id="selecao-rodape" class="selecao-footer" style="display:none;">
+                <div class="selecao-info">
+                    <div class="selecao-badge">
+                        <i class="fa-solid fa-layer-group"></i>
+                        <span id="qtd-selecionados">0</span> selecionados
+                    </div>
+                    <span class="selecao-hint">Pronto para traduzir</span>
+                </div>
+                <button id="btn-traduzir" class="run-btn traduzir-btn" type="button">
+                    <span class="run-btn-inner">
+                        <i class="fa-solid fa-language"></i>
+                        <span>Traduzir selecionados</span>
+                    </span>
+                    <span class="run-btn-shine"></span>
+                </button>
+            </div>
+
+            <!-- LOADING TRADUÇÃO -->
+            <div id="status-traducao" class="loading-card" style="display:none;">
+                <div class="machine-scene">
+                    <div class="translate-loader">
+                        <div class="lang-pill from">EN</div>
+                        <div class="arrow-anim">
+                            <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                        </div>
+                        <div class="lang-pill to">PT</div>
+                    </div>
+                    <div class="machine-label">
+                        <div class="machine-label-dot"></div>
+                        <span id="status-text-trad">Traduzindo artigos</span>
+                        <span class="dots"><span>.</span><span>.</span><span>.</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESULTADO TRADUÇÃO -->
+            <div id="resultado-traducao" class="result-panel" style="display:none;">
+                <div class="result-header">
+                    <div class="result-icon">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <div class="result-text">
+                        <div class="result-title">Tradução concluída!</div>
+                        <div class="result-sub">Seus arquivos estão prontos para download</div>
+                    </div>
+                    <div class="result-count" id="result-count-trad">— arquivos</div>
+                </div>
+                <div id="downloads-traducao" class="file-list"></div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='pesquisar.js') }}"></script>
+    <script>
+        // Canvas de partículas (igual ao index)
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let W, H, particles = [];
+        function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+        function initParticles() {
+            particles = Array.from({length: 55}, () => ({
+                x: Math.random() * W, y: Math.random() * H,
+                r: Math.random() * 1.4 + 0.3,
+                vx: (Math.random() - 0.5) * 0.22,
+                vy: (Math.random() - 0.5) * 0.22,
+                o: Math.random() * 0.35 + 0.05
+            }));
+        }
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            for (const p of particles) {
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0,200,255,${p.o})`; ctx.fill();
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+                if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+            }
+            requestAnimationFrame(draw);
+        }
+        resize(); initParticles(); draw();
+        window.addEventListener('resize', () => { resize(); initParticles(); });
+    </script>
+</body>
+</html>

@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cronograma de Postagem 2026 — Alfa by Tennant</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='alfa.css') }}">
+    <style>
+        /* ── PAGE LAYOUT ── */
+        .crono-shell {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            background: var(--ab);
+        }
+
+        /* ── TOPBAR ── */
+        .crono-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 28px;
+            background: var(--aw);
+            border-bottom: 1px solid var(--abrd);
+            flex-shrink: 0;
+            gap: 16px;
+        }
+        .crono-topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .crono-logo {
+            height: 36px;
+            width: auto;
+        }
+        .crono-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--ag);
+        }
+        .crono-title span {
+            color: var(--ay);
+        }
+        .crono-topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .nav-pill {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            border: 1px solid var(--abrd);
+            color: var(--as);
+            background: transparent;
+            transition: all .16s;
+            cursor: pointer;
+        }
+        .nav-pill:hover { background: var(--ag3); color: var(--ag); border-color: var(--ag2); }
+        .nav-pill.active { background: var(--ag); color: #fff; border-color: var(--ag); }
+
+        /* ── MAIN ── */
+        .crono-main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            gap: 0;
+        }
+
+        /* ── LEFT PANEL (today + week) ── */
+        .crono-sidebar {
+            width: 300px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 16px;
+            background: var(--aw);
+            border-right: 1px solid var(--abrd);
+            overflow-y: auto;
+            gap: 16px;
+        }
+
+        .panel-card {
+            background: var(--ab);
+            border: 1px solid var(--abrd);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        .panel-card-header {
+            padding: 12px 14px 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--as);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            border-bottom: 1px solid var(--abrd);
+        }
+        .panel-card-header i { color: var(--ag); font-size: 13px; }
+        .panel-card-body { padding: 10px 12px; }
+
+        /* post item mini */
+        .mini-post {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 9px 0;
+            border-bottom: 1px solid var(--abrd);
+            cursor: pointer;
+            transition: background .12s;
+        }
+        .mini-post:last-child { border-bottom: none; }
+        .mini-post:hover { background: var(--ag3); margin: 0 -12px; padding: 9px 12px; border-radius: 8px; }
+        .mini-post-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            margin-top: 5px;
+            flex-shrink: 0;
+        }
+        .mini-post-info { flex: 1; min-width: 0; }
+        .mini-post-date {
+            font-size: 11px;
+            color: var(--as);
+            font-family: 'DM Mono', monospace;
+        }
+        .mini-post-tema {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--at);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .mini-post-conteudo {
+            font-size: 11px;
+            color: var(--as);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 20px 10px;
+            font-size: 12px;
+            color: var(--as);
+        }
+
+        /* ── RIGHT: CALENDAR ── */
+        .crono-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 20px 24px;
+            gap: 16px;
+        }
+
+        /* Month nav */
+        .month-nav {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .month-nav-btn {
+            width: 34px; height: 34px;
+            border-radius: 9px;
+            background: var(--aw);
+            border: 1px solid var(--abrd);
+            color: var(--as);
+            cursor: pointer;
+            font-size: 13px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all .15s;
+        }
+        .month-nav-btn:hover { background: var(--ag3); color: var(--ag); border-color: var(--ag2); }
+        .month-label {
+            font-family: 'Syne', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--at);
+            flex: 1;
+        }
+        .month-stats {
+            display: flex;
+            gap: 8px;
+        }
+        .stat-chip {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* Calendar grid */
+        .calendar-wrap {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .cal-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+        .cal-weekday {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--as);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            padding: 4px 0;
+        }
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            flex: 1;
+            overflow: hidden;
+        }
+        .cal-day {
+            background: var(--aw);
+            border: 1px solid var(--abrd);
+            border-radius: 10px;
+            padding: 6px 8px;
+            min-height: 80px;
+            overflow: hidden;
+            position: relative;
+            transition: all .15s;
+            cursor: default;
+        }
+        .cal-day.other-month { opacity: .35; }
+        .cal-day.today {
+            border-color: var(--ag);
+            background: var(--ag3);
+            box-shadow: 0 0 0 2px rgba(27,92,56,.15);
+        }
+        .cal-day.has-post { cursor: pointer; }
+        .cal-day.has-post:hover {
+            border-color: var(--ag2);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(27,92,56,.12);
+        }
+        .cal-day-num {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--at);
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+        .cal-day.today .cal-day-num {
+            color: var(--ag);
+        }
+        .cal-post-pill {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 3px;
+            padding: 2px 5px;
+            border-radius: 5px;
+            font-size: 10px;
+            font-weight: 500;
+            line-height: 1.3;
+            overflow: hidden;
+        }
+        .cal-post-pill .dot {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .cal-post-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .cal-more {
+            font-size: 10px;
+            color: var(--as);
+            font-style: italic;
+            margin-top: 2px;
+        }
+
+        /* ── MODAL POST DETAIL ── */
+        .post-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.45);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+        .post-modal-overlay.open { display: flex; }
+        .post-modal {
+            background: var(--aw);
+            border-radius: 18px;
+            width: 500px;
+            max-width: 95vw;
+            box-shadow: 0 20px 60px rgba(0,0,0,.25);
+            overflow: hidden;
+        }
+        .post-modal-header {
+            background: var(--ag);
+            padding: 18px 22px;
+            color: #fff;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .post-modal-date {
+            font-size: 12px;
+            opacity: .8;
+            font-family: 'DM Mono', monospace;
+            margin-bottom: 4px;
+        }
+        .post-modal-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .modal-close-btn {
+            background: rgba(255,255,255,.2);
+            border: none;
+            color: #fff;
+            width: 30px; height: 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .post-modal-body { padding: 20px 22px; }
+        .post-detail-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .post-detail-field {
+            flex: 1;
+            padding: 10px 14px;
+            background: var(--ab);
+            border-radius: 10px;
+            border: 1px solid var(--abrd);
+        }
+        .post-detail-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--as);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: 3px;
+        }
+        .post-detail-value {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--at);
+        }
+        .post-conteudo-box {
+            padding: 12px 14px;
+            background: var(--ag3);
+            border-radius: 10px;
+            border: 1px solid rgba(27,92,56,.15);
+            font-size: 14px;
+            color: var(--ag);
+            font-weight: 500;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        /* ── COPY GENERATOR IN MODAL ── */
+        .copy-section { border-top: 1px solid var(--abrd); padding-top: 16px; }
+        .copy-section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--at);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .copy-section-title i { color: var(--ag); }
+        .format-selector {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .format-btn {
+            flex: 1;
+            padding: 7px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--abrd);
+            background: var(--ab);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all .15s;
+            color: var(--as);
+            text-align: center;
+        }
+        .format-btn.active {
+            background: var(--ag);
+            color: #fff;
+            border-color: var(--ag);
+        }
+        .format-btn:hover:not(.active) {
+            background: var(--ag3);
+            color: var(--ag);
+            border-color: var(--ag2);
+        }
+        .gen-copy-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--ag);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all .16s;
+        }
+        .gen-copy-btn:hover { background: var(--ag2); }
+        .gen-copy-btn:disabled { opacity: .6; cursor: not-allowed; }
+        .copy-result {
+            display: none;
+            margin-top: 14px;
+        }
+        .copy-result.visible { display: block; }
+        .copy-text-area {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--ab);
+            border: 1px solid var(--abrd);
+            border-radius: 10px;
+            font-size: 13px;
+            color: var(--at);
+            line-height: 1.6;
+            resize: vertical;
+            min-height: 120px;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .copy-meta {
+            margin-top: 8px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .hashtag-chip {
+            padding: 3px 9px;
+            background: rgba(27,92,56,.1);
+            color: var(--ag);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .dica-visual {
+            flex: 1;
+            font-size: 11px;
+            color: var(--as);
+            font-style: italic;
+            min-width: 100px;
+        }
+        .copy-actions {
+            display: flex;
+            gap: 7px;
+            margin-top: 10px;
+        }
+        .copy-action-btn {
+            flex: 1;
+            padding: 7px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--abrd);
+            background: var(--aw);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all .15s;
+            color: var(--as);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .copy-action-btn:hover { background: var(--ag3); color: var(--ag); border-color: var(--ag2); }
+
+        /* ── TIPO COLORS ── */
+        .tipo-produto { background: rgba(59,130,246,.1); color: #3b82f6; }
+        .tipo-dica    { background: rgba(16,185,129,.1); color: #10b981; }
+        .tipo-case    { background: rgba(245,158,11,.1); color: #f59e0b; }
+        .tipo-feriado { background: rgba(239,68,68,.1);  color: #ef4444; }
+        .tipo-outros  { background: rgba(107,114,128,.1);color: #6b7280; }
+        .tipo-beneficios { background: rgba(139,92,246,.1); color: #8b5cf6; }
+        .tipo-tecnologia { background: rgba(6,182,212,.1); color: #06b6d4; }
+        .tipo-ambiente { background: rgba(52,211,153,.1); color: #34d399; }
+    </style>
+</head>
+<body>
+<div class="crono-shell">
+
+    <!-- TOPBAR -->
+    <header class="crono-topbar">
+        <div class="crono-topbar-left">
+            <img src="{{ url_for('static', filename='../assets/alfa_logo.png') }}" alt="Alfa" class="crono-logo">
+            <div class="crono-title">Cronograma <span>2026</span></div>
+        </div>
+        <div class="crono-topbar-right">
+            <a href="{{ url_for('home') }}" class="nav-pill"><i class="fa-solid fa-arrow-left"></i> Home</a>
+            <a href="{{ url_for('pesquisar') }}" class="nav-pill"><i class="fa-solid fa-magnifying-glass"></i> Pesquisar</a>
+            <a href="{{ url_for('alfa') }}" class="nav-pill"><i class="fa-solid fa-robot"></i> Alfa IA</a>
+        </div>
+    </header>
+
+    <!-- MAIN -->
+    <div class="crono-main">
+
+        <!-- LEFT PANEL -->
+        <aside class="crono-sidebar">
+
+            <!-- Hoje -->
+            <div class="panel-card" id="card-hoje">
+                <div class="panel-card-header">
+                    <i class="fa-solid fa-calendar-day"></i>
+                    Hoje
+                    <span id="hoje-date" style="margin-left:auto; font-size:11px; color: var(--ag); font-family:'DM Mono',monospace;"></span>
+                </div>
+                <div class="panel-card-body" id="hoje-body">
+                    <div class="empty-state"><i class="fa-regular fa-calendar"></i><br>Carregando…</div>
+                </div>
+            </div>
+
+            <!-- Próximos 7 dias -->
+            <div class="panel-card">
+                <div class="panel-card-header">
+                    <i class="fa-solid fa-calendar-week"></i>
+                    Próximos 7 dias
+                </div>
+                <div class="panel-card-body" id="semana-body">
+                    <div class="empty-state">Carregando…</div>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- CALENDAR -->
+        <div class="crono-content">
+            <div class="month-nav">
+                <button class="month-nav-btn" onclick="navMes(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                <div class="month-label" id="month-label">–</div>
+                <button class="month-nav-btn" onclick="navMes(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                <div class="month-stats" id="month-stats"></div>
+                <button class="nav-pill" onclick="irHoje()" style="margin-left:4px;"><i class="fa-regular fa-calendar-check"></i> Hoje</button>
+            </div>
+
+            <div class="calendar-wrap">
+                <div class="cal-weekdays">
+                    <div class="cal-weekday">Dom</div>
+                    <div class="cal-weekday">Seg</div>
+                    <div class="cal-weekday">Ter</div>
+                    <div class="cal-weekday">Qua</div>
+                    <div class="cal-weekday">Qui</div>
+                    <div class="cal-weekday">Sex</div>
+                    <div class="cal-weekday">Sáb</div>
+                </div>
+                <div class="cal-grid" id="cal-grid">
+                    <!-- populated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- POST DETAIL MODAL -->
+<div class="post-modal-overlay" id="post-modal">
+    <div class="post-modal">
+        <div class="post-modal-header">
+            <div>
+                <div class="post-modal-date" id="modal-date"></div>
+                <div class="post-modal-title" id="modal-title"></div>
+            </div>
+            <button class="modal-close-btn" onclick="fecharModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="post-modal-body">
+            <div class="post-detail-row">
+                <div class="post-detail-field">
+                    <div class="post-detail-label">Tipo</div>
+                    <div class="post-detail-value" id="modal-tipo">–</div>
+                </div>
+                <div class="post-detail-field">
+                    <div class="post-detail-label">Dia da semana</div>
+                    <div class="post-detail-value" id="modal-dia">–</div>
+                </div>
+            </div>
+            <div class="post-conteudo-box" id="modal-conteudo"></div>
+
+            <!-- Gerador de Copy -->
+            <div class="copy-section">
+                <div class="copy-section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Gerar copy para redes sociais</div>
+                <div class="format-selector">
+                    <button class="format-btn active" data-fmt="instagram" onclick="selecionarFormato(this)"><i class="fa-brands fa-instagram"></i> Instagram</button>
+                    <button class="format-btn" data-fmt="linkedin" onclick="selecionarFormato(this)"><i class="fa-brands fa-linkedin"></i> LinkedIn</button>
+                    <button class="format-btn" data-fmt="facebook" onclick="selecionarFormato(this)"><i class="fa-brands fa-facebook"></i> Facebook</button>
+                </div>
+                <button class="gen-copy-btn" id="gen-btn" onclick="gerarCopy()">
+                    <i class="fa-solid fa-bolt"></i> Gerar copy com IA
+                </button>
+                <div class="copy-result" id="copy-result">
+                    <textarea class="copy-text-area" id="copy-text" readonly></textarea>
+                    <div class="copy-meta">
+                        <div id="copy-hashtags"></div>
+                        <div class="dica-visual" id="copy-dica"></div>
+                    </div>
+                    <div class="copy-actions">
+                        <button class="copy-action-btn" onclick="copiarTexto()"><i class="fa-regular fa-copy"></i> Copiar</button>
+                        <button class="copy-action-btn" onclick="regenerar()"><i class="fa-solid fa-rotate"></i> Regenerar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── STATE ──
+let allPosts = [];
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth() + 1; // 1-12
+let selectedPost = null;
+let selectedFormato = 'instagram';
+
+// ── COLOR MAP por tipo ──
+function tipoClass(tema) {
+    const t = (tema || '').toLowerCase();
+    if (t.includes('produto') || t.includes('imop') || t.includes('t7') || t.includes('t16') || t.includes('t20') || t.includes('t360') || t.includes('a16') || t.includes('z50') || t.includes('x4') || t.includes('m20') || t.includes('a500') || t.includes('t600') || t.includes('t760')) return 'tipo-produto';
+    if (t.includes('dica') || t.includes('conserva')) return 'tipo-dica';
+    if (t.includes('case') || t.includes('sucesso')) return 'tipo-case';
+    if (t.includes('feriado') || t.includes('carnaval') || t.includes('páscoa') || t.includes('tiradentes') || t.includes('natal') || t.includes('finados') || t.includes('corpus') || t.includes('república')) return 'tipo-feriado';
+    if (t.includes('benefício') || t.includes('locação') || t.includes('treinamento') || t.includes('manutenção')) return 'tipo-beneficios';
+    if (t.includes('tecnologia') || t.includes('ec-h2o') || t.includes('ec‑h2o')) return 'tipo-tecnologia';
+    if (t.includes('ambiente') || t.includes('ambiental') || t.includes('terra') || t.includes('água') || t.includes('sustent')) return 'tipo-ambiente';
+    return 'tipo-outros';
+}
+
+// ── DATA LOAD ──
+async function carregarTodos() {
+    const resp = await fetch('/api/cronograma');
+    const data = await resp.json();
+    if (data.sucesso) allPosts = data.posts;
+    renderCalendar();
+}
+
+async function carregarHoje() {
+    const hoje = new Date();
+    const iso = hoje.toISOString().split('T')[0];
+    document.getElementById('hoje-date').textContent = formatDateBR(iso);
+    
+    const resp = await fetch('/api/cronograma/hoje');
+    const data = await resp.json();
+    const body = document.getElementById('hoje-body');
+    if (!data.sucesso || data.posts.length === 0) {
+        body.innerHTML = '<div class="empty-state"><i class="fa-regular fa-calendar-xmark"></i><br>Nenhum post hoje</div>';
+        return;
+    }
+    body.innerHTML = data.posts.map(p => `
+        <div class="mini-post" onclick="abrirModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+            <div class="mini-post-dot" style="background:var(--ag)"></div>
+            <div class="mini-post-info">
+                <div class="mini-post-tema">${p.tema}</div>
+                <div class="mini-post-conteudo">${p.conteudo}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function carregarSemana() {
+    const resp = await fetch('/api/cronograma/semana');
+    const data = await resp.json();
+    const body = document.getElementById('semana-body');
+    if (!data.sucesso || data.posts.length === 0) {
+        body.innerHTML = '<div class="empty-state">Nenhum post nos próximos 7 dias</div>';
+        return;
+    }
+    body.innerHTML = data.posts.map(p => `
+        <div class="mini-post" onclick="abrirModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+            <div class="mini-post-dot ${tipoClass(p.tema)}" style="width:8px;height:8px;border-radius:50%"></div>
+            <div class="mini-post-info">
+                <div class="mini-post-date">${formatDateBR(p.data)} · ${p.dia_semana}</div>
+                <div class="mini-post-tema">${p.tema}</div>
+                <div class="mini-post-conteudo">${p.conteudo}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ── CALENDAR RENDER ──
+function renderCalendar() {
+    const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    document.getElementById('month-label').textContent = `${monthNames[currentMonth-1]} ${currentYear}`;
+
+    // Get posts for this month
+    const monthPosts = allPosts.filter(p => {
+        const d = new Date(p.data + 'T00:00:00');
+        return d.getFullYear() === currentYear && d.getMonth()+1 === currentMonth;
+    });
+
+    // Stats
+    const tiposCount = {};
+    monthPosts.forEach(p => { tiposCount[p.modelo] = (tiposCount[p.modelo]||0)+1; });
+    const statsEl = document.getElementById('month-stats');
+    statsEl.innerHTML = `
+        <div class="stat-chip" style="background:rgba(27,92,56,.1);color:var(--ag);">
+            <i class="fa-solid fa-calendar-check"></i> ${monthPosts.length} posts
+        </div>
+    `;
+
+    // Build calendar grid
+    const firstDay = new Date(currentYear, currentMonth-1, 1);
+    const lastDay = new Date(currentYear, currentMonth, 0);
+    const startDow = firstDay.getDay(); // 0=Sun
+    const totalDays = lastDay.getDate();
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    const grid = document.getElementById('cal-grid');
+    grid.innerHTML = '';
+
+    // Build map: date -> posts
+    const postMap = {};
+    monthPosts.forEach(p => {
+        if (!postMap[p.data]) postMap[p.data] = [];
+        postMap[p.data].push(p);
+    });
+
+    // Days from previous month
+    const prevLastDay = new Date(currentYear, currentMonth-1, 0).getDate();
+    for (let i = startDow - 1; i >= 0; i--) {
+        const d = prevLastDay - i;
+        grid.appendChild(makeCell(d, true, false, null, []));
+    }
+
+    // Days of this month
+    for (let d = 1; d <= totalDays; d++) {
+        const dateStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const isToday = dateStr === todayStr;
+        const posts = postMap[dateStr] || [];
+        grid.appendChild(makeCell(d, false, isToday, dateStr, posts));
+    }
+
+    // Fill remaining
+    const totalCells = startDow + totalDays;
+    const remainCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+    for (let d = 1; d <= remainCells; d++) {
+        grid.appendChild(makeCell(d, true, false, null, []));
+    }
+}
+
+function makeCell(dayNum, otherMonth, isToday, dateStr, posts) {
+    const div = document.createElement('div');
+    div.className = 'cal-day' + (otherMonth ? ' other-month' : '') + (isToday ? ' today' : '') + (posts.length > 0 ? ' has-post' : '');
+    
+    let html = `<div class="cal-day-num">${dayNum}</div>`;
+    
+    const maxShow = 2;
+    posts.slice(0, maxShow).forEach(p => {
+        const cls = tipoClass(p.tema);
+        html += `<div class="cal-post-pill ${cls}"><div class="dot" style="background:currentColor;width:5px;height:5px;border-radius:50%;flex-shrink:0"></div><span class="cal-post-text">${p.tema}</span></div>`;
+    });
+    if (posts.length > maxShow) {
+        html += `<div class="cal-more">+${posts.length - maxShow} mais</div>`;
+    }
+    
+    div.innerHTML = html;
+    
+    if (posts.length > 0) {
+        if (posts.length === 1) {
+            div.onclick = () => abrirModal(posts[0]);
+        } else {
+            div.onclick = () => abrirModal(posts[0]); // TODO: multi-post view
+        }
+    }
+    
+    return div;
+}
+
+// ── NAV ──
+function navMes(delta) {
+    currentMonth += delta;
+    if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+    if (currentMonth < 1)  { currentMonth = 12; currentYear--; }
+    renderCalendar();
+}
+
+function irHoje() {
+    currentYear = new Date().getFullYear();
+    currentMonth = new Date().getMonth() + 1;
+    renderCalendar();
+}
+
+// ── MODAL ──
+function abrirModal(post) {
+    selectedPost = post;
+    document.getElementById('modal-date').textContent = `${formatDateBR(post.data)} · ${post.dia_semana}`;
+    document.getElementById('modal-title').textContent = post.tema;
+    document.getElementById('modal-tipo').textContent = post.modelo;
+    document.getElementById('modal-dia').textContent = post.dia_semana;
+    document.getElementById('modal-conteudo').textContent = post.conteudo || '–';
+    document.getElementById('copy-result').classList.remove('visible');
+    document.getElementById('post-modal').classList.add('open');
+}
+
+function fecharModal() {
+    document.getElementById('post-modal').classList.remove('open');
+    selectedPost = null;
+}
+
+document.getElementById('post-modal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('post-modal')) fecharModal();
+});
+
+// ── COPY GENERATOR ──
+function selecionarFormato(btn) {
+    document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedFormato = btn.dataset.fmt;
+}
+
+async function gerarCopy() {
+    if (!selectedPost) return;
+    const btn = document.getElementById('gen-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gerando…';
+    
+    try {
+        const resp = await fetch('/api/gerar-copy', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                tema: selectedPost.tema,
+                conteudo: selectedPost.conteudo,
+                modelo: selectedPost.modelo,
+                formato: selectedFormato
+            })
+        });
+        const data = await resp.json();
+        
+        if (data.sucesso) {
+            document.getElementById('copy-text').value = data.copy;
+            const hashEl = document.getElementById('copy-hashtags');
+            hashEl.innerHTML = (data.hashtags || []).map(h => `<span class="hashtag-chip">#${h.replace('#','')}</span>`).join(' ');
+            document.getElementById('copy-dica').textContent = data.dica_visual ? `💡 ${data.dica_visual}` : '';
+            document.getElementById('copy-result').classList.add('visible');
+        } else {
+            alert('Erro: ' + (data.erro || 'Falha ao gerar copy'));
+        }
+    } catch(e) {
+        alert('Erro de conexão');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Gerar copy com IA';
+    }
+}
+
+function regenerar() {
+    gerarCopy();
+}
+
+async function copiarTexto() {
+    const txt = document.getElementById('copy-text').value;
+    await navigator.clipboard.writeText(txt);
+    const btn = event.target.closest('.copy-action-btn');
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+    setTimeout(() => btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copiar', 1500);
+}
+
+// ── HELPERS ──
+function formatDateBR(isoDate) {
+    if (!isoDate) return '';
+    const [y,m,d] = isoDate.split('-');
+    return `${d}/${m}/${y}`;
+}
+
+// ── INIT ──
+carregarTodos();
+carregarHoje();
+carregarSemana();
+</script>
+</body>
+</html>
