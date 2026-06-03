@@ -1,4 +1,3 @@
-import pandas as pd
 from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for
 import os
 import asyncio
@@ -678,16 +677,3 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
  
-
-
-@app.route('/importar-cronograma', methods=['POST'])
-def importar_cronograma():
-    arquivo = request.files['arquivo']
-    if arquivo.filename.endswith('.csv'):
-        df = pd.read_csv(arquivo)
-    else:
-        df = pd.read_excel(arquivo)
-
-    return jsonify({
-        "dados": df.fillna('').to_dict('records')
-    })
