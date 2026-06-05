@@ -2035,3 +2035,326 @@ body {
   background: var(--ag);
   color: #fff;
 }
+
+/* ══════════════════════════════════════════════════════
+   🎨 ADMIN — Botão de temas na sidebar
+══════════════════════════════════════════════════════ */
+.admin-tema-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  text-align: left;
+  font-family: 'DM Sans', sans-serif;
+}
+.admin-tema-badge {
+  color: var(--tema-accent, #F5C518);
+  font-size: 10px;
+  margin-left: 2px;
+  animation: pulse-badge 2s infinite;
+}
+@keyframes pulse-badge {
+  0%,100% { opacity:1; } 50% { opacity:.3; }
+}
+
+/* ── Modal do painel admin ── */
+.admin-tema-modal {
+  max-width: 580px;
+  width: 96%;
+}
+.admin-senha-wrap {
+  margin-bottom: 18px;
+}
+
+/* Grade de temas */
+.admin-temas-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+@media (max-width: 480px) {
+  .admin-temas-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.admin-tema-card {
+  border: 2px solid var(--abrd);
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .2s, transform .15s, box-shadow .2s;
+  background: var(--aw);
+}
+.admin-tema-card:hover {
+  border-color: var(--ag);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.1);
+}
+.admin-tema-card.selecionado {
+  border-color: var(--ag);
+  box-shadow: 0 0 0 3px rgba(27,92,56,.18);
+}
+.admin-tema-card.ativo-agora {
+  border-color: var(--ay);
+  box-shadow: 0 0 0 3px rgba(245,197,24,.25);
+}
+
+/* Mini preview */
+.tema-preview {
+  height: 62px;
+  display: flex;
+  overflow: hidden;
+}
+.tema-prev-sidebar {
+  width: 28%;
+  height: 100%;
+}
+.tema-prev-chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px;
+}
+.tema-prev-bubble {
+  height: 8px;
+  border-radius: 6px;
+  background: rgba(0,0,0,.1);
+  width: 90%;
+}
+.tema-prev-bubble.short { width: 60%; }
+
+/* Cores das previews */
+.tema-padrao-prev .tema-prev-sidebar   { background: #1B5C38; }
+.tema-padrao-prev                       { background: #f4f5f4; }
+
+.tema-natal-prev .tema-prev-sidebar    { background: #8B0000; }
+.tema-natal-prev                        { background: #fff9f9; }
+.tema-natal-prev .tema-prev-bubble     { background: rgba(139,0,0,.15); }
+
+.tema-anonovo-prev .tema-prev-sidebar  { background: #0d0d2b; }
+.tema-anonovo-prev                      { background: #0f0f1e; }
+.tema-anonovo-prev .tema-prev-bubble   { background: rgba(255,215,0,.25); }
+
+.tema-pascoa-prev .tema-prev-sidebar   { background: #7c3aed; }
+.tema-pascoa-prev                       { background: #fef9ff; }
+.tema-pascoa-prev .tema-prev-bubble    { background: rgba(124,58,237,.12); }
+
+.tema-carnaval-prev .tema-prev-sidebar { background: #7c1f7c; }
+.tema-carnaval-prev                     { background: #fffbe6; }
+.tema-carnaval-prev .tema-prev-bubble  { background: rgba(124,31,124,.15); }
+
+.tema-halloween-prev .tema-prev-sidebar{ background: #1a0a00; }
+.tema-halloween-prev                    { background: #0d0d0d; }
+.tema-halloween-prev .tema-prev-bubble { background: rgba(255,100,0,.25); }
+
+.tema-junina-prev .tema-prev-sidebar   { background: #7c3700; }
+.tema-junina-prev                       { background: #fffbf0; }
+.tema-junina-prev .tema-prev-bubble    { background: rgba(124,55,0,.15); }
+
+.tema-maes-prev .tema-prev-sidebar     { background: #be185d; }
+.tema-maes-prev                         { background: #fff5f9; }
+.tema-maes-prev .tema-prev-bubble      { background: rgba(190,24,93,.12); }
+
+.tema-pais-prev .tema-prev-sidebar     { background: #1e3a5f; }
+.tema-pais-prev                         { background: #f0f6ff; }
+.tema-pais-prev .tema-prev-bubble      { background: rgba(30,58,95,.12); }
+
+.tema-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--at);
+  border-top: 1px solid var(--abrd);
+}
+.tema-emoji { font-size: 14px; }
+
+/* Status atual */
+.admin-tema-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--ag3);
+  border: 1px solid var(--abrd);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--as);
+}
+
+/* ══════════════════════════════════════════════════════
+   🎨 TEMAS COMEMORATIVOS — variáveis aplicadas ao body
+══════════════════════════════════════════════════════ */
+
+/* ── Natal ── */
+body.tema-natal {
+  --ag:   #8B0000;
+  --ag2:  #c0392b;
+  --ag3:  #fff3f3;
+  --ay:   #FFD700;
+  --ay2:  #fff8dc;
+  --abrd: #f5c6c6;
+  --ab:   #fff9f9;
+  --ashad: 0 2px 12px rgba(139,0,0,.1);
+}
+body.tema-natal .chat-topbar,
+body.tema-natal .alfa-chat {
+  background: #fff9f9;
+}
+
+/* ── Ano Novo ── */
+body.tema-ano_novo {
+  --ag:   #0d0d2b;
+  --ag2:  #1a1a4e;
+  --ag3:  #1a1a3e;
+  --ay:   #FFD700;
+  --ay2:  #ffd70020;
+  --abrd: #2a2a5a;
+  --ab:   #0f0f1e;
+  --at:   #e8e8ff;
+  --as:   #8888bb;
+  --aw:   #1a1a38;
+  --ashad: 0 2px 16px rgba(0,0,80,.4);
+}
+body.tema-ano_novo .chat-topbar,
+body.tema-ano_novo .alfa-chat {
+  background: #0f0f1e;
+  color: #e8e8ff;
+}
+body.tema-ano_novo .chat-input-wrap,
+body.tema-ano_novo .chat-input {
+  background: #1a1a38;
+  color: #e8e8ff;
+  border-color: #2a2a5a;
+}
+body.tema-ano_novo .topbar-name,
+body.tema-ano_novo .topbar-sub,
+body.tema-ano_novo .filtro-chip,
+body.tema-ano_novo .sidebar-label { color: #aaaadd; }
+body.tema-ano_novo .modal-card { background: #1a1a38; color: #e8e8ff; }
+body.tema-ano_novo .modal-field input,
+body.tema-ano_novo .modal-field textarea { background: #0f0f1e; color: #e8e8ff; border-color: #2a2a5a; }
+
+/* ── Páscoa ── */
+body.tema-pascoa {
+  --ag:   #6d28d9;
+  --ag2:  #8b5cf6;
+  --ag3:  #f5f0ff;
+  --ay:   #f59e0b;
+  --ay2:  #fef3c7;
+  --abrd: #ddd6fe;
+  --ab:   #faf8ff;
+  --ashad: 0 2px 12px rgba(109,40,217,.1);
+}
+
+/* ── Carnaval ── */
+body.tema-carnaval {
+  --ag:   #7c1f7c;
+  --ag2:  #a855f7;
+  --ag3:  #fdf0ff;
+  --ay:   #f59e0b;
+  --ay2:  #fef9c3;
+  --abrd: #e9d5ff;
+  --ab:   #fffdf5;
+  --ashad: 0 2px 12px rgba(124,31,124,.1);
+}
+
+/* ── Halloween ── */
+body.tema-halloween {
+  --ag:   #1a0a00;
+  --ag2:  #7c2d12;
+  --ag3:  #1f1007;
+  --ay:   #f97316;
+  --ay2:  #ff6a0020;
+  --abrd: #3d1f00;
+  --ab:   #0d0d0d;
+  --at:   #f0d0a0;
+  --as:   #a08060;
+  --aw:   #1a0e00;
+  --ashad: 0 2px 16px rgba(255,100,0,.15);
+}
+body.tema-halloween .chat-topbar,
+body.tema-halloween .alfa-chat { background: #0d0d0d; }
+body.tema-halloween .chat-input-wrap,
+body.tema-halloween .chat-input { background: #1a0e00; color: #f0d0a0; border-color: #3d1f00; }
+body.tema-halloween .modal-card { background: #1a0e00; color: #f0d0a0; }
+body.tema-halloween .modal-field input,
+body.tema-halloween .modal-field textarea { background: #0d0d0d; color: #f0d0a0; border-color: #3d1f00; }
+
+/* ── Festa Junina ── */
+body.tema-junina {
+  --ag:   #7c3700;
+  --ag2:  #b45309;
+  --ag3:  #fef9ed;
+  --ay:   #dc2626;
+  --ay2:  #fecaca;
+  --abrd: #fde68a;
+  --ab:   #fffdf5;
+  --ashad: 0 2px 12px rgba(124,55,0,.1);
+}
+
+/* ── Dia das Mães ── */
+body.tema-dia_das_maes {
+  --ag:   #be185d;
+  --ag2:  #ec4899;
+  --ag3:  #fff0f7;
+  --ay:   #f59e0b;
+  --ay2:  #fdf0ff;
+  --abrd: #fbcfe8;
+  --ab:   #fff5fa;
+  --ashad: 0 2px 12px rgba(190,24,93,.1);
+}
+
+/* ── Dia dos Pais ── */
+body.tema-dia_dos_pais {
+  --ag:   #1e3a5f;
+  --ag2:  #2563eb;
+  --ag3:  #eff6ff;
+  --ay:   #0ea5e9;
+  --ay2:  #e0f2fe;
+  --abrd: #bfdbfe;
+  --ab:   #f0f6ff;
+  --ashad: 0 2px 12px rgba(30,58,95,.1);
+}
+
+/* ══════════════════════════════════════════════════════
+   🎊 PARTÍCULAS DECORATIVAS DE TEMA
+══════════════════════════════════════════════════════ */
+.tema-particles {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.tema-particle {
+  position: absolute;
+  font-size: 20px;
+  animation: floatParticle linear infinite;
+  opacity: 0;
+  user-select: none;
+}
+@keyframes floatParticle {
+  0%   { transform: translateY(110vh) rotate(0deg);   opacity: 0; }
+  5%   { opacity: .7; }
+  95%  { opacity: .5; }
+  100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+}
+
+/* Flocos de neve (Natal / Ano Novo) */
+.tema-floco {
+  font-size: 16px;
+  animation: floatFloco linear infinite;
+  opacity: 0;
+}
+@keyframes floatFloco {
+  0%   { transform: translateY(-5vh) translateX(0) rotate(0deg);   opacity: 0; }
+  5%   { opacity: .6; }
+  95%  { opacity: .4; }
+  100% { transform: translateY(105vh) translateX(30px) rotate(360deg); opacity: 0; }
+}
