@@ -43,6 +43,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     atualizarProgressoAnual();
     atualizarSemana();
     atualizarProximoPost();
+    verificarPostsDiaUm();
     chatInput.focus();
 });
 
@@ -648,19 +649,18 @@ function renderizarCalendario() {
 }
 
 function renderizarListaPosts(dia) {
-    const cont  = document.getElementById('cron-lista-posts');
+    const cont   = document.getElementById('cron-lista-posts');
     const titulo = document.getElementById('cron-lista-titulo');
     cont.innerHTML = '';
 
+    const todosMes = cronogramaPosts.filter(p => {
+        const d = new Date(p.data + 'T00:00:00');
+        return d.getFullYear() === cronogramaAno && d.getMonth() === cronogramaMes;
+    }).sort((a,b) => a.data.localeCompare(b.data));
+
     const posts = dia
-        ? cronogramaPosts.filter(p => {
-            const d = new Date(p.data + 'T00:00:00');
-            return d.getFullYear() === cronogramaAno && d.getMonth() === cronogramaMes && d.getDate() === dia;
-          })
-        : cronogramaPosts.filter(p => {
-            const d = new Date(p.data + 'T00:00:00');
-            return d.getFullYear() === cronogramaAno && d.getMonth() === cronogramaMes;
-          }).sort((a,b) => a.data.localeCompare(b.data));
+        ? todosMes.filter(p => new Date(p.data + 'T00:00:00').getDate() === dia)
+        : todosMes;
 
     titulo.textContent = dia ? `Posts do dia ${dia}` : 'Todos os posts do mês';
 
@@ -672,30 +672,107 @@ function renderizarListaPosts(dia) {
         return;
     }
 
-    const badgeLabel = { produto: '🟢 Produto', dica: '🟡 Dica', case: '🟣 Case', conteudo: '🟠 Conteúdo', feriado: '🔴 Feriado', outro: '⚪ Outro' };
+    const badgeLabel = { produto:'🟢 Produto', dica:'🟡 Dica', case:'🟣 Case', conteudo:'🟠 Conteúdo', feriado:'🔴 Feriado', outro:'⚪ Outro' };
+    const canalIcon  = { Instagram:'📸', LinkedIn:'💼', Facebook:'📘', Blog:'📝' };
 
-    posts.forEach((p, i) => {
+    posts.forEach((p) => {
+        // Encontra índice real no array global
+        const idxReal = cronogramaPosts.findIndex(x => x.data === p.data && x.tema === p.tema);
         const item = document.createElement('div');
         item.className = 'post-item';
-        item.style.borderLeftColor = `var(--cal-dot-${p.tipo}, var(--ag))`;
-        const dataFmt = new Date(p.data + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+
+        const d = new Date(p.data + 'T00:00:00');
+        const dataFmt = d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+
+        // Calcula D-1
+        const hoje = new Date(); hoje.setHours(0,0,0,0);
+        const diff = Math.round((d - hoje) / 86400000);
+        const isDiaUm = diff === 1;
+        const isHoje  = diff === 0;
+        const jaTemTexto = !!p.textoGerado;
+
+        const alertaDiaUm = isDiaUm
+            ? `<span style="background:#fff3cd;color:#856404;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;display:inline-flex;align-items:center;gap:3px"><i class="fa-solid fa-bell"></i> Post amanhã!</span>`
+            : isHoje
+            ? `<span style="background:#d1e7dd;color:#0a3622;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;display:inline-flex;align-items:center;gap:3px"><i class="fa-solid fa-rocket"></i> Hoje!</span>`
+            : '';
+
+        const textoIndicador = jaTemTexto
+            ? `<span style="background:#e8f5ee;color:var(--ag);font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;display:inline-flex;align-items:center;gap:3px"><i class="fa-solid fa-circle-check"></i> Texto pronto</span>`
+            : '';
+
         item.innerHTML = `
-            <div class="post-item-data">${dataFmt}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                <div class="post-item-data">${dataFmt} ${p.canal ? `· ${canalIcon[p.canal]||''}${p.canal}` : ''}</div>
+                <div style="display:flex;gap:4px;align-items:center">
+                    ${alertaDiaUm}
+                    ${textoIndicador}
+                    <button onclick="confirmarRemoverPost(${idxReal})" style="background:none;border:none;color:var(--as);cursor:pointer;font-size:11px;padding:2px 6px;border-radius:4px;transition:color .12s" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--as)'">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
             <div class="post-item-tema">${escHtml(p.tema)}</div>
             ${p.obs ? `<div class="post-item-conteudo">${escHtml(p.obs)}</div>` : ''}
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
+            ${p.imagem && p.imagem !== '__HAS_IMG__' ? `<img src="${p.imagem}" style="width:100%;max-height:80px;object-fit:cover;border-radius:6px;margin-top:6px">` : ''}
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
                 <span class="post-tipo-badge badge-${p.tipo}">${badgeLabel[p.tipo] || p.tipo}</span>
-                <button onclick="removerPost(${i})" style="background:none;border:none;color:var(--as);cursor:pointer;font-size:11px;padding:2px 6px;border-radius:4px;transition:color .12s" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--as)'">
-                    <i class="fa-solid fa-trash-can"></i>
+                <button class="gerar-texto-btn" onclick="gerarTextoPost(${idxReal})">
+                    <i class="fa-solid fa-${jaTemTexto ? 'rotate' : 'wand-magic-sparkles'}"></i>
+                    ${jaTemTexto ? 'Ver / Regenerar texto' : 'Gerar texto'}
                 </button>
             </div>
         `;
+
+        // Se já tem texto e é hoje/amanhã, mostra preview colapsado
+        if (jaTemTexto) {
+            const preview = document.createElement('div');
+            preview.style.cssText = 'margin-top:8px;padding:8px 10px;background:var(--ag3);border-radius:8px;font-size:11px;color:var(--ag);line-height:1.5;cursor:pointer;border:1px solid rgba(27,92,56,.15)';
+            preview.textContent = p.textoGerado.slice(0, 120) + (p.textoGerado.length > 120 ? '...' : '');
+            preview.title = 'Clique para ver o texto completo';
+            preview.onclick = () => gerarTextoPost(idxReal);
+            item.appendChild(preview);
+        }
+
         cont.appendChild(item);
     });
 }
 
+// ─── UPLOAD DE IMAGEM ────────────────────
+let imagemBase64Atual = null; // base64 da imagem do post sendo criado
+
+window.previewImagem = function(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast('Imagem muito grande', 'Máximo 5MB', 'aviso'); return; }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        imagemBase64Atual = e.target.result; // data:image/...;base64,...
+        const preview = document.getElementById('upload-img-preview');
+        const placeholder = document.getElementById('upload-img-placeholder');
+        const removeBtn = document.getElementById('upload-img-remove');
+        preview.src = imagemBase64Atual;
+        preview.style.display = 'block';
+        placeholder.style.display = 'none';
+        removeBtn.style.display = 'flex';
+        document.getElementById('upload-img-area').style.border = '1.5px solid var(--ag2)';
+    };
+    reader.readAsDataURL(file);
+};
+
+window.removerImagem = function(e) {
+    e.stopPropagation();
+    imagemBase64Atual = null;
+    document.getElementById('upload-img-preview').style.display = 'none';
+    document.getElementById('upload-img-placeholder').style.display = 'flex';
+    document.getElementById('upload-img-remove').style.display = 'none';
+    document.getElementById('post-img-input').value = '';
+    document.getElementById('upload-img-area').style.border = '1.5px dashed var(--abrd)';
+};
+
 window.abrirAdicionarPost = function() {
-    // Pré-preenche com o dia selecionado
+    imagemBase64Atual = null;
     const hoje = new Date();
     const dataDefault = diaSelecionado
         ? `${cronogramaAno}-${String(cronogramaMes+1).padStart(2,'0')}-${String(diaSelecionado).padStart(2,'0')}`
@@ -703,53 +780,209 @@ window.abrirAdicionarPost = function() {
     document.getElementById('post-data').value = dataDefault;
     document.getElementById('post-tema').value = '';
     document.getElementById('post-obs').value = '';
+    document.getElementById('upload-img-preview').style.display = 'none';
+    document.getElementById('upload-img-placeholder').style.display = 'flex';
+    document.getElementById('upload-img-remove').style.display = 'none';
+    document.getElementById('post-img-input').value = '';
+    document.getElementById('upload-img-area').style.border = '1.5px dashed var(--abrd)';
     document.getElementById('modal-add-post').style.display = 'flex';
     setTimeout(() => document.getElementById('post-tema').focus(), 100);
 };
 
 window.salvarPost = function() {
-    const data = document.getElementById('post-data').value;
-    const tema = document.getElementById('post-tema').value.trim();
-    const tipo = document.querySelector('input[name="post-tipo"]:checked')?.value || 'outro';
-    const obs  = document.getElementById('post-obs').value.trim();
+    const data   = document.getElementById('post-data').value;
+    const tema   = document.getElementById('post-tema').value.trim();
+    const tipo   = document.querySelector('input[name="post-tipo"]:checked')?.value || 'outro';
+    const canal  = document.querySelector('input[name="post-canal"]:checked')?.value || 'Instagram';
+    const obs    = document.getElementById('post-obs').value.trim();
+    const imagem = imagemBase64Atual || null;
 
     if (!data || !tema) { toast('Campos obrigatórios', 'Preencha data e tema', 'aviso'); return; }
 
-    cronogramaPosts.push({ data, tema, tipo, obs });
+    cronogramaPosts.push({ data, tema, tipo, canal, obs, imagem, textoGerado: null });
     cronogramaPosts.sort((a,b) => a.data.localeCompare(b.data));
-    localStorage.setItem('alfa_cronograma', JSON.stringify(cronogramaPosts));
+    salvarCronograma();
 
     fecharModal('modal-add-post');
 
-    // Atualiza mês/ano para o mês do post adicionado
+    // Navega para o mês do post
     const d = new Date(data + 'T00:00:00');
-    cronogramaAno = d.getFullYear();
-    cronogramaMes = d.getMonth();
+    cronogramaAno  = d.getFullYear();
+    cronogramaMes  = d.getMonth();
     diaSelecionado = d.getDate();
     renderizarCalendario();
-
     atualizarProgressoAnual();
     atualizarSemana();
     atualizarProximoPost();
-    toast('Post adicionado!', `${tema} · ${new Date(data+'T00:00:00').toLocaleDateString('pt-BR')}`, 'sucesso');
+
+    toast('Post adicionado!', `${tema} · ${d.toLocaleDateString('pt-BR')}`, 'sucesso');
+
+    // Verifica se é D-1 (amanhã) → gera texto automaticamente
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const diff = Math.round((d - hoje) / 86400000);
+    if (diff === 1) {
+        setTimeout(() => {
+            toast('Gerando texto...', 'Post é amanhã — criando texto agora!', 'info');
+            const idx = cronogramaPosts.findIndex(p => p.data === data && p.tema === tema);
+            if (idx > -1) gerarTextoPost(idx, true);
+        }, 800);
+    }
 };
 
-window.removerPost = function(idx) {
-    // Recalcula índice real (lista pode ser filtrada)
-    // Simplificado: remove por data+tema
-    const cont   = document.getElementById('cron-lista-posts');
-    const items  = cont.querySelectorAll('.post-item');
-    const item   = items[idx];
-    if (!item) return;
-    const tema   = item.querySelector('.post-item-tema')?.textContent;
-    const dataFmt = item.querySelector('.post-item-data')?.textContent;
-    const postIdx = cronogramaPosts.findIndex(p => {
-        const d = new Date(p.data + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-        return p.tema === tema && d === dataFmt;
+function salvarCronograma() {
+    // Salva sem imagens grandes no localStorage (guarda apenas referência)
+    const semImagem = cronogramaPosts.map(p => ({ ...p, imagem: p.imagem ? '__HAS_IMG__' : null }));
+    try { localStorage.setItem('alfa_cronograma_meta', JSON.stringify(semImagem)); } catch(_) {}
+    // Salva imagens separadamente por índice
+    cronogramaPosts.forEach((p, i) => {
+        if (p.imagem && p.imagem !== '__HAS_IMG__') {
+            try { localStorage.setItem(`alfa_img_${i}`, p.imagem); } catch(_) {}
+        }
     });
-    if (postIdx > -1) {
-        cronogramaPosts.splice(postIdx, 1);
-        localStorage.setItem('alfa_cronograma', JSON.stringify(cronogramaPosts));
+    // Versão completa em memória (sem limite)
+}
+
+// ─── GERAR TEXTO DO POST ──────────────────
+let postIndexAtual = null; // índice do post sendo gerado (para regenerar)
+
+window.gerarTextoPost = async function(idx, autoAbrir = false) {
+    const post = cronogramaPosts[idx];
+    if (!post) return;
+    postIndexAtual = idx;
+
+    // Abre modal de resultado
+    document.getElementById('modal-texto-gerado').style.display = 'flex';
+    document.getElementById('modal-cronograma').style.display = 'none';
+
+    // Mostra skeleton
+    const contentEl = document.getElementById('texto-gerado-content');
+    contentEl.innerHTML = `
+        <div class="skeleton skeleton-linha larga" style="margin-bottom:10px"></div>
+        <div class="skeleton skeleton-linha media" style="margin-bottom:8px"></div>
+        <div class="skeleton skeleton-linha larga" style="margin-bottom:8px"></div>
+        <div class="skeleton skeleton-linha curta"></div>
+    `;
+
+    // Meta badges
+    const canalIcon = { Instagram: '📸', LinkedIn: '💼', Facebook: '📘', Blog: '📝' };
+    const tipoLabel = { produto: '🟢 Produto', dica: '🟡 Dica', case: '🟣 Case', conteudo: '🟠 Conteúdo', outro: '⚪ Outro' };
+    document.getElementById('texto-gerado-meta').innerHTML = `
+        <span class="post-tipo-badge badge-${post.tipo}">${tipoLabel[post.tipo] || post.tipo}</span>
+        <span class="post-tipo-badge" style="background:#f0f4ff;color:#3b5bdb">${canalIcon[post.canal] || '📱'} ${post.canal || 'Instagram'}</span>
+        <span class="post-tipo-badge" style="background:var(--ab);color:var(--as)"><i class="fa-solid fa-calendar-day"></i> ${new Date(post.data+'T00:00:00').toLocaleDateString('pt-BR')}</span>
+    `;
+
+    // Mostra imagem se houver
+    const imgWrap = document.getElementById('texto-gerado-img-wrap');
+    const imgEl   = document.getElementById('texto-gerado-img');
+    if (post.imagem && post.imagem !== '__HAS_IMG__') {
+        imgEl.src = post.imagem;
+        imgWrap.style.display = 'block';
+    } else {
+        imgWrap.style.display = 'none';
+    }
+
+    // Monta prompt
+    const canal  = post.canal || 'Instagram';
+    const instrCanal = {
+        Instagram: 'Post para Instagram: texto envolvente até 220 caracteres (sem o bloco de hashtags), tom visual e inspirador. Ao final, adicione 5 hashtags relevantes separadas.',
+        LinkedIn:  'Post para LinkedIn: texto profissional de 3-4 parágrafos, com insight de negócio. Ao final, 3 hashtags profissionais.',
+        Facebook:  'Post para Facebook: texto amigável e informativo, 2-3 parágrafos curtos, com pergunta final para engajamento.',
+        Blog:      'Introdução de blog: parágrafo de abertura envolvente (150-200 palavras) e lista dos tópicos principais do artigo.'
+    };
+
+    const temImagem = post.imagem && post.imagem !== '__HAS_IMG__';
+    const promptTexto = `Você é especialista em marketing de conteúdo da Tennant Company.
+
+Gere um texto pronto para publicação com base nas informações abaixo.
+
+DADOS DO POST:
+- Tema: ${post.tema}
+- Tipo: ${post.tipo}
+- Canal: ${canal}
+- Contexto adicional: ${post.obs || 'nenhum'}
+${temImagem ? '- Uma imagem foi fornecida (analise-a para enriquecer o texto)' : ''}
+
+INSTRUÇÃO DE FORMATO: ${instrCanal[canal] || instrCanal.Instagram}
+
+Tom: profissional mas acessível, alinhado à marca Tennant (limpeza, tecnologia, eficiência, sustentabilidade).
+Responda APENAS com o texto final, sem explicações. Não inclua o título "Texto:" no início.`;
+
+    try {
+        const api_key = ''; // será via backend
+        const mensagens = [{ role: 'user', content: promptTexto }];
+
+        // Se tem imagem, envia como vision
+        let bodyPayload;
+        if (temImagem) {
+            const mediaType = post.imagem.split(';')[0].split(':')[1] || 'image/jpeg';
+            const base64Data = post.imagem.split(',')[1];
+            bodyPayload = {
+                mensagem: promptTexto,
+                historico: [],
+                pais: paisAtual,
+                pais_nome: paisNomeAtual,
+                artigos: [],
+                imagem_base64: base64Data,
+                imagem_media_type: mediaType
+            };
+        } else {
+            bodyPayload = {
+                mensagem: promptTexto,
+                historico: [],
+                pais: paisAtual,
+                pais_nome: paisNomeAtual,
+                artigos: []
+            };
+        }
+
+        const r = await fetch('/alfa-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(bodyPayload)
+        });
+        if (r.status === 401) { window.location.href = '/'; return; }
+        const data = await r.json();
+
+        const texto = data.texto || '⚠️ Não foi possível gerar o texto.';
+
+        // Salva no post
+        cronogramaPosts[idx].textoGerado = texto;
+        salvarCronograma();
+
+        contentEl.innerHTML = '';
+        contentEl.textContent = texto;
+
+        toast('Texto gerado!', `Para o post: ${post.tema.slice(0,30)}...`, 'sucesso');
+
+    } catch (err) {
+        contentEl.textContent = '⚠️ Erro ao gerar texto. Verifique a conexão e tente novamente.';
+        toast('Erro', 'Falha ao gerar texto', 'erro');
+    }
+};
+
+window.regenerarTexto = async function() {
+    if (postIndexAtual === null) return;
+    cronogramaPosts[postIndexAtual].textoGerado = null;
+    await gerarTextoPost(postIndexAtual, false);
+};
+
+window.copiarTextoGerado = function() {
+    const texto = document.getElementById('texto-gerado-content').textContent;
+    navigator.clipboard.writeText(texto).then(() => {
+        toast('Copiado!', 'Texto pronto para colar', 'sucesso');
+        const btn = document.querySelector('#modal-texto-gerado .modal-btn-confirm');
+        if (btn) { btn.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!'; setTimeout(() => { btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copiar texto'; }, 2000); }
+    });
+};
+
+window.confirmarRemoverPost = function(idx) {
+    const post = cronogramaPosts[idx];
+    if (!post) return;
+    if (confirm(`Remover post "${post.tema}" de ${new Date(post.data+'T00:00:00').toLocaleDateString('pt-BR')}?`)) {
+        cronogramaPosts.splice(idx, 1);
+        salvarCronograma();
         renderizarCalendario();
         atualizarProgressoAnual();
         atualizarSemana();
@@ -757,6 +990,25 @@ window.removerPost = function(idx) {
         toast('Post removido', '', 'info');
     }
 };
+
+// Verifica posts D-1 que ainda não têm texto → notifica
+function verificarPostsDiaUm() {
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const amanha = new Date(hoje); amanha.setDate(hoje.getDate() + 1);
+    const postsAmanha = cronogramaPosts.filter(p => {
+        const d = new Date(p.data + 'T00:00:00');
+        return d.getTime() === amanha.getTime() && !p.textoGerado;
+    });
+    if (postsAmanha.length > 0) {
+        setTimeout(() => {
+            toast(
+                `${postsAmanha.length} post${postsAmanha.length > 1 ? 's' : ''} para amanhã sem texto!`,
+                'Abra o cronograma e clique em "Gerar texto"',
+                'aviso'
+            );
+        }, 1500);
+    }
+}
 
 // ─── PROGRESSO ANUAL ─────────────────────
 function atualizarProgressoAnual() {
