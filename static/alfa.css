@@ -1971,3 +1971,67 @@ body {
   .metricas-grid { grid-template-columns: 1fr 1fr; }
   .filtros-wrap { padding: 8px 12px; }
 }
+/* ══════════════════════════════════════════
+   UPLOAD DE IMAGEM + GERAR TEXTO
+══════════════════════════════════════════ */
+
+.upload-img-area {
+  position: relative;
+  border: 1.5px dashed var(--abrd);
+  border-radius: 12px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color .2s, background .2s;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ab);
+}
+.upload-img-area:hover {
+  border-color: var(--ag2);
+  background: var(--ag3);
+}
+#upload-img-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 20px;
+  color: var(--as);
+  pointer-events: none;
+}
+#upload-img-placeholder i {
+  font-size: 24px;
+  opacity: .4;
+}
+#upload-img-placeholder span {
+  font-size: 13px;
+  font-weight: 500;
+}
+#upload-img-placeholder small {
+  font-size: 11px;
+  opacity: .6;
+}
+
+/* Botão gerar texto nos posts */
+.gerar-texto-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--ag);
+  background: transparent;
+  color: var(--ag);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.gerar-texto-btn:hover {
+  background: var(--ag);
+  color: #fff;
+}
