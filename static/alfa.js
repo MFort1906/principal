@@ -1398,3 +1398,186 @@ function horaAtual() {
 function scrollBottom() {
     requestAnimationFrame(() => { chatMessages.scrollTop = chatMessages.scrollHeight; });
 }
+
+// ══════════════════════════════════════════════════════
+// 🎨 ADMIN — Temas Comemorativos
+// ══════════════════════════════════════════════════════
+
+const TEMAS_INFO = {
+    padrao:       { nome: 'Padrão',        emoji: '🟢', particles: [] },
+    natal:        { nome: 'Natal',         emoji: '🎄', particles: ['❄️','⛄','🎅','🎁','✨','🌟'] },
+    ano_novo:     { nome: 'Ano Novo',      emoji: '🎆', particles: ['🎆','🎇','✨','⭐','🌟','💫'] },
+    pascoa:       { nome: 'Páscoa',        emoji: '🐣', particles: ['🐣','🐰','🥚','🌸','🌷','🌼'] },
+    carnaval:     { nome: 'Carnaval',      emoji: '🎭', particles: ['🎭','🎊','🎉','🎈','✨','🌈'] },
+    halloween:    { nome: 'Halloween',     emoji: '🎃', particles: ['🎃','👻','🦇','🕷️','🍬','💀'] },
+    junina:       { nome: 'Festa Junina',  emoji: '🎡', particles: ['🎡','🌽','🎠','⭐','🌟','🎆'] },
+    dia_das_maes: { nome: 'Dia das Mães',  emoji: '💐', particles: ['💐','🌷','🌸','💖','🌺','✨'] },
+    dia_dos_pais: { nome: 'Dia dos Pais',  emoji: '👔', particles: ['⭐','🌟','✨','💙','🎉','🎊'] },
+};
+
+let temaAtual       = 'padrao';
+let temaSelecionado = 'padrao';
+let particleTimer   = null;
+
+// ── Abrir painel admin ──
+window.abrirAdminTema = function() {
+    document.getElementById('modal-admin-tema').style.display = 'flex';
+    _renderTemaCards();
+    _atualizarStatusTema();
+};
+
+// ── Selecionar card (visual) ──
+function _renderTemaCards() {
+    document.querySelectorAll('.admin-tema-card').forEach(card => {
+        const t = card.dataset.tema;
+        card.classList.toggle('selecionado', t === temaSelecionado);
+        card.classList.toggle('ativo-agora', t === temaAtual);
+        card.onclick = () => {
+            temaSelecionado = t;
+            _renderTemaCards();
+        };
+    });
+}
+
+function _atualizarStatusTema() {
+    const info = TEMAS_INFO[temaAtual] || TEMAS_INFO.padrao;
+    document.getElementById('admin-tema-status-txt').innerHTML =
+        `Tema ativo: <strong>${info.emoji} ${info.nome}</strong>`;
+}
+
+// ── Aplicar tema (chama API) ──
+window.aplicarTemaSelecionado = async function() {
+    const senha = document.getElementById('admin-senha-input').value.trim();
+    if (!senha) { toast('Atenção', 'Digite a senha de administrador.', 'aviso'); return; }
+
+    const btn = document.getElementById('btn-aplicar-tema');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Aplicando...';
+
+    try {
+        const r = await fetch('/admin/tema', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ senha_admin: senha, tema: temaSelecionado, ativo: true })
+        });
+        const data = await r.json();
+
+        if (data.sucesso) {
+            temaAtual = temaSelecionado;
+            _aplicarTemaVisual(temaAtual);
+            _atualizarStatusTema();
+            _renderTemaCards();
+            const info = TEMAS_INFO[temaAtual] || TEMAS_INFO.padrao;
+            toast('Tema aplicado!', `${info.emoji} ${info.nome} ativado com sucesso.`, 'sucesso');
+            // Limpa senha após uso
+            document.getElementById('admin-senha-input').value = '';
+        } else {
+            toast('Erro', data.erro || 'Não foi possível aplicar o tema.', 'erro');
+        }
+    } catch (e) {
+        toast('Erro de conexão', 'Não foi possível conectar ao servidor.', 'erro');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Aplicar tema';
+    }
+};
+
+// ── Desativar tema ──
+window.desativarTema = async function() {
+    const senha = document.getElementById('admin-senha-input').value.trim();
+    if (!senha) { toast('Atenção', 'Digite a senha de administrador.', 'aviso'); return; }
+
+    try {
+        const r = await fetch('/admin/tema', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ senha_admin: senha, tema: 'padrao', ativo: false })
+        });
+        const data = await r.json();
+        if (data.sucesso) {
+            temaAtual       = 'padrao';
+            temaSelecionado = 'padrao';
+            _aplicarTemaVisual('padrao');
+            _atualizarStatusTema();
+            _renderTemaCards();
+            toast('Tema restaurado', '🟢 Visual padrão ativado.', 'sucesso');
+            document.getElementById('admin-senha-input').value = '';
+        } else {
+            toast('Erro', data.erro || 'Senha incorreta.', 'erro');
+        }
+    } catch (e) {
+        toast('Erro de conexão', '', 'erro');
+    }
+};
+
+// ── Carregar tema salvo ao iniciar ──
+async function carregarTemaInicial() {
+    try {
+        const r = await fetch('/admin/tema', { credentials: 'include' });
+        if (!r.ok) return;
+        const data = await r.json();
+        if (data.sucesso && data.ativo && data.tema && data.tema !== 'padrao') {
+            temaAtual       = data.tema;
+            temaSelecionado = data.tema;
+            _aplicarTemaVisual(data.tema);
+        }
+    } catch { /* silencioso */ }
+}
+
+// ── Aplicar visualmente ──
+function _aplicarTemaVisual(tema) {
+    // Remove todos os temas do body
+    Object.keys(TEMAS_INFO).forEach(t => document.body.classList.remove(`tema-${t}`));
+    _limparParticulas();
+
+    if (tema && tema !== 'padrao') {
+        document.body.classList.add(`tema-${tema}`);
+        _iniciarParticulas(tema);
+    }
+
+    // Badge na sidebar
+    const badge = document.getElementById('admin-tema-badge');
+    if (badge) badge.style.display = (tema && tema !== 'padrao') ? 'inline' : 'none';
+}
+
+// ── Partículas ──
+function _iniciarParticulas(tema) {
+    const container = document.getElementById('tema-particles');
+    if (!container) return;
+    const emojis = TEMAS_INFO[tema]?.particles || [];
+    if (!emojis.length) return;
+
+    function criarParticula() {
+        const el = document.createElement('span');
+        el.className = 'tema-particle';
+        el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        el.style.left    = Math.random() * 100 + 'vw';
+        el.style.fontSize = (14 + Math.random() * 14) + 'px';
+        const dur  = 8 + Math.random() * 14;
+        const delay = Math.random() * 6;
+        el.style.animation = `floatParticle ${dur}s ${delay}s linear infinite`;
+        container.appendChild(el);
+        // Limita a 30 partículas
+        const all = container.querySelectorAll('.tema-particle');
+        if (all.length > 30) all[0].remove();
+    }
+
+    // Cria batch inicial
+    for (let i = 0; i < 12; i++) criarParticula();
+    // Adiciona gradualmente
+    particleTimer = setInterval(criarParticula, 2500);
+}
+
+function _limparParticulas() {
+    if (particleTimer) { clearInterval(particleTimer); particleTimer = null; }
+    const c = document.getElementById('tema-particles');
+    if (c) c.innerHTML = '';
+}
+
+// ── Hook na inicialização ──
+const _origDOMReady = window.addEventListener;
+document.addEventListener('DOMContentLoaded', () => {
+    carregarTemaInicial();
+});
