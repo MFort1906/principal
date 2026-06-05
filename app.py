@@ -682,6 +682,75 @@ def _enfileirar_notificacao(tipo: str, titulo: str, mensagem: str = ""):
     session["notificacoes"] = notifs
  
  
+# ─────────────────────────────────────────────────────────────
+# 🎨 ADMIN — Tema comemorativo (apenas para o admin)
+# ─────────────────────────────────────────────────────────────
+
+# Senha de admin separada (defina ADMIN_PASSWORD no .env / Render secret)
+def get_admin_password():
+    secret_path = "/etc/secrets/ADMIN_PASSWORD"
+    if os.path.exists(secret_path):
+        try:
+            with open(secret_path) as f:
+                return f.read().strip()
+        except Exception:
+            pass
+    return os.getenv("ADMIN_PASSWORD")
+
+ADMIN_PASSWORD = get_admin_password()
+
+# Arquivo que persiste o tema ativo
+TEMA_FILE = os.path.join(os.getcwd(), "tema_ativo.json")
+
+def _ler_tema():
+    if os.path.exists(TEMA_FILE):
+        try:
+            with open(TEMA_FILE, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"tema": "padrao", "ativo": False}
+
+def _salvar_tema(tema: str, ativo: bool):
+    with open(TEMA_FILE, "w", encoding="utf-8") as f:
+        json.dump({"tema": tema, "ativo": ativo}, f)
+
+
+@app.route("/admin/tema", methods=["GET"])
+def get_tema():
+    """Retorna tema ativo — qualquer usuário logado pode consultar."""
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+    return jsonify({"sucesso": True, **_ler_tema()})
+
+
+@app.route("/admin/tema", methods=["POST"])
+def set_tema():
+    """Atualiza tema — requer senha de admin."""
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+
+    data       = request.get_json()
+    senha_adm  = data.get("senha_admin", "")
+    tema       = data.get("tema", "padrao")
+    ativo      = bool(data.get("ativo", True))
+
+    if not ADMIN_PASSWORD:
+        return jsonify({"sucesso": False, "erro": "Senha admin não configurada no servidor"}), 500
+
+    if senha_adm.strip() != ADMIN_PASSWORD.strip():
+        return jsonify({"sucesso": False, "erro": "Senha de administrador incorreta"}), 403
+
+    temas_validos = {"padrao", "natal", "ano_novo", "pascoa", "carnaval",
+                     "halloween", "dia_das_maes", "dia_dos_pais", "junina"}
+    if tema not in temas_validos:
+        return jsonify({"sucesso": False, "erro": "Tema inválido"}), 400
+
+    _salvar_tema(tema, ativo)
+    print(f"🎨 Tema atualizado: {tema} | ativo={ativo}")
+    return jsonify({"sucesso": True, "tema": tema, "ativo": ativo})
+
+
 # 🚪 Logout
 @app.route("/logout")
 def logout():
