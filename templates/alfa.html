@@ -350,18 +350,18 @@
 
 <!-- ── MODAL: ADICIONAR POST ── -->
 <div id="modal-add-post" class="modal-overlay" style="display:none" onclick="fecharModal('modal-add-post')">
-    <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-card" style="max-width:540px" onclick="event.stopPropagation()">
         <div class="modal-header">
             <div class="modal-title"><i class="fa-solid fa-plus"></i> Novo Post no Cronograma</div>
             <button class="modal-close" onclick="fecharModal('modal-add-post')"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" style="max-height:70vh;overflow-y:auto">
             <div class="modal-field">
-                <label>Data</label>
+                <label>Data de postagem</label>
                 <input type="date" id="post-data" style="width:100%;padding:10px 13px;border:1.5px solid var(--abrd);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;background:var(--ab)" />
             </div>
             <div class="modal-field">
-                <label>Tema / Título</label>
+                <label>Tema / Título do post</label>
                 <input type="text" id="post-tema" placeholder="Ex: 5 dicas de limpeza industrial..." />
             </div>
             <div class="modal-field">
@@ -375,13 +375,70 @@
                 </div>
             </div>
             <div class="modal-field">
-                <label>Observações (opcional)</label>
-                <input type="text" id="post-obs" placeholder="Canal, responsável, status..." />
+                <label>Canal / Rede social</label>
+                <div class="radio-group">
+                    <label class="radio-opt"><input type="radio" name="post-canal" value="Instagram" checked> 📸 Instagram</label>
+                    <label class="radio-opt"><input type="radio" name="post-canal" value="LinkedIn"> 💼 LinkedIn</label>
+                    <label class="radio-opt"><input type="radio" name="post-canal" value="Facebook"> 📘 Facebook</label>
+                    <label class="radio-opt"><input type="radio" name="post-canal" value="Blog"> 📝 Blog</label>
+                </div>
+            </div>
+            <div class="modal-field">
+                <label>Imagem do post <span style="font-weight:400;text-transform:none;color:var(--as)">(opcional — ajuda a IA gerar texto melhor)</span></label>
+                <div class="upload-img-area" id="upload-img-area" onclick="document.getElementById('post-img-input').click()">
+                    <input type="file" id="post-img-input" accept="image/*" style="display:none" onchange="previewImagem(this)">
+                    <div id="upload-img-placeholder">
+                        <i class="fa-solid fa-image"></i>
+                        <span>Clique para adicionar imagem</span>
+                        <small>JPG, PNG, WEBP — máx. 5MB</small>
+                    </div>
+                    <img id="upload-img-preview" src="" alt="" style="display:none;max-width:100%;border-radius:8px;max-height:180px;object-fit:cover">
+                    <button id="upload-img-remove" onclick="removerImagem(event)" style="display:none;position:absolute;top:8px;right:8px;background:#fff;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);font-size:11px;display:none;align-items:center;justify-content:center">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-field">
+                <label>Contexto adicional <span style="font-weight:400;text-transform:none;color:var(--as)">(opcional)</span></label>
+                <textarea id="post-obs" placeholder="Ex: foco em clientes industriais, mencionar produto X, usar tom descontraído..." style="width:100%;padding:10px 13px;border:1.5px solid var(--abrd);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;resize:vertical;min-height:64px;background:var(--ab);color:var(--at)"></textarea>
             </div>
         </div>
         <div class="modal-footer">
             <button class="modal-btn-cancel" onclick="fecharModal('modal-add-post')">Cancelar</button>
-            <button class="modal-btn-confirm" onclick="salvarPost()"><i class="fa-solid fa-check"></i> Salvar</button>
+            <button class="modal-btn-confirm" onclick="salvarPost()"><i class="fa-solid fa-check"></i> Salvar post</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL: TEXTO GERADO ── -->
+<div id="modal-texto-gerado" class="modal-overlay" style="display:none" onclick="fecharModal('modal-texto-gerado')">
+    <div class="modal-card" style="max-width:580px" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Texto gerado para o post</div>
+            <button class="modal-close" onclick="fecharModal('modal-texto-gerado')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <div id="texto-gerado-meta" style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap"></div>
+            <div id="texto-gerado-img-wrap" style="display:none;margin-bottom:14px">
+                <img id="texto-gerado-img" src="" style="max-width:100%;border-radius:10px;max-height:200px;object-fit:cover">
+            </div>
+            <div id="texto-gerado-content" style="background:var(--ab);border:1.5px solid var(--abrd);border-radius:12px;padding:16px;font-size:14px;line-height:1.7;color:var(--at);white-space:pre-wrap;min-height:80px">
+                <div class="skeleton skeleton-linha larga" style="margin-bottom:10px"></div>
+                <div class="skeleton skeleton-linha media" style="margin-bottom:8px"></div>
+                <div class="skeleton skeleton-linha larga" style="margin-bottom:8px"></div>
+                <div class="skeleton skeleton-linha curta"></div>
+            </div>
+        </div>
+        <div class="modal-footer" style="justify-content:space-between">
+            <button class="modal-btn-cancel" id="btn-regenerar" onclick="regenerarTexto()">
+                <i class="fa-solid fa-rotate"></i> Regenerar
+            </button>
+            <div style="display:flex;gap:8px">
+                <button class="modal-btn-cancel" onclick="fecharModal('modal-texto-gerado')">Fechar</button>
+                <button class="modal-btn-confirm" onclick="copiarTextoGerado()">
+                    <i class="fa-regular fa-copy"></i> Copiar texto
+                </button>
+            </div>
         </div>
     </div>
 </div>
