@@ -278,6 +278,8 @@ def alfa_chat():
         pais         = data.get("pais", "")
         pais_nome    = data.get("pais_nome", "")
         artigos      = data.get("artigos", [])
+        imagem_b64   = data.get("imagem_base64", None)
+        imagem_type  = data.get("imagem_media_type", "image/jpeg")
  
         if not mensagem:
             return jsonify({"erro": "Mensagem vazia"}), 400
@@ -326,21 +328,36 @@ Campos obrigatórios:
             if not content_h or role not in ("user", "assistant"):
                 continue
             messages.append({"role": role, "content": content_h})
-
-        # Adiciona a mensagem atual
-        messages.append({"role": "user", "content": mensagem})
-
+ 
+        # Adiciona a mensagem atual (com imagem se houver)
+        if imagem_b64:
+            messages.append({
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{imagem_type};base64,{imagem_b64}",
+                            "detail": "low"
+                        }
+                    },
+                    {"type": "text", "text": mensagem}
+                ]
+            })
+        else:
+            messages.append({"role": "user", "content": mensagem})
+ 
         # ── Chama a API da OpenAI ──
         api_key = os.getenv("OPENAI_API_KEY", "").strip()
         print(f"🔑 OPENAI_API_KEY: {'OK' if api_key else 'NÃO CONFIGURADA'}")
-
+ 
         if not api_key:
             return jsonify({
                 "texto": "⚠️ Chave de API da Alfa não configurada. Configure a variável OPENAI_API_KEY no Render.",
                 "artigos_filtrados": [],
                 "acao": None
             })
-
+ 
         resp = req_lib.post(
             "https://api.openai.com/v1/chat/completions",
             headers={
@@ -360,14 +377,14 @@ Campos obrigatórios:
             print("❌ OpenAI error:", resp.status_code, resp.text[:300])
         resp.raise_for_status()
         result = resp.json()
-
+ 
         # ── Extrai texto da resposta da OpenAI ──
         raw_text = ""
         try:
             raw_text = result["choices"][0]["message"]["content"]
         except Exception as e:
             print("❌ Erro ao extrair texto da OpenAI:", e)
-
+ 
         print("📨 OpenAI raw_text:", raw_text[:300])
  
         # ── Parse JSON robusto ──
@@ -427,7 +444,7 @@ Campos obrigatórios:
 # 📅 CRONOGRAMA — tipos de conteúdo reconhecidos pelo CSS
 # ─────────────────────────────────────────────────────────────
 TIPOS_CONTEUDO = ["produto", "dica", "case", "feriado", "conteudo", "outro"]
-
+ 
 # 📅 CRONOGRAMA — listar posts do cronograma
 @app.route("/cronograma", methods=["GET"])
 def get_cronograma():
@@ -436,32 +453,32 @@ def get_cronograma():
     """
     if not session.get("logado"):
         return jsonify({"erro": "Não autorizado"}), 401
-
+ 
     mes  = request.args.get("mes",  type=int)
     ano  = request.args.get("ano",  type=int, default=date.today().year)
     tipo = request.args.get("tipo", "").strip().lower()
-
+ 
     caminho = os.path.join(os.getcwd(), "cronograma.json")
     if not os.path.exists(caminho):
         return jsonify({"sucesso": True, "posts": [], "total": 0})
-
+ 
     with open(caminho, encoding="utf-8") as f:
         posts = json.load(f)
-
+ 
     # Filtra por ano
     posts = [p for p in posts if p.get("ano", ano) == ano]
-
+ 
     # Filtra por mês se informado
     if mes:
         posts = [p for p in posts if p.get("mes") == mes]
-
+ 
     # Filtra por tipo se informado e válido
     if tipo and tipo in TIPOS_CONTEUDO:
         posts = [p for p in posts if p.get("tipo", "outro") == tipo]
-
+ 
     return jsonify({"sucesso": True, "posts": posts, "total": len(posts)})
-
-
+ 
+ 
 # 📅 CRONOGRAMA — salvar / substituir posts
 @app.route("/cronograma", methods=["POST"])
 def salvar_cronograma():
@@ -470,11 +487,11 @@ def salvar_cronograma():
     """
     if not session.get("logado"):
         return jsonify({"erro": "Não autorizado"}), 401
-
+ 
     try:
         data = request.get_json()
         posts = data.get("posts", [])
-
+ 
         # Valida e normaliza cada post
         normalizados = []
         for p in posts:
@@ -489,59 +506,59 @@ def salvar_cronograma():
                 "tipo":     tipo   if tipo   in TIPOS_CONTEUDO          else "outro",
                 "status":   status if status in ("publicado", "agendado", "pendente") else "pendente",
             })
-
+ 
         caminho = os.path.join(os.getcwd(), "cronograma.json")
         with open(caminho, "w", encoding="utf-8") as f:
             json.dump(normalizados, f, ensure_ascii=False, indent=2)
-
+ 
         print(f"📅 Cronograma salvo: {len(normalizados)} posts")
         return jsonify({"sucesso": True, "total": len(normalizados)})
-
+ 
     except Exception as e:
         print("❌ Erro no /cronograma POST:", e)
         return jsonify({"sucesso": False, "erro": str(e)}), 500
-
-
+ 
+ 
 # 📅 CRONOGRAMA — atualizar status de um post (publicado / agendado / pendente)
 @app.route("/cronograma/status", methods=["PATCH"])
 def atualizar_status_post():
     """Body: { "dia": 10, "mes": 6, "ano": 2026, "status": "publicado" }"""
     if not session.get("logado"):
         return jsonify({"erro": "Não autorizado"}), 401
-
+ 
     try:
         data   = request.get_json()
         dia    = int(data.get("dia"))
         mes    = int(data.get("mes"))
         ano    = int(data.get("ano", date.today().year))
         status = data.get("status", "pendente").lower()
-
+ 
         if status not in ("publicado", "agendado", "pendente"):
             return jsonify({"sucesso": False, "erro": "Status inválido"}), 400
-
+ 
         caminho = os.path.join(os.getcwd(), "cronograma.json")
         if not os.path.exists(caminho):
             return jsonify({"sucesso": False, "erro": "Cronograma não encontrado"}), 404
-
+ 
         with open(caminho, encoding="utf-8") as f:
             posts = json.load(f)
-
+ 
         atualizados = 0
         for p in posts:
             if p.get("dia") == dia and p.get("mes") == mes and p.get("ano") == ano:
                 p["status"] = status
                 atualizados += 1
-
+ 
         with open(caminho, "w", encoding="utf-8") as f:
             json.dump(posts, f, ensure_ascii=False, indent=2)
-
+ 
         return jsonify({"sucesso": True, "atualizados": atualizados})
-
+ 
     except Exception as e:
         print("❌ Erro no /cronograma/status:", e)
         return jsonify({"sucesso": False, "erro": str(e)}), 500
-
-
+ 
+ 
 # ─────────────────────────────────────────────────────────────
 # 📊 MÉTRICAS — painel rápido da sidebar
 # ─────────────────────────────────────────────────────────────
@@ -550,10 +567,10 @@ def get_metricas():
     """Retorna métricas agregadas para os cards da sidebar."""
     if not session.get("logado"):
         return jsonify({"erro": "Não autorizado"}), 401
-
+ 
     hoje = date.today()
     ano  = hoje.year
-
+ 
     # Conta arquivos gerados
     total_arquivos = 0
     try:
@@ -563,24 +580,24 @@ def get_metricas():
         ])
     except Exception:
         pass
-
+ 
     # Lê cronograma para calcular métricas de posts
     posts_publicados = 0
     posts_agendados  = 0
     posts_total_ano  = 0
     proximo_post     = None
-
+ 
     caminho = os.path.join(os.getcwd(), "cronograma.json")
     if os.path.exists(caminho):
         try:
             with open(caminho, encoding="utf-8") as f:
                 posts = json.load(f)
-
+ 
             posts_ano = [p for p in posts if p.get("ano") == ano]
             posts_total_ano  = len(posts_ano)
             posts_publicados = sum(1 for p in posts_ano if p.get("status") == "publicado")
             posts_agendados  = sum(1 for p in posts_ano if p.get("status") == "agendado")
-
+ 
             # Próximo post: menor data >= hoje com status agendado ou pendente
             futuros = [
                 p for p in posts_ano
@@ -604,10 +621,10 @@ def get_metricas():
                 }
         except Exception as e:
             print("⚠️ Erro ao ler cronograma para métricas:", e)
-
+ 
     # Progresso anual (% de posts publicados em relação ao total)
     pct_anual = round((posts_publicados / posts_total_ano * 100) if posts_total_ano else 0, 1)
-
+ 
     return jsonify({
         "sucesso": True,
         "metricas": {
@@ -619,8 +636,8 @@ def get_metricas():
         },
         "proximo_post": proximo_post,
     })
-
-
+ 
+ 
 # ─────────────────────────────────────────────────────────────
 # 🏷️  FILTROS — tipos de conteúdo disponíveis
 # ─────────────────────────────────────────────────────────────
@@ -629,7 +646,7 @@ def get_tipos_conteudo():
     """Retorna os tipos disponíveis para os filtro-chips do CSS."""
     if not session.get("logado"):
         return jsonify({"erro": "Não autorizado"}), 401
-
+ 
     labels = {
         "produto":  {"label": "Produto",   "icone": "fa-box"},
         "dica":     {"label": "Dica",      "icone": "fa-lightbulb"},
@@ -639,8 +656,8 @@ def get_tipos_conteudo():
         "outro":    {"label": "Outro",     "icone": "fa-tag"},
     }
     return jsonify({"sucesso": True, "tipos": labels})
-
-
+ 
+ 
 # ─────────────────────────────────────────────────────────────
 # 🔔 TOAST — endpoint para notificações server-side (opcional)
 # Permite que o back-end enfileire toasts a serem exibidos
@@ -651,11 +668,11 @@ def get_notificacoes():
     """Retorna notificações pendentes para a sessão e as limpa."""
     if not session.get("logado"):
         return jsonify({"erro": "Não autorizado"}), 401
-
+ 
     notifs = session.pop("notificacoes", [])
     return jsonify({"sucesso": True, "notificacoes": notifs})
-
-
+ 
+ 
 def _enfileirar_notificacao(tipo: str, titulo: str, mensagem: str = ""):
     """Helper interno: adiciona toast à sessão Flask.
     tipo: 'sucesso' | 'aviso' | 'erro' | 'info'
@@ -663,8 +680,8 @@ def _enfileirar_notificacao(tipo: str, titulo: str, mensagem: str = ""):
     notifs = session.get("notificacoes", [])
     notifs.append({"tipo": tipo, "titulo": titulo, "mensagem": mensagem})
     session["notificacoes"] = notifs
-
-
+ 
+ 
 # 🚪 Logout
 @app.route("/logout")
 def logout():
@@ -677,18 +694,4 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
  
-
-
-import pandas as pd
-
-@app.route('/importar-cronograma', methods=['POST'])
-def importar_cronograma():
-    arquivo = request.files['arquivo']
-    if arquivo.filename.lower().endswith('.csv'):
-        df = pd.read_csv(arquivo)
-    else:
-        df = pd.read_excel(arquivo)
-
-    return jsonify({
-        'dados': df.fillna('').to_dict('records')
-    })
+ 
