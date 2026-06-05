@@ -150,6 +150,10 @@
             <a href="{{ url_for('home') }}" class="sidebar-link">
                 <i class="fa-solid fa-house"></i> Início
             </a>
+            <button class="sidebar-link admin-tema-btn" onclick="abrirAdminTema()" id="btn-admin-tema" data-tooltip="Painel de temas comemorativos">
+                <i class="fa-solid fa-wand-sparkles"></i> Temas
+                <span class="admin-tema-badge" id="admin-tema-badge" style="display:none">●</span>
+            </button>
         </div>
     </aside>
 
@@ -457,6 +461,166 @@
 
 <!-- Toast container -->
 <div class="toast-container" id="toast-container"></div>
+
+<!-- ── MODAL: ADMIN TEMAS COMEMORATIVOS ── -->
+<div id="modal-admin-tema" class="modal-overlay" style="display:none" onclick="fecharModal('modal-admin-tema')">
+    <div class="modal-card admin-tema-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-wand-sparkles"></i> Temas Comemorativos</div>
+            <button class="modal-close" onclick="fecharModal('modal-admin-tema')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <!-- Senha admin -->
+            <div class="modal-field admin-senha-wrap" id="admin-senha-wrap">
+                <label><i class="fa-solid fa-lock"></i> Senha de administrador</label>
+                <input type="password" id="admin-senha-input" placeholder="Digite a senha admin..." autocomplete="off"
+                    style="width:100%;padding:10px 13px;border:1.5px solid var(--abrd);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;background:var(--ab);color:var(--at)">
+                <p style="font-size:11px;color:var(--as);margin-top:6px"><i class="fa-solid fa-info-circle"></i> Acesso restrito ao administrador do sistema.</p>
+            </div>
+
+            <!-- Grade de temas -->
+            <div class="admin-temas-grid" id="admin-temas-grid">
+                <div class="admin-tema-card" data-tema="padrao">
+                    <div class="tema-preview tema-padrao-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">🟢</span>
+                        <span class="tema-nome">Padrão</span>
+                    </div>
+                </div>
+                <div class="admin-tema-card" data-tema="natal">
+                    <div class="tema-preview tema-natal-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">🎄</span>
+                        <span class="tema-nome">Natal</span>
+                    </div>
+                </div>
+                <div class="admin-tema-card" data-tema="ano_novo">
+                    <div class="tema-preview tema-anonovo-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">🎆</span>
+                        <span class="tema-nome">Ano Novo</span>
+                    </div>
+                </div>
+                <div class="admin-tema-card" data-tema="pascoa">
+                    <div class="tema-preview tema-pascoa-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">🐣</span>
+                        <span class="tema-nome">Páscoa</span>
+                    </div>
+                </div>
+                <div class="admin-tema-card" data-tema="carnaval">
+                    <div class="tema-preview tema-carnaval-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">🎭</span>
+                        <span class="tema-nome">Carnaval</span>
+                    </div>
+                </div>
+                <div class="admin-tema-card" data-tema="halloween">
+                    <div class="tema-preview tema-halloween-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">🎃</span>
+                        <span class="tema-nome">Halloween</span>
+                    </div>
+                </div>
+                <div class="admin-tema-card" data-tema="junina">
+                    <div class="tema-preview tema-junina-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">🎡</span>
+                        <span class="tema-nome">Festa Junina</span>
+                    </div>
+                </div>
+                <div class="admin-tema-card" data-tema="dia_das_maes">
+                    <div class="tema-preview tema-maes-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">💐</span>
+                        <span class="tema-nome">Dia das Mães</span>
+                    </div>
+                </div>
+                <div class="admin-tema-card" data-tema="dia_dos_pais">
+                    <div class="tema-preview tema-pais-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">👔</span>
+                        <span class="tema-nome">Dia dos Pais</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status atual -->
+            <div class="admin-tema-status" id="admin-tema-status">
+                <i class="fa-solid fa-circle-info"></i>
+                <span id="admin-tema-status-txt">Tema atual: <strong>Padrão</strong></span>
+            </div>
+        </div>
+        <div class="modal-footer" style="justify-content:space-between">
+            <button class="modal-btn-cancel" onclick="desativarTema()">
+                <i class="fa-solid fa-rotate-left"></i> Restaurar padrão
+            </button>
+            <div style="display:flex;gap:8px">
+                <button class="modal-btn-cancel" onclick="fecharModal('modal-admin-tema')">Fechar</button>
+                <button class="modal-btn-confirm" id="btn-aplicar-tema" onclick="aplicarTemaSelecionado()">
+                    <i class="fa-solid fa-check"></i> Aplicar tema
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Partículas decorativas de tema (injetadas por JS) -->
+<div id="tema-particles" class="tema-particles" aria-hidden="true"></div>
 
 <script src="{{ url_for('static', filename='alfa.js') }}"></script>
 </body>
