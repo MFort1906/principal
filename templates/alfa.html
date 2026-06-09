@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -179,6 +179,9 @@
                 </div>
                 <button id="btn-traduzir" class="traduzir-btn" style="display:none" onclick="traduzirSelecionados()">
                     <i class="fa-solid fa-language"></i> Traduzir selecionados
+                </button>
+                <button class="btn-tema-toggle" onclick="toggleTemaUsuario()" id="btn-tema-toggle" data-tooltip="Alternar tema escuro/claro" aria-label="Alternar tema">
+                    <i class="fa-solid fa-moon" id="tema-icon"></i>
                 </button>
                 <button class="btn-modo-foco" onclick="toggleModoFoco()" id="btn-foco" data-tooltip="Modo foco">
                     <i class="fa-solid fa-expand"></i>
