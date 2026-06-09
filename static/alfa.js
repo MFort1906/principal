@@ -1,3 +1,9 @@
+// ── Aplica tema imediatamente para evitar flash de tema errado ──
+(function() {
+    var t = localStorage.getItem('alfa_tema') || 'light';
+    document.documentElement.setAttribute('data-theme', t);
+})();
+
 /* ═════════════════════════════════════════
    ALFA.JS — Assistente Inteligente Tennant
    v3.0 — Marketing Edition
@@ -78,6 +84,30 @@ window.toggleModoFoco = function() {
         ? '<i class="fa-solid fa-compress"></i>'
         : '<i class="fa-solid fa-expand"></i>';
 };
+
+// ─── TEMA ESCURO/CLARO (escolha do usuário) ──────────────
+function aplicarTema(tema) {
+    // Aplica no <html> para máxima especificidade via [data-theme]
+    document.documentElement.setAttribute('data-theme', tema);
+    localStorage.setItem('alfa_tema', tema);
+    // Atualiza ícone
+    const icon = document.getElementById('tema-icon');
+    if (icon) icon.className = tema === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    // Atualiza tooltip
+    const btn = document.getElementById('btn-tema-toggle');
+    if (btn) btn.setAttribute('data-tooltip', tema === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro');
+}
+
+window.toggleTemaUsuario = function() {
+    const atual = document.documentElement.getAttribute('data-theme') || 'light';
+    aplicarTema(atual === 'dark' ? 'light' : 'dark');
+};
+
+// Aplica tema salvo assim que o DOM estiver pronto (ícone precisa existir)
+document.addEventListener('DOMContentLoaded', function() {
+    const saved = localStorage.getItem('alfa_tema') || 'light';
+    aplicarTema(saved);
+});
 
 // ─── CHIP FILTROS ─────────────────────────
 window.toggleFiltro = function(btn, tipo) {
