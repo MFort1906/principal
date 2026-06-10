@@ -81,6 +81,9 @@
                 <button class="tool-btn" onclick="verHistorico()" data-tooltip="Histórico da sessão">
                     <i class="fa-solid fa-clock-rotate-left"></i><span>Histórico</span>
                 </button>
+                <button class="tool-btn tool-btn-auditoria" onclick="abrirAuditoria()" data-tooltip="Auditar site Tennant">
+                    <i class="fa-solid fa-magnifying-glass-chart"></i><span>Auditoria</span>
+                </button>
             </div>
         </div>
 
@@ -624,6 +627,100 @@
 
 <!-- Partículas decorativas de tema (injetadas por JS) -->
 <div id="tema-particles" class="tema-particles" aria-hidden="true"></div>
+
+<!-- ── MODAL: AUDITORIA TENNANT ── -->
+<div id="modal-auditoria" class="modal-overlay auditoria-overlay" style="display:none" onclick="fecharModal('modal-auditoria')">
+    <div class="modal-card auditoria-card" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-magnifying-glass-chart"></i> Auditoria do Site Tennant</div>
+            <button class="modal-close" onclick="fecharModal('modal-auditoria')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body auditoria-body">
+
+            <!-- Painel de configuração -->
+            <div class="auditoria-config" id="auditoria-config">
+                <div class="auditoria-intro">
+                    <div class="auditoria-intro-icon"><i class="fa-solid fa-robot"></i></div>
+                    <div>
+                        <div class="auditoria-intro-title">Verificação automática de documentos — tennantco.com/pt_br</div>
+                        <div class="auditoria-intro-desc">A Alfa vai pesquisar cada máquina do catálogo brasileiro da Tennant e verificar se possui os 5 documentos obrigatórios: <strong>Folheto</strong>, <strong>Guia de peças de reposição</strong>, <strong>Manual de peças</strong>, <strong>Manual do operador</strong> e <strong>Tabela de parede</strong>.<br><br><span style="color:var(--ag);font-weight:600"><i class="fa-solid fa-circle-info"></i> O site usa carregamento dinâmico de documentos — a Alfa usa busca inteligente para localizá-los.</span></div>
+                    </div>
+                </div>
+
+                <div class="auditoria-campos">
+                    <div class="modal-field">
+                        <label><i class="fa-solid fa-sliders"></i> Documentos obrigatórios a verificar</label>
+                        <div class="auditoria-checks-grid">
+                            <label class="auditoria-check-opt"><input type="checkbox" class="doc-check" value="folheto" checked> <i class="fa-regular fa-file-pdf"></i> Folheto</label>
+                            <label class="auditoria-check-opt"><input type="checkbox" class="doc-check" value="guia" checked> <i class="fa-regular fa-file-pdf"></i> Guia de peças de reposição</label>
+                            <label class="auditoria-check-opt"><input type="checkbox" class="doc-check" value="manual_pecas" checked> <i class="fa-regular fa-file-pdf"></i> Manual de peças</label>
+                            <label class="auditoria-check-opt"><input type="checkbox" class="doc-check" value="manual_operador" checked> <i class="fa-regular fa-file-pdf"></i> Manual do operador</label>
+                            <label class="auditoria-check-opt"><input type="checkbox" class="doc-check" value="tabela_parede" checked> <i class="fa-regular fa-file-pdf"></i> Tabela de parede</label>
+                        </div>
+                    </div>
+                    <div class="aud-aviso-tempo">
+                        <i class="fa-solid fa-clock"></i> A auditoria pode levar alguns minutos dependendo do número de máquinas encontradas.
+                    </div>
+                </div>
+
+                <div class="auditoria-footer-cfg">
+                    <button class="modal-btn-confirm auditoria-btn-iniciar" onclick="iniciarAuditoria()">
+                        <i class="fa-solid fa-magnifying-glass"></i> Iniciar auditoria
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progresso -->
+            <div class="auditoria-progresso" id="auditoria-progresso" style="display:none">
+                <div class="aud-prog-header">
+                    <div class="aud-prog-spinner"><i class="fa-solid fa-gear fa-spin"></i></div>
+                    <div>
+                        <div class="aud-prog-titulo">Auditoria em andamento...</div>
+                        <div class="aud-prog-sub" id="aud-prog-sub">Iniciando análise do site</div>
+                    </div>
+                </div>
+                <div class="aud-prog-bar-wrap">
+                    <div class="aud-prog-bar" id="aud-prog-bar" style="width:0%"></div>
+                </div>
+                <div class="aud-prog-stats">
+                    <span><i class="fa-solid fa-check-circle" style="color:var(--ag2)"></i> <span id="aud-ok-count">0</span> completas</span>
+                    <span><i class="fa-solid fa-triangle-exclamation" style="color:#e67e22"></i> <span id="aud-warn-count">0</span> com pendências</span>
+                    <span><i class="fa-solid fa-circle-xmark" style="color:#e74c3c"></i> <span id="aud-err-count">0</span> sem documentos</span>
+                </div>
+                <div class="aud-prog-log" id="aud-prog-log"></div>
+            </div>
+
+            <!-- Resultado -->
+            <div class="auditoria-resultado" id="auditoria-resultado" style="display:none">
+                <!-- Sumário -->
+                <div class="aud-sumario" id="aud-sumario"></div>
+
+                <!-- Filtros resultado -->
+                <div class="aud-filtros">
+                    <button class="aud-filtro-btn ativo" onclick="filtrarResultados(this,'todos')">Todos</button>
+                    <button class="aud-filtro-btn" onclick="filtrarResultados(this,'completo')"><i class="fa-solid fa-check-circle"></i> Completos</button>
+                    <button class="aud-filtro-btn" onclick="filtrarResultados(this,'pendente')"><i class="fa-solid fa-triangle-exclamation"></i> Com pendências</button>
+                    <button class="aud-filtro-btn" onclick="filtrarResultados(this,'vazio')"><i class="fa-solid fa-circle-xmark"></i> Sem documentos</button>
+                </div>
+
+                <!-- Tabela de máquinas -->
+                <div class="aud-tabela-wrap" id="aud-tabela-wrap"></div>
+            </div>
+
+        </div>
+        <div class="modal-footer auditoria-modal-footer" id="auditoria-modal-footer" style="justify-content:space-between">
+            <button class="modal-btn-cancel" id="btn-aud-nova" style="display:none" onclick="novaAuditoria()">
+                <i class="fa-solid fa-rotate-left"></i> Nova auditoria
+            </button>
+            <div style="display:flex;gap:8px">
+                <button class="modal-btn-confirm" id="btn-aud-exportar" style="display:none" onclick="exportarRelatorioAuditoria()">
+                    <i class="fa-solid fa-file-arrow-down"></i> Exportar relatório CSV
+                </button>
+                <button class="modal-btn-cancel" onclick="fecharModal('modal-auditoria')">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="{{ url_for('static', filename='alfa.js') }}"></script>
 </body>
