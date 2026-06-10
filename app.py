@@ -478,7 +478,7 @@ def alfa_auditoria():
                     "model": "gpt-4o",
                     "tools": [{"type": "web_search_preview"}],
                     "input": prompt_text,
-                    "max_output_tokens": 3000
+                    "max_output_tokens": 12000
                 },
                 timeout=60
             )
@@ -541,24 +541,32 @@ Acesse cada URL acima que corresponda às categorias solicitadas. Para cada mode
 Responda APENAS com JSON válido, sem texto antes ou depois:
 {{"maquinas":[{{"nome":"R3","url":"https://www.tennantco.com/pt_br/...","categoria":"Extratoras de carpete"}},{{"nome":"A5","url":"...","categoria":"Aspiradores"}}]}}"""
             else:
-                prompt = """Acesse o site da Tennant Company Brasil e liste TODOS os modelos de máquinas disponíveis no catálogo.
+                prompt = """Acesse TODAS as URLs abaixo e liste TODOS os modelos de máquinas encontrados.
 
-URLs para verificar:
-- https://www.tennantco.com/pt_br/m%C3%A1quinas.html (página principal de máquinas)
-- Subcategorias: lavadoras de piso, varredeiras, extratoras, polidoras, aspiradores, robóticas
-- Para Extratoras de carpete: https://www.tennantco.com/pt_br/m%C3%A1quinas/extratoras-de-carpete.html
-- Para Polidoras e enceradeiras: https://www.tennantco.com/pt_br/m%C3%A1quinas/polidoras-e-enceradeiras.html
-- Para Aspiradores: https://www.tennantco.com/pt_br/m%C3%A1quinas/aspiradores.html
-- Para Equipamento de limpeza especializada: https://www.tennantco.com/pt_br/m%C3%A1quinas/equipamentos-especializados.html
-- Para Lavadoras de alta pressão: https://www.tennantco.com/pt_br/m%C3%A1quinas/lavadoras-de-alta-pressao.html
+URLs obrigatórias:
 
-Para cada modelo encontrado, forneça:
-- nome: modelo da máquina (ex: T360, T300, B70, A260, S30, etc.)
-- url: URL completa da página do produto no site pt_br
-- categoria: categoria do produto
+https://www.tennantco.com/pt_br/1/máquinas/lavadoras.html#!category=category_page&filter=%3Acategory%3Ascrubbers%3AmachineStatus%3A0005_02_AVAILABLE&sortBy=relevance&page=1&perpage=12&view=list&
+https://www.tennantco.com/pt_br/1/máquinas/lavadoras.html#!category=category_page&filter=%3Acategory%3Ascrubbers%3AmachineStatus%3A0005_02_AVAILABLE&sortBy=relevance&page=2&perpage=12&view=list&
+https://www.tennantco.com/pt_br/1/máquinas/varredeiras.html
+https://www.tennantco.com/pt_br/1/máquinas/varredeiras-lavadoras.html
+https://www.tennantco.com/pt_br/1/máquinas/extratoras.html
+https://www.tennantco.com/pt_br/1/máquinas/polidoras-e-enceradeiras.html
+https://www.tennantco.com/pt_br/1/máquinas/aspiradores.html
+https://www.tennantco.com/pt_br/1/máquinas/equipamento-de-limpeza-especializado.html
+https://www.tennantco.com/pt_br/1/máquinas/lavadoras-de-alta-pressão.html
 
-Responda APENAS com JSON válido, sem texto antes ou depois:
-{"maquinas":[{"nome":"T360","url":"https://www.tennantco.com/pt_br/...","categoria":"Lavadora a pé"},{"nome":"T300","url":"...","categoria":"..."}]}"""
+IMPORTANTE:
+- Verifique TODAS as URLs.
+- Percorra TODAS as páginas de resultados.
+- Não limite a quantidade de máquinas.
+- Remova duplicados.
+- Retorne TODOS os modelos encontrados.
+
+Formato:
+{"maquinas":[{"nome":"T300","url":"https://...","categoria":"Lavadoras"}]}
+
+Retorne APENAS JSON válido.
+"""
 
             texto_resp = chamar_openai(prompt)
             parsed = extrair_json_seguro(texto_resp)
