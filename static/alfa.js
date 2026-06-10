@@ -1639,6 +1639,21 @@ const DOC_LABELS = {
     tabela_parede:   'Tabela de parede'
 };
 
+// ─── Categorias de máquinas disponíveis ──────────────
+const CATEGORIAS_MAQUINAS = [
+    'Extratoras de carpete',
+    'Polidoras e enceradeiras',
+    'Aspiradores',
+    'Equipamento de limpeza especializada',
+    'Lavadoras de alta pressão',
+    'Lavadoras de piso operação a pé',
+    'Lavadoras de piso operação a bordo',
+    'Lavadoras robóticas',
+    'Varredeiras de operação a bordo',
+    'Varredeiras de operação a pé',
+    'Varredeiras-Lavadoras',
+];
+
 // ─── Termos de busca por tipo de documento ───────────
 // Cada entrada: array de termos alternativos que buscamos
 const DOC_SEARCH_TERMS = {
