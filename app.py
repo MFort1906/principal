@@ -438,8 +438,194 @@ Campos obrigatórios:
     except Exception as e:
         print("❌ Erro no /alfa-chat:", str(e))
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
- 
- 
+
+
+# ─────────────────────────────────────────────────────────────
+# 🔍 AUDITORIA — OpenAI GPT-4o com web search
+# ─────────────────────────────────────────────────────────────
+@app.route("/alfa-auditoria", methods=["POST"])
+def alfa_auditoria():
+    """
+    Endpoint de auditoria que usa OpenAI Responses API (gpt-4o)
+    com a ferramenta web_search_preview para buscar documentos
+    no site da Tennant de forma segura via backend.
+    """
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+
+    try:
+        import requests as req_lib
+
+        data = request.get_json()
+        tipo      = data.get("tipo", "")       # "listar_maquinas" | "verificar_docs"
+        maquina   = data.get("maquina", None)  # {"nome": ..., "url": ..., "categoria": ...}
+        docs      = data.get("docs", [])        # lista de chaves de documentos
+
+        api_key = os.getenv("OPENAI_API_KEY", "").strip()
+        if not api_key:
+            return jsonify({"erro": "OPENAI_API_KEY não configurada no servidor."}), 500
+
+        # ── Helpers ──────────────────────────────────────────────
+        def chamar_openai(prompt_text):
+            """Chama a OpenAI Responses API com web_search_preview."""
+            resp = req_lib.post(
+                "https://api.openai.com/v1/responses",
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {api_key}"
+                },
+                json={
+                    "model": "gpt-4o",
+                    "tools": [{"type": "web_search_preview"}],
+                    "input": prompt_text,
+                    "max_output_tokens": 3000
+                },
+                timeout=60
+            )
+            if not resp.ok:
+                raise Exception(f"OpenAI API error {resp.status_code}: {resp.text[:300]}")
+            result = resp.json()
+            # Extrai texto da resposta
+            texto = ""
+            for item in result.get("output", []):
+                if item.get("type") == "message":
+                    for c in item.get("content", []):
+                        if c.get("type") == "output_text":
+                            texto += c.get("text", "")
+            return texto
+
+        def extrair_json_seguro(texto):
+            import re
+            texto = texto.strip()
+            try:
+                return json.loads(texto)
+            except Exception:
+                pass
+            texto2 = re.sub(r'```json\s*', '', texto)
+            texto2 = re.sub(r'```\s*', '', texto2).strip()
+            try:
+                return json.loads(texto2)
+            except Exception:
+                pass
+            match = re.search(r'\{[\s\S]*\}', texto)
+            if match:
+                try:
+                    return json.loads(match.group(0))
+                except Exception:
+                    pass
+            return None
+
+        # ── Tipo 1: Listar máquinas ───────────────────────────────
+        if tipo == "listar_maquinas":
+            prompt = """Acesse o site da Tennant Company Brasil e liste TODOS os modelos de máquinas disponíveis no catálogo.
+
+URLs para verificar:
+- https://www.tennantco.com/pt_br/m%C3%A1quinas.html (página principal de máquinas)
+- Subcategorias: lavadoras de piso, varredeiras, extratoras, polidoras, aspiradores, robóticas
+
+Para cada modelo encontrado, forneça:
+- nome: modelo da máquina (ex: T360, T300, B70, A260, S30, etc.)
+- url: URL completa da página do produto no site pt_br
+- categoria: categoria do produto
+
+Responda APENAS com JSON válido, sem texto antes ou depois:
+{"maquinas":[{"nome":"T360","url":"https://www.tennantco.com/pt_br/...","categoria":"Lavadora a pé"},{"nome":"T300","url":"...","categoria":"..."}]}"""
+
+            texto_resp = chamar_openai(prompt)
+            parsed = extrair_json_seguro(texto_resp)
+
+            if not parsed or "maquinas" not in parsed:
+                # Fallback: tentar extrair qualquer lista
+                return jsonify({
+                    "sucesso": False,
+                    "erro": "Não foi possível obter a lista de máquinas do site.",
+                    "raw": texto_resp[:500]
+                })
+
+            return jsonify({
+                "sucesso": True,
+                "maquinas": parsed["maquinas"]
+            })
+
+        # ── Tipo 2: Verificar documentos de uma máquina ──────────
+        elif tipo == "verificar_docs":
+            if not maquina or not docs:
+                return jsonify({"erro": "Dados insuficientes: maquina e docs são obrigatórios"}), 400
+
+            DOC_LABELS = {
+                "folheto":         "Folheto / Brochure",
+                "guia":            "Guia de peças de reposição",
+                "manual_pecas":    "Manual de peças",
+                "manual_operador": "Manual do operador",
+                "tabela_parede":   "Tabela de parede / Wall chart"
+            }
+
+            docs_lista = "\n".join([f'- {DOC_LABELS.get(d, d)} (chave: "{d}")' for d in docs])
+
+            prompt = f"""Você é um auditor do site da Tennant Company Brasil.
+
+Verifique se o modelo de máquina "{maquina['nome']}" possui os seguintes documentos disponíveis para download no site tennantco.com:
+
+Documentos a verificar:
+{docs_lista}
+
+Como pesquisar:
+1. Acesse a página do produto: {maquina.get('url', f'https://www.tennantco.com/pt_br pesquisar {maquina["nome"]}')}
+2. Procure pela seção de documentos/downloads da página
+3. Também busque por: site:tennantco.com "{maquina['nome']}" filetype:pdf
+
+Para cada documento:
+- "sim" = documento encontrado e disponível para download
+- "nao" = documento não encontrado
+
+Responda APENAS com JSON válido:
+{{"documentos":{{{", ".join([f'"{d}": "sim" ou "nao"' for d in docs])}}}}}
+
+Exemplo de resposta:
+{{"documentos":{{{", ".join([f'"{d}": "nao"' for d in docs])}}}}}"""
+
+            texto_resp = chamar_openai(prompt)
+            parsed = extrair_json_seguro(texto_resp)
+
+            # Normalizar resultado
+            doc_result = {}
+            if parsed and "documentos" in parsed:
+                for d in docs:
+                    val = str(parsed["documentos"].get(d, "nao")).lower()
+                    doc_result[d] = "sim" if "sim" in val else "nao"
+            else:
+                # Fallback: tudo como não encontrado
+                for d in docs:
+                    doc_result[d] = "nao"
+
+            presentes = [d for d in docs if doc_result[d] == "sim"]
+            ausentes  = [d for d in docs if doc_result[d] != "sim"]
+
+            status = "completo"
+            if len(ausentes) == len(docs):
+                status = "vazio"
+            elif len(ausentes) > 0:
+                status = "pendente"
+
+            return jsonify({
+                "sucesso":    True,
+                "nome":       maquina["nome"],
+                "url":        maquina.get("url", ""),
+                "categoria":  maquina.get("categoria", ""),
+                "documentos": doc_result,
+                "presentes":  presentes,
+                "ausentes":   ausentes,
+                "status":     status
+            })
+
+        else:
+            return jsonify({"erro": f"Tipo de auditoria desconhecido: {tipo}"}), 400
+
+    except Exception as e:
+        print("❌ Erro no /alfa-auditoria:", str(e))
+        return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
+
+
 # ─────────────────────────────────────────────────────────────
 # 📅 CRONOGRAMA — tipos de conteúdo reconhecidos pelo CSS
 # ─────────────────────────────────────────────────────────────
@@ -682,75 +868,6 @@ def _enfileirar_notificacao(tipo: str, titulo: str, mensagem: str = ""):
     session["notificacoes"] = notifs
  
  
-# ─────────────────────────────────────────────────────────────
-# 🎨 ADMIN — Tema comemorativo (apenas para o admin)
-# ─────────────────────────────────────────────────────────────
-
-# Senha de admin separada (defina ADMIN_PASSWORD no .env / Render secret)
-def get_admin_password():
-    secret_path = "/etc/secrets/ADMIN_PASSWORD"
-    if os.path.exists(secret_path):
-        try:
-            with open(secret_path) as f:
-                return f.read().strip()
-        except Exception:
-            pass
-    return os.getenv("ADMIN_PASSWORD")
-
-ADMIN_PASSWORD = get_admin_password()
-
-# Arquivo que persiste o tema ativo
-TEMA_FILE = os.path.join(os.getcwd(), "tema_ativo.json")
-
-def _ler_tema():
-    if os.path.exists(TEMA_FILE):
-        try:
-            with open(TEMA_FILE, encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {"tema": "padrao", "ativo": False}
-
-def _salvar_tema(tema: str, ativo: bool):
-    with open(TEMA_FILE, "w", encoding="utf-8") as f:
-        json.dump({"tema": tema, "ativo": ativo}, f)
-
-
-@app.route("/admin/tema", methods=["GET"])
-def get_tema():
-    """Retorna tema ativo — qualquer usuário logado pode consultar."""
-    if not session.get("logado"):
-        return jsonify({"erro": "Não autorizado"}), 401
-    return jsonify({"sucesso": True, **_ler_tema()})
-
-
-@app.route("/admin/tema", methods=["POST"])
-def set_tema():
-    """Atualiza tema — requer senha de admin."""
-    if not session.get("logado"):
-        return jsonify({"erro": "Não autorizado"}), 401
-
-    data       = request.get_json()
-    senha_adm  = data.get("senha_admin", "")
-    tema       = data.get("tema", "padrao")
-    ativo      = bool(data.get("ativo", True))
-
-    if not ADMIN_PASSWORD:
-        return jsonify({"sucesso": False, "erro": "Senha admin não configurada no servidor"}), 500
-
-    if senha_adm.strip() != ADMIN_PASSWORD.strip():
-        return jsonify({"sucesso": False, "erro": "Senha de administrador incorreta"}), 403
-
-    temas_validos = {"padrao", "natal", "ano_novo", "pascoa", "carnaval",
-                     "halloween", "dia_das_maes", "dia_dos_pais", "junina"}
-    if tema not in temas_validos:
-        return jsonify({"sucesso": False, "erro": "Tema inválido"}), 400
-
-    _salvar_tema(tema, ativo)
-    print(f"🎨 Tema atualizado: {tema} | ativo={ativo}")
-    return jsonify({"sucesso": True, "tema": tema, "ativo": ativo})
-
-
 # 🚪 Logout
 @app.route("/logout")
 def logout():
