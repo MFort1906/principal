@@ -1611,3 +1611,446 @@ const _origDOMReady = window.addEventListener;
 document.addEventListener('DOMContentLoaded', () => {
     carregarTemaInicial();
 });
+
+/* ═══════════════════════════════════════════════════════
+   MÓDULO: AUDITORIA TENNANT
+   Verifica se cada máquina do site possui os documentos
+   obrigatórios (Folheto, Guia, Manual de Peças, Manual
+   do Operador, Tabela de Parede).
+
+   ESTRATÉGIA:
+   O site tennantco.com carrega a seção de documentação
+   via JavaScript assíncrono — o HTML estático não expõe
+   os PDFs. Por isso usamos a Claude API com web_search
+   para buscar cada documento por modelo, pesquisando
+   diretamente no site da Tennant.
+════════════════════════════════════════════════════════ */
+
+// ─── Estado da auditoria ───────────────────────────────
+let auditoriaResultados = [];
+let auditoriaEmAndamento = false;
+
+// ─── Labels dos documentos ────────────────────────────
+const DOC_LABELS = {
+    folheto:         'Folheto',
+    guia:            'Guia de peças de reposição',
+    manual_pecas:    'Manual de peças',
+    manual_operador: 'Manual do operador',
+    tabela_parede:   'Tabela de parede'
+};
+
+// ─── Termos de busca por tipo de documento ───────────
+// Cada entrada: array de termos alternativos que buscamos
+const DOC_SEARCH_TERMS = {
+    folheto:         ['folheto', 'brochure', 'datasheet', 'ficha técnica'],
+    guia:            ['guia de peças de reposição', 'common replacement parts', 'peças de reposição e consumíveis'],
+    manual_pecas:    ['parts manual', 'manual de peças', 'parts list'],
+    manual_operador: ['manual do operador', 'operator manual', 'manual de operação'],
+    tabela_parede:   ['tabela de parede', 'wall chart', 'use and care guide']
+};
+
+// ─── Abrir modal ──────────────────────────────────────
+window.abrirAuditoria = function() {
+    novaAuditoria();
+    document.getElementById('modal-auditoria').style.display = 'flex';
+};
+
+window.novaAuditoria = function() {
+    document.getElementById('auditoria-config').style.display = 'block';
+    document.getElementById('auditoria-progresso').style.display = 'none';
+    document.getElementById('auditoria-resultado').style.display = 'none';
+    document.getElementById('btn-aud-nova').style.display = 'none';
+    document.getElementById('btn-aud-exportar').style.display = 'none';
+    auditoriaResultados = [];
+    auditoriaEmAndamento = false;
+};
+
+// ─── Iniciar auditoria ────────────────────────────────
+window.iniciarAuditoria = async function() {
+    const docsSelecionados = [...document.querySelectorAll('.doc-check:checked')].map(c => c.value);
+    if (docsSelecionados.length === 0) {
+        toast('Selecione documentos', 'Marque ao menos um documento para verificar.', 'aviso');
+        return;
+    }
+
+    document.getElementById('auditoria-config').style.display = 'none';
+    document.getElementById('auditoria-progresso').style.display = 'block';
+    auditoriaEmAndamento = true;
+    auditoriaResultados = [];
+
+    setAudProg(5, 'Identificando máquinas no site da Tennant...');
+    logAud('🚀 Iniciando auditoria do site tennantco.com/pt_br');
+
+    try {
+        // ── Etapa 1: Listar máquinas ─────────────────
+        const maquinas = await obterListaMaquinas();
+        if (!maquinas || maquinas.length === 0) throw new Error('Nenhuma máquina encontrada.');
+
+        setAudProg(15, `${maquinas.length} máquinas encontradas. Verificando documentos...`);
+        logAud(`✅ ${maquinas.length} máquinas identificadas`);
+
+        // ── Etapa 2: Verificar documentos ────────────
+        for (let i = 0; i < maquinas.length; i++) {
+            const m = maquinas[i];
+            const pct = 15 + Math.round(((i + 1) / maquinas.length) * 82);
+            setAudProg(pct, `Verificando: ${m.nome} (${i+1}/${maquinas.length})`);
+            logAud(`🔍 Buscando documentos de ${m.nome}...`);
+
+            const resultado = await verificarDocumentosMaquina(m, docsSelecionados);
+            auditoriaResultados.push(resultado);
+            atualizarContadoresAud();
+
+            // Pequena pausa para não sobrecarregar a API
+            if (i < maquinas.length - 1) await sleep(400);
+        }
+
+        setAudProg(100, '✅ Auditoria concluída!');
+        logAud(`🎉 Auditoria finalizada — ${maquinas.length} máquinas analisadas.`);
+
+        await sleep(700);
+        mostrarResultadoAuditoria(docsSelecionados);
+
+    } catch (err) {
+        console.error('Auditoria erro:', err);
+        setAudProg(0, 'Erro: ' + err.message);
+        logAud(`❌ Erro fatal: ${err.message}`);
+        toast('Erro na auditoria', err.message, 'erro');
+        setTimeout(() => novaAuditoria(), 4000);
+    }
+};
+
+// ─── Helper: sleep ────────────────────────────────────
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─── Atualiza barra de progresso ─────────────────────
+function setAudProg(pct, msg) {
+    document.getElementById('aud-prog-bar').style.width = pct + '%';
+    document.getElementById('aud-prog-sub').textContent = msg;
+}
+
+function logAud(msg) {
+    const log = document.getElementById('aud-prog-log');
+    const line = document.createElement('div');
+    line.className = 'aud-log-line';
+    line.textContent = msg;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+}
+
+function atualizarContadoresAud() {
+    const ok   = auditoriaResultados.filter(r => r.status === 'completo').length;
+    const warn = auditoriaResultados.filter(r => r.status === 'pendente').length;
+    const err  = auditoriaResultados.filter(r => r.status === 'vazio' || r.status === 'erro').length;
+    document.getElementById('aud-ok-count').textContent   = ok;
+    document.getElementById('aud-warn-count').textContent = warn;
+    document.getElementById('aud-err-count').textContent  = err;
+}
+
+// ─── Etapa 1: Listar máquinas ────────────────────────
+// Usa o endpoint /alfa-auditoria no backend (OpenAI GPT-4o + web search).
+async function obterListaMaquinas() {
+    const r = await fetch('/alfa-auditoria', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ tipo: 'listar_maquinas' })
+    });
+    if (r.status === 401) { window.location.href = '/'; return []; }
+    if (!r.ok) throw new Error(`Erro HTTP ${r.status} ao listar máquinas`);
+    const data = await r.json();
+    if (!data.sucesso) throw new Error(data.erro || 'Não foi possível listar máquinas.');
+    return data.maquinas || [];
+}
+
+// ─── VERSÃO ANTIGA (substituída) ─────────────────────
+async function _obterListaMaquinas_ANTIGA() {
+    const prompt = `Você é um auditor do site da Tennant Company Brasil. Use a ferramenta de busca web para acessar https://www.tennantco.com/pt_br/m%C3%A1quinas.html e as páginas de subcategoria listadas no menu:
+- Lavadoras de piso de operação a bordo
+- Lavadoras de operação a pé
+- Lavadoras robóticas
+- Varredeiras de operação a bordo
+- Varredeiras de operação a pé
+- Varredeiras-Lavadoras
+- Extratoras de carpete
+- Polidoras e enceradeiras
+- Aspiradores
+- Equipamento de limpeza especializado
+- Lavadoras de alta pressão
+
+Liste TODOS os modelos de máquinas individuais que encontrar (ex: T360, T300, A260, B70, A500, A650, T7, T16, T16AMR, S20, S30, M20, M30, etc.).
+
+Para cada modelo, inclua o nome do modelo e a URL da página do produto no site pt_br da Tennant.
+
+Responda SOMENTE com JSON, sem texto extra, sem markdown:
+{"maquinas":[{"nome":"T360","url":"https://www.tennantco.com/pt_br/1/machines/scrubbers/product.t360...html","categoria":"Lavadora operação a pé"},{"nome":"T300","url":"...","categoria":"..."}]}`;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 4000,
+            tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+            messages: [{ role: 'user', content: prompt }]
+        })
+    });
+
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message || 'Erro na API Claude');
+
+    const texto = data.content
+        .filter(b => b.type === 'text')
+        .map(b => b.text)
+        .join('');
+
+    // Extrair JSON
+    const jsonMatch = texto.match(/\{[\s\S]*"maquinas"[\s\S]*\}/);
+    if (!jsonMatch) {
+        // Fallback: tentar parsear direto
+        try { return JSON.parse(texto.replace(/```json|```/g, '').trim()).maquinas || []; }
+        catch { throw new Error('IA não retornou lista de máquinas em formato JSON.'); }
+    }
+    return JSON.parse(jsonMatch[0]).maquinas || [];
+}
+
+// ─── Etapa 2: Verificar documentos por modelo ────────
+// Usa o endpoint /alfa-auditoria no backend (OpenAI GPT-4o + web search).
+async function verificarDocumentosMaquina(maquina, docsParaVerificar) {
+    try {
+        const r = await fetch('/alfa-auditoria', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                tipo: 'verificar_docs',
+                maquina: maquina,
+                docs: docsParaVerificar
+            })
+        });
+        if (r.status === 401) { window.location.href = '/'; return null; }
+        if (!r.ok) throw new Error(`Erro HTTP ${r.status}`);
+        const data = await r.json();
+        if (!data.sucesso) throw new Error(data.erro || 'Erro ao verificar documentos');
+        return {
+            nome:       data.nome,
+            url:        data.url,
+            categoria:  data.categoria,
+            documentos: data.documentos,
+            presentes:  data.presentes,
+            ausentes:   data.ausentes,
+            status:     data.status
+        };
+    } catch (err) {
+        const docs = {};
+        docsParaVerificar.forEach(d => { docs[d] = 'erro'; });
+        return { nome: maquina.nome, url: maquina.url, categoria: maquina.categoria || '', documentos: docs, presentes: [], ausentes: docsParaVerificar, status: 'erro', erro: err.message };
+    }
+}
+
+// ─── VERSÃO ANTIGA (substituída) ─────────────────────
+async function _verificarDocumentosMaquina_ANTIGA(maquina, docsParaVerificar) {
+    // Monta queries de busca para cada documento
+    const docsInfo = docsParaVerificar.map(d => {
+        const termos = DOC_SEARCH_TERMS[d];
+        return `- ${DOC_LABELS[d]} (buscar por: ${termos.join(' OR ')})`;
+    }).join('\n');
+
+    const prompt = `Você é um auditor do site da Tennant Company Brasil. Sua tarefa é verificar se a máquina "${maquina.nome}" possui os seguintes documentos disponíveis para download no site tennantco.com/pt_br.
+
+Use a ferramenta de busca web para pesquisar cada documento. Estratégia:
+1. Acesse a página do produto: ${maquina.url}
+2. Busque no site por PDFs do modelo ${maquina.nome} usando queries como:
+   - site:tennantco.com "${maquina.nome}" folheto
+   - site:tennantco.com "${maquina.nome}" parts manual
+   - site:tennantco.com/content/dam "${maquina.nome}"
+
+Documentos a verificar:
+${docsInfo}
+
+Para cada documento, determine se existe um link de PDF disponível para o modelo ${maquina.nome} no site da Tennant Brasil.
+- "sim" = PDF encontrado com link real apontando para tennantco.com
+- "nao" = PDF não encontrado
+
+Responda SOMENTE com JSON:
+{"documentos":{"folheto":"sim","guia":"nao","manual_pecas":"sim","manual_operador":"nao","tabela_parede":"nao"}}
+
+Inclua APENAS as chaves: ${docsParaVerificar.join(', ')}`;
+
+    try {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 800,
+                tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+                messages: [{ role: 'user', content: prompt }]
+            })
+        });
+
+        const data = await response.json();
+        if (data.error) throw new Error(data.error.message);
+
+        const texto = data.content
+            .filter(b => b.type === 'text')
+            .map(b => b.text)
+            .join('');
+
+        // Extrair JSON
+        let docs = {};
+        const jsonMatch = texto.match(/\{[\s\S]*"documentos"[\s\S]*\}/);
+        if (jsonMatch) {
+            docs = JSON.parse(jsonMatch[0]).documentos || {};
+        } else {
+            // Tentar parsear direto
+            try {
+                docs = JSON.parse(texto.replace(/```json|```/g, '').trim()).documentos || {};
+            } catch {
+                // Se falhou tudo, marca como não encontrado
+                docsParaVerificar.forEach(d => { docs[d] = 'nao'; });
+            }
+        }
+
+        // Normalizar: qualquer valor diferente de "sim" vira "nao"
+        docsParaVerificar.forEach(d => {
+            if (!docs[d]) docs[d] = 'nao';
+            docs[d] = String(docs[d]).toLowerCase().includes('sim') ? 'sim' : 'nao';
+        });
+
+        const presentes = docsParaVerificar.filter(d => docs[d] === 'sim');
+        const ausentes  = docsParaVerificar.filter(d => docs[d] !== 'sim');
+
+        let status = 'completo';
+        if (ausentes.length === docsParaVerificar.length) status = 'vazio';
+        else if (ausentes.length > 0) status = 'pendente';
+
+        return { nome: maquina.nome, url: maquina.url, categoria: maquina.categoria || '', documentos: docs, presentes, ausentes, status };
+
+    } catch (err) {
+        const docs = {};
+        docsParaVerificar.forEach(d => { docs[d] = 'erro'; });
+        return { nome: maquina.nome, url: maquina.url, categoria: maquina.categoria || '', documentos: docs, presentes: [], ausentes: docsParaVerificar, status: 'erro', erro: err.message };
+    }
+}
+
+// ─── Mostrar resultado ────────────────────────────────
+function mostrarResultadoAuditoria(docsVerificados) {
+    document.getElementById('auditoria-progresso').style.display = 'none';
+    document.getElementById('auditoria-resultado').style.display = 'block';
+    document.getElementById('btn-aud-nova').style.display = 'inline-flex';
+    document.getElementById('btn-aud-exportar').style.display = 'inline-flex';
+
+    // Sumário
+    const total = auditoriaResultados.length;
+    const ok = auditoriaResultados.filter(r => r.status === 'completo').length;
+    const warn = auditoriaResultados.filter(r => r.status === 'pendente').length;
+    const vazio = auditoriaResultados.filter(r => r.status === 'vazio').length;
+    const erro = auditoriaResultados.filter(r => r.status === 'erro').length;
+    const pctOk = total > 0 ? Math.round((ok / total) * 100) : 0;
+
+    document.getElementById('aud-sumario').innerHTML = `
+        <div class="aud-sum-titulo">Resultado da auditoria</div>
+        <div class="aud-sum-cards">
+            <div class="aud-sum-card aud-sum-total">
+                <div class="aud-sum-num">${total}</div>
+                <div class="aud-sum-label">Máquinas analisadas</div>
+            </div>
+            <div class="aud-sum-card aud-sum-ok">
+                <div class="aud-sum-num">${ok}</div>
+                <div class="aud-sum-label">Completas (${pctOk}%)</div>
+            </div>
+            <div class="aud-sum-card aud-sum-warn">
+                <div class="aud-sum-num">${warn}</div>
+                <div class="aud-sum-label">Com pendências</div>
+            </div>
+            <div class="aud-sum-card aud-sum-err">
+                <div class="aud-sum-num">${vazio + erro}</div>
+                <div class="aud-sum-label">Sem documentos</div>
+            </div>
+        </div>
+        <div class="aud-sum-barra-wrap">
+            <div class="aud-sum-barra" style="width:${pctOk}%" title="${pctOk}% completo"></div>
+        </div>
+    `;
+
+    renderTabelaAuditoria(auditoriaResultados, docsVerificados);
+}
+
+function renderTabelaAuditoria(resultados, docsVerificados) {
+    const wrap = document.getElementById('aud-tabela-wrap');
+    if (resultados.length === 0) {
+        wrap.innerHTML = '<div class="aud-empty">Nenhum resultado para este filtro.</div>';
+        return;
+    }
+
+    const statusLabel = { completo: '✅ Completo', pendente: '⚠️ Pendente', vazio: '❌ Sem docs', erro: '⚠️ Erro' };
+    const statusClass = { completo: 'aud-status-ok', pendente: 'aud-status-warn', vazio: 'aud-status-err', erro: 'aud-status-warn' };
+
+    let html = `<table class="aud-tabela">
+        <thead>
+            <tr>
+                <th>Máquina</th>
+                ${docsVerificados.map(d => `<th>${DOC_LABELS[d]}</th>`).join('')}
+                <th>Status</th>
+                <th>Faltando</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+    resultados.forEach(r => {
+        const faltando = r.ausentes.map(d => DOC_LABELS[d]).join(', ') || '—';
+        html += `<tr data-status="${r.status}">
+            <td><a href="${escHtml(r.url)}" target="_blank" class="aud-link">${escHtml(r.nome)} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:9px"></i></a></td>
+            ${docsVerificados.map(d => {
+                const ok = r.documentos[d] === 'sim';
+                return `<td class="aud-doc-cell ${ok ? 'aud-doc-ok' : 'aud-doc-falta'}">${ok ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-xmark"></i>'}</td>`;
+            }).join('')}
+            <td><span class="aud-status-badge ${statusClass[r.status]}">${statusLabel[r.status] || r.status}</span></td>
+            <td class="aud-faltando-cel">${faltando}</td>
+        </tr>`;
+    });
+
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+}
+
+// ─── Filtrar resultados ───────────────────────────────
+window.filtrarResultados = function(btn, filtro) {
+    document.querySelectorAll('.aud-filtro-btn').forEach(b => b.classList.remove('ativo'));
+    btn.classList.add('ativo');
+
+    const docsVerificados = [...document.querySelectorAll('.doc-check:checked')].map(c => c.value);
+
+    let dados = auditoriaResultados;
+    if (filtro !== 'todos') dados = auditoriaResultados.filter(r => r.status === filtro);
+
+    renderTabelaAuditoria(dados, docsVerificados.length ? docsVerificados :
+        Object.keys(DOC_LABELS));
+};
+
+// ─── Exportar CSV ─────────────────────────────────────
+window.exportarRelatorioAuditoria = function() {
+    if (!auditoriaResultados.length) { toast('Nada para exportar', '', 'aviso'); return; }
+
+    const docKeys = Object.keys(auditoriaResultados[0]?.documentos || DOC_LABELS);
+    const headers = ['Máquina', 'URL', ...docKeys.map(d => DOC_LABELS[d] || d), 'Status', 'Documentos faltando'];
+
+    const linhas = auditoriaResultados.map(r => [
+        r.nome,
+        r.url,
+        ...docKeys.map(d => r.documentos[d] === 'sim' ? 'Sim' : 'Não'),
+        r.status === 'completo' ? 'Completo' : r.status === 'pendente' ? 'Pendente' : 'Sem documentos',
+        r.ausentes.map(d => DOC_LABELS[d]).join(' | ')
+    ]);
+
+    const csv = [headers, ...linhas].map(row =>
+        row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `auditoria_tennant_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    toast('CSV exportado!', 'Relatório salvo com sucesso.', 'sucesso');
+};
