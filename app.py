@@ -517,11 +517,40 @@ def alfa_auditoria():
 
         # ── Tipo 1: Listar máquinas ───────────────────────────────
         if tipo == "listar_maquinas":
-            prompt = """Acesse o site da Tennant Company Brasil e liste TODOS os modelos de máquinas disponíveis no catálogo.
+            categorias_alvo = data.get("categorias", None)  # lista opcional de categorias
+
+            if categorias_alvo:
+                cats_str = "\n".join([f"- {c}" for c in categorias_alvo])
+                prompt = f"""Acesse o site da Tennant Company Brasil e liste TODOS os modelos de máquinas das seguintes categorias:
+
+{cats_str}
+
+URLs base para verificar:
+- https://www.tennantco.com/pt_br/m%C3%A1quinas.html (página principal)
+- Para Extratoras de carpete: https://www.tennantco.com/pt_br/m%C3%A1quinas/extratoras-de-carpete.html
+- Para Polidoras e enceradeiras: https://www.tennantco.com/pt_br/m%C3%A1quinas/polidoras-e-enceradeiras.html
+- Para Aspiradores: https://www.tennantco.com/pt_br/m%C3%A1quinas/aspiradores.html
+- Para Equipamento de limpeza especializada: https://www.tennantco.com/pt_br/m%C3%A1quinas/equipamentos-especializados.html
+- Para Lavadoras de alta pressão: https://www.tennantco.com/pt_br/m%C3%A1quinas/lavadoras-de-alta-pressao.html
+
+Acesse cada URL acima que corresponda às categorias solicitadas. Para cada modelo individual encontrado forneça:
+- nome: modelo da máquina (ex: R3, A5, B5, etc.)
+- url: URL completa da página do produto
+- categoria: exatamente o nome da categoria conforme listado acima
+
+Responda APENAS com JSON válido, sem texto antes ou depois:
+{{"maquinas":[{{"nome":"R3","url":"https://www.tennantco.com/pt_br/...","categoria":"Extratoras de carpete"}},{{"nome":"A5","url":"...","categoria":"Aspiradores"}}]}}"""
+            else:
+                prompt = """Acesse o site da Tennant Company Brasil e liste TODOS os modelos de máquinas disponíveis no catálogo.
 
 URLs para verificar:
 - https://www.tennantco.com/pt_br/m%C3%A1quinas.html (página principal de máquinas)
 - Subcategorias: lavadoras de piso, varredeiras, extratoras, polidoras, aspiradores, robóticas
+- Para Extratoras de carpete: https://www.tennantco.com/pt_br/m%C3%A1quinas/extratoras-de-carpete.html
+- Para Polidoras e enceradeiras: https://www.tennantco.com/pt_br/m%C3%A1quinas/polidoras-e-enceradeiras.html
+- Para Aspiradores: https://www.tennantco.com/pt_br/m%C3%A1quinas/aspiradores.html
+- Para Equipamento de limpeza especializada: https://www.tennantco.com/pt_br/m%C3%A1quinas/equipamentos-especializados.html
+- Para Lavadoras de alta pressão: https://www.tennantco.com/pt_br/m%C3%A1quinas/lavadoras-de-alta-pressao.html
 
 Para cada modelo encontrado, forneça:
 - nome: modelo da máquina (ex: T360, T300, B70, A260, S30, etc.)
@@ -623,6 +652,352 @@ Exemplo de resposta:
 
     except Exception as e:
         print("❌ Erro no /alfa-auditoria:", str(e))
+        return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
+
+
+# ─────────────────────────────────────────────────────────────
+# 📊 AUDITORIA — Exportar relatório Excel (.xlsx)
+# ─────────────────────────────────────────────────────────────
+@app.route("/auditoria-exportar-excel", methods=["POST"])
+def auditoria_exportar_excel():
+    """
+    Recebe os resultados da auditoria em JSON e devolve um arquivo .xlsx
+    bem formatado com abas de resumo, detalhe por categoria e lista de pendências.
+    """
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import (
+            Font, PatternFill, Alignment, Border, Side, GradientFill
+        )
+        from openpyxl.utils import get_column_letter
+        from openpyxl.chart import BarChart, Reference
+        from openpyxl.chart.series import DataPoint
+        import io
+
+        data = request.get_json()
+        resultados = data.get("resultados", [])
+        docs_verificados = data.get("docs_verificados", [])
+
+        if not resultados:
+            return jsonify({"erro": "Nenhum resultado para exportar"}), 400
+
+        DOC_LABELS_PT = {
+            "folheto":         "Folheto",
+            "guia":            "Guia de Peças de Reposição",
+            "manual_pecas":    "Manual de Peças",
+            "manual_operador": "Manual do Operador",
+            "tabela_parede":   "Tabela de Parede",
+        }
+
+        # ── Paleta de cores ──────────────────────────────────────
+        COR_VERDE_ESCURO   = "1B5C38"   # cabeçalho principal
+        COR_VERDE_MEDIO    = "2D8653"   # cabeçalho secundário
+        COR_VERDE_CLARO    = "E8F5EE"   # linha alternada
+        COR_BRANCO         = "FFFFFF"
+        COR_CINZA_HEADER   = "F2F2F2"
+        COR_OK             = "D4EDDA"   # célula com ✓
+        COR_FALTA          = "FDECEA"   # célula com ✗
+        COR_AMARELO        = "FFF3CD"   # pendente
+        COR_TEXTO_OK       = "155724"
+        COR_TEXTO_FALTA    = "721C24"
+        COR_TEXTO_AMARELO  = "856404"
+
+        def fill(hex_color):
+            return PatternFill("solid", start_color=hex_color, fgColor=hex_color)
+
+        def border_thin():
+            side = Side(style="thin", color="CCCCCC")
+            return Border(left=side, right=side, top=side, bottom=side)
+
+        def header_font(size=11, bold=True, color="FFFFFF"):
+            return Font(name="Arial", size=size, bold=bold, color=color)
+
+        def cell_font(size=10, bold=False, color="000000"):
+            return Font(name="Arial", size=size, bold=bold, color=color)
+
+        wb = Workbook()
+
+        # ════════════════════════════════════════════════════════
+        # ABA 1 — RESUMO EXECUTIVO
+        # ════════════════════════════════════════════════════════
+        ws_resumo = wb.active
+        ws_resumo.title = "Resumo"
+
+        # Título
+        ws_resumo.merge_cells("A1:H1")
+        ws_resumo["A1"] = "RELATÓRIO DE AUDITORIA DE DOCUMENTAÇÃO — TENNANT"
+        ws_resumo["A1"].font = Font(name="Arial", size=16, bold=True, color="FFFFFF")
+        ws_resumo["A1"].fill = fill(COR_VERDE_ESCURO)
+        ws_resumo["A1"].alignment = Alignment(horizontal="center", vertical="center")
+        ws_resumo.row_dimensions[1].height = 40
+
+        # Data
+        ws_resumo.merge_cells("A2:H2")
+        ws_resumo["A2"] = f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+        ws_resumo["A2"].font = Font(name="Arial", size=10, italic=True, color="FFFFFF")
+        ws_resumo["A2"].fill = fill(COR_VERDE_MEDIO)
+        ws_resumo["A2"].alignment = Alignment(horizontal="center")
+        ws_resumo.row_dimensions[2].height = 20
+
+        ws_resumo.append([])
+
+        # Totais gerais
+        total    = len(resultados)
+        ok       = sum(1 for r in resultados if r.get("status") == "completo")
+        pendente = sum(1 for r in resultados if r.get("status") == "pendente")
+        vazio    = sum(1 for r in resultados if r.get("status") in ("vazio", "erro"))
+        pct_ok   = round(ok / total * 100, 1) if total else 0
+
+        # Cards de sumário (linha 4)
+        cards = [
+            ("Total de Máquinas", total,    COR_VERDE_ESCURO, "FFFFFF"),
+            ("✅ Completas",       ok,       "1B5C38",        "FFFFFF"),
+            ("⚠️ Com Pendências",  pendente, "856404",        "FFFFFF"),
+            ("❌ Sem Documentos",  vazio,    "721C24",        "FFFFFF"),
+            ("Taxa de Conclusão",  f"{pct_ok}%", "2D8653",   "FFFFFF"),
+        ]
+        # Linha 4: labels
+        for i, (label, _, cor, _) in enumerate(cards):
+            col = i * 2 + 1
+            ws_resumo.merge_cells(
+                start_row=4, start_column=col,
+                end_row=4, end_column=col + 1
+            )
+            c = ws_resumo.cell(row=4, column=col, value=label)
+            c.font  = Font(name="Arial", size=10, bold=True, color="FFFFFF")
+            c.fill  = fill(cor)
+            c.alignment = Alignment(horizontal="center", vertical="center")
+        ws_resumo.row_dimensions[4].height = 22
+
+        # Linha 5: valores
+        for i, (_, valor, cor, _) in enumerate(cards):
+            col = i * 2 + 1
+            ws_resumo.merge_cells(
+                start_row=5, start_column=col,
+                end_row=5, end_column=col + 1
+            )
+            c = ws_resumo.cell(row=5, column=col, value=valor)
+            c.font  = Font(name="Arial", size=20, bold=True, color=cor)
+            c.fill  = fill(COR_CINZA_HEADER)
+            c.alignment = Alignment(horizontal="center", vertical="center")
+        ws_resumo.row_dimensions[5].height = 38
+
+        ws_resumo.append([])
+        ws_resumo.append([])
+
+        # Resumo por categoria
+        categorias = {}
+        for r in resultados:
+            cat = r.get("categoria") or "Sem categoria"
+            if cat not in categorias:
+                categorias[cat] = {"total": 0, "completo": 0, "pendente": 0, "vazio": 0}
+            categorias[cat]["total"] += 1
+            st = r.get("status", "vazio")
+            if st == "completo":
+                categorias[cat]["completo"] += 1
+            elif st == "pendente":
+                categorias[cat]["pendente"] += 1
+            else:
+                categorias[cat]["vazio"] += 1
+
+        row_cat_inicio = ws_resumo.max_row + 1
+        headers_cat = ["Categoria", "Total", "Completas", "Pendentes", "Sem Docs", "% OK"]
+        for col_i, h in enumerate(headers_cat, 1):
+            c = ws_resumo.cell(row=row_cat_inicio, column=col_i, value=h)
+            c.font  = header_font()
+            c.fill  = fill(COR_VERDE_MEDIO)
+            c.alignment = Alignment(horizontal="center")
+            c.border = border_thin()
+        ws_resumo.row_dimensions[row_cat_inicio].height = 22
+
+        for linha_i, (cat, nums) in enumerate(sorted(categorias.items())):
+            row_n = row_cat_inicio + 1 + linha_i
+            bg = COR_VERDE_CLARO if linha_i % 2 == 0 else COR_BRANCO
+            pct = round(nums["completo"] / nums["total"] * 100, 1) if nums["total"] else 0
+            valores = [cat, nums["total"], nums["completo"], nums["pendente"], nums["vazio"], f"{pct}%"]
+            for col_i, val in enumerate(valores, 1):
+                c = ws_resumo.cell(row=row_n, column=col_i, value=val)
+                c.font   = cell_font()
+                c.fill   = fill(bg)
+                c.border = border_thin()
+                c.alignment = Alignment(horizontal="center" if col_i > 1 else "left")
+
+        # Larguras das colunas
+        ws_resumo.column_dimensions["A"].width = 35
+        for col_ltr in ["B", "C", "D", "E", "F"]:
+            ws_resumo.column_dimensions[col_ltr].width = 14
+        for col_ltr in ["G", "H"]:
+            ws_resumo.column_dimensions[col_ltr].width = 6
+
+        # ════════════════════════════════════════════════════════
+        # ABA 2 — DETALHE COMPLETO
+        # ════════════════════════════════════════════════════════
+        ws_det = wb.create_sheet("Detalhe Completo")
+
+        # Título
+        n_cols = 3 + len(docs_verificados) + 2
+        ws_det.merge_cells(start_row=1, start_column=1, end_row=1, end_column=n_cols)
+        ws_det["A1"] = "DETALHE DE DOCUMENTAÇÃO POR MÁQUINA"
+        ws_det["A1"].font = Font(name="Arial", size=14, bold=True, color="FFFFFF")
+        ws_det["A1"].fill = fill(COR_VERDE_ESCURO)
+        ws_det["A1"].alignment = Alignment(horizontal="center", vertical="center")
+        ws_det.row_dimensions[1].height = 32
+
+        # Cabeçalho
+        cabecalho = ["Máquina", "Categoria", "URL do Produto"]
+        cabecalho += [DOC_LABELS_PT.get(d, d) for d in docs_verificados]
+        cabecalho += ["Status", "Documentos Faltando"]
+
+        for col_i, h in enumerate(cabecalho, 1):
+            c = ws_det.cell(row=2, column=col_i, value=h)
+            c.font  = header_font(size=10)
+            c.fill  = fill(COR_VERDE_ESCURO)
+            c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+            c.border = border_thin()
+        ws_det.row_dimensions[2].height = 36
+
+        # Dados — ordenados por categoria, depois nome
+        resultados_ord = sorted(resultados, key=lambda r: (r.get("categoria",""), r.get("nome","")))
+
+        STATUS_PT = {
+            "completo": "✅ Completo",
+            "pendente": "⚠️ Pendente",
+            "vazio":    "❌ Sem docs",
+            "erro":     "⚠️ Erro",
+        }
+        STATUS_COR = {
+            "completo": COR_OK,
+            "pendente": COR_AMARELO,
+            "vazio":    COR_FALTA,
+            "erro":     COR_AMARELO,
+        }
+
+        for linha_i, r in enumerate(resultados_ord):
+            row_n = 3 + linha_i
+            bg_base = COR_VERDE_CLARO if linha_i % 2 == 0 else COR_BRANCO
+
+            faltando = " | ".join(DOC_LABELS_PT.get(d, d) for d in r.get("ausentes", []))
+            status   = r.get("status", "vazio")
+
+            linha_vals = [r.get("nome",""), r.get("categoria",""), r.get("url","")]
+            for d in docs_verificados:
+                val = r.get("documentos", {}).get(d, "nao")
+                linha_vals.append("✓" if val == "sim" else "✗")
+            linha_vals += [STATUS_PT.get(status, status), faltando]
+
+            for col_i, val in enumerate(linha_vals, 1):
+                c = ws_det.cell(row=row_n, column=col_i, value=val)
+                c.font   = cell_font()
+                c.border = border_thin()
+                c.alignment = Alignment(horizontal="left", vertical="center")
+
+                # Colorir células de documento
+                if 4 <= col_i <= 3 + len(docs_verificados):
+                    if val == "✓":
+                        c.fill = fill(COR_OK)
+                        c.font = Font(name="Arial", size=11, bold=True, color=COR_TEXTO_OK)
+                        c.alignment = Alignment(horizontal="center")
+                    else:
+                        c.fill = fill(COR_FALTA)
+                        c.font = Font(name="Arial", size=11, bold=True, color=COR_TEXTO_FALTA)
+                        c.alignment = Alignment(horizontal="center")
+                elif col_i == 3 + len(docs_verificados) + 1:
+                    # Coluna de status
+                    cor_st = STATUS_COR.get(status, COR_CINZA_HEADER)
+                    c.fill = fill(cor_st)
+                    c.alignment = Alignment(horizontal="center")
+                    if status == "completo":
+                        c.font = Font(name="Arial", size=10, bold=True, color=COR_TEXTO_OK)
+                    elif status in ("vazio", "erro"):
+                        c.font = Font(name="Arial", size=10, bold=True, color=COR_TEXTO_FALTA)
+                    else:
+                        c.font = Font(name="Arial", size=10, bold=True, color=COR_TEXTO_AMARELO)
+                else:
+                    c.fill = fill(bg_base)
+
+        # Larguras
+        ws_det.column_dimensions["A"].width = 20
+        ws_det.column_dimensions["B"].width = 28
+        ws_det.column_dimensions["C"].width = 40
+        for i, d in enumerate(docs_verificados):
+            ws_det.column_dimensions[get_column_letter(4 + i)].width = 18
+        col_status  = get_column_letter(4 + len(docs_verificados))
+        col_faltando = get_column_letter(5 + len(docs_verificados))
+        ws_det.column_dimensions[col_status].width = 16
+        ws_det.column_dimensions[col_faltando].width = 50
+
+        ws_det.freeze_panes = "A3"
+
+        # ════════════════════════════════════════════════════════
+        # ABA 3 — PENDÊNCIAS (só máquinas com algo faltando)
+        # ════════════════════════════════════════════════════════
+        ws_pend = wb.create_sheet("Pendências")
+
+        ws_pend.merge_cells(start_row=1, start_column=1, end_row=1, end_column=6)
+        ws_pend["A1"] = "LISTA DE PENDÊNCIAS — DOCUMENTOS EM FALTA"
+        ws_pend["A1"].font = Font(name="Arial", size=14, bold=True, color="FFFFFF")
+        ws_pend["A1"].fill = fill("8B1A1A")
+        ws_pend["A1"].alignment = Alignment(horizontal="center", vertical="center")
+        ws_pend.row_dimensions[1].height = 32
+
+        cabecalho_pend = ["Máquina", "Categoria", "URL", "Documento Faltando", "Prioridade"]
+        for col_i, h in enumerate(cabecalho_pend, 1):
+            c = ws_pend.cell(row=2, column=col_i, value=h)
+            c.font  = Font(name="Arial", size=10, bold=True, color="FFFFFF")
+            c.fill  = fill("8B1A1A")
+            c.alignment = Alignment(horizontal="center")
+            c.border = border_thin()
+        ws_pend.row_dimensions[2].height = 24
+
+        pendencias = []
+        for r in resultados_ord:
+            for doc in r.get("ausentes", []):
+                pendencias.append({
+                    "nome":       r.get("nome",""),
+                    "categoria":  r.get("categoria",""),
+                    "url":        r.get("url",""),
+                    "doc":        DOC_LABELS_PT.get(doc, doc),
+                    "prioridade": "Alta" if doc in ("manual_operador","folheto") else "Média",
+                })
+
+        COR_ALTA  = "FDECEA"
+        COR_MEDIA = "FFF3CD"
+        for linha_i, p in enumerate(pendencias):
+            row_n = 3 + linha_i
+            bg = COR_ALTA if p["prioridade"] == "Alta" else COR_MEDIA
+            vals = [p["nome"], p["categoria"], p["url"], p["doc"], p["prioridade"]]
+            for col_i, val in enumerate(vals, 1):
+                c = ws_pend.cell(row=row_n, column=col_i, value=val)
+                c.fill   = fill(bg)
+                c.font   = cell_font()
+                c.border = border_thin()
+                c.alignment = Alignment(horizontal="center" if col_i in (5,) else "left")
+
+        ws_pend.column_dimensions["A"].width = 20
+        ws_pend.column_dimensions["B"].width = 28
+        ws_pend.column_dimensions["C"].width = 40
+        ws_pend.column_dimensions["D"].width = 28
+        ws_pend.column_dimensions["E"].width = 14
+        ws_pend.freeze_panes = "A3"
+
+        # ── Salva em memória e retorna ─────────────────────────
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        nome_arquivo = f"auditoria_tennant_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        return send_file(
+            output,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            as_attachment=True,
+            download_name=nome_arquivo
+        )
+
+    except Exception as e:
+        print("❌ Erro no /auditoria-exportar-excel:", str(e))
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
 
 
@@ -879,5 +1254,3 @@ def logout():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
- 
- 
