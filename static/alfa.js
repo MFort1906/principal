@@ -1678,7 +1678,31 @@ window.novaAuditoria = function() {
     document.getElementById('btn-aud-exportar').style.display = 'none';
     auditoriaResultados = [];
     auditoriaEmAndamento = false;
+    renderizarCategorias();
 };
+
+function renderizarCategorias() {
+    const container = document.getElementById('categorias-maquinas');
+    if (!container) return;
+    container.innerHTML = '';
+
+    // As 5 categorias solicitadas ficam pré-marcadas, o restante desmarcado
+    const preChecked = new Set([
+        'Extratoras de carpete',
+        'Polidoras e enceradeiras',
+        'Aspiradores',
+        'Equipamento de limpeza especializada',
+        'Lavadoras de alta pressão',
+    ]);
+
+    CATEGORIAS_MAQUINAS.forEach(cat => {
+        const label = document.createElement('label');
+        label.className = 'cat-check-label';
+        const checked = preChecked.has(cat) ? 'checked' : '';
+        label.innerHTML = `<input type="checkbox" class="cat-check" value="${escHtml(cat)}" ${checked}> ${escHtml(cat)}`;
+        container.appendChild(label);
+    });
+}
 
 // ─── Iniciar auditoria ────────────────────────────────
 window.iniciarAuditoria = async function() {
@@ -1688,18 +1712,25 @@ window.iniciarAuditoria = async function() {
         return;
     }
 
+    const categoriasSelecionadas = [...document.querySelectorAll('.cat-check:checked')].map(c => c.value);
+    if (categoriasSelecionadas.length === 0) {
+        toast('Selecione categorias', 'Marque ao menos uma categoria de máquinas.', 'aviso');
+        return;
+    }
+
     document.getElementById('auditoria-config').style.display = 'none';
     document.getElementById('auditoria-progresso').style.display = 'block';
     auditoriaEmAndamento = true;
     auditoriaResultados = [];
 
     setAudProg(5, 'Identificando máquinas no site da Tennant...');
-    logAud('🚀 Iniciando auditoria do site tennantco.com/pt_br');
+    logAud(`🚀 Iniciando auditoria — ${categoriasSelecionadas.length} categoria(s) selecionada(s)`);
+    logAud(`📂 Categorias: ${categoriasSelecionadas.join(', ')}`);
 
     try {
         // ── Etapa 1: Listar máquinas ─────────────────
-        const maquinas = await obterListaMaquinas();
-        if (!maquinas || maquinas.length === 0) throw new Error('Nenhuma máquina encontrada.');
+        const maquinas = await obterListaMaquinas(categoriasSelecionadas);
+        if (!maquinas || maquinas.length === 0) throw new Error('Nenhuma máquina encontrada nas categorias selecionadas.');
 
         setAudProg(15, `${maquinas.length} máquinas encontradas. Verificando documentos...`);
         logAud(`✅ ${maquinas.length} máquinas identificadas`);
@@ -1715,7 +1746,6 @@ window.iniciarAuditoria = async function() {
             auditoriaResultados.push(resultado);
             atualizarContadoresAud();
 
-            // Pequena pausa para não sobrecarregar a API
             if (i < maquinas.length - 1) await sleep(400);
         }
 
@@ -1762,13 +1792,12 @@ function atualizarContadoresAud() {
 }
 
 // ─── Etapa 1: Listar máquinas ────────────────────────
-// Usa o endpoint /alfa-auditoria no backend (OpenAI GPT-4o + web search).
-async function obterListaMaquinas() {
+async function obterListaMaquinas(categorias) {
     const r = await fetch('/alfa-auditoria', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ tipo: 'listar_maquinas' })
+        body: JSON.stringify({ tipo: 'listar_maquinas', categorias: categorias || [] })
     });
     if (r.status === 401) { window.location.href = '/'; return []; }
     if (!r.ok) throw new Error(`Erro HTTP ${r.status} ao listar máquinas`);
@@ -2043,29 +2072,54 @@ window.filtrarResultados = function(btn, filtro) {
         Object.keys(DOC_LABELS));
 };
 
-// ─── Exportar CSV ─────────────────────────────────────
-window.exportarRelatorioAuditoria = function() {
+// ─── Exportar Excel (via backend) ────────────────────
+window.exportarRelatorioAuditoria = async function() {
     if (!auditoriaResultados.length) { toast('Nada para exportar', '', 'aviso'); return; }
 
+    const btnExportar = document.getElementById('btn-aud-exportar');
+    const textoOriginal = btnExportar ? btnExportar.innerHTML : '';
+    if (btnExportar) {
+        btnExportar.disabled = true;
+        btnExportar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gerando Excel...';
+    }
+
     const docKeys = Object.keys(auditoriaResultados[0]?.documentos || DOC_LABELS);
-    const headers = ['Máquina', 'URL', ...docKeys.map(d => DOC_LABELS[d] || d), 'Status', 'Documentos faltando'];
 
-    const linhas = auditoriaResultados.map(r => [
-        r.nome,
-        r.url,
-        ...docKeys.map(d => r.documentos[d] === 'sim' ? 'Sim' : 'Não'),
-        r.status === 'completo' ? 'Completo' : r.status === 'pendente' ? 'Pendente' : 'Sem documentos',
-        r.ausentes.map(d => DOC_LABELS[d]).join(' | ')
-    ]);
+    try {
+        const r = await fetch('/auditoria-exportar-excel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                resultados: auditoriaResultados,
+                docs_verificados: docKeys
+            })
+        });
 
-    const csv = [headers, ...linhas].map(row =>
-        row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')
-    ).join('\n');
+        if (r.status === 401) { window.location.href = '/'; return; }
+        if (!r.ok) {
+            const err = await r.json().catch(() => ({ erro: 'Erro desconhecido' }));
+            throw new Error(err.erro || `Erro HTTP ${r.status}`);
+        }
 
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `auditoria_tennant_${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    toast('CSV exportado!', 'Relatório salvo com sucesso.', 'sucesso');
+        // Baixar o arquivo
+        const blob = await r.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = `auditoria_tennant_${new Date().toISOString().slice(0,10)}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        toast('Excel exportado! 🎉', '3 abas: Resumo, Detalhe e Pendências', 'sucesso');
+
+    } catch (err) {
+        console.error('Erro ao exportar Excel:', err);
+        toast('Erro ao exportar', err.message, 'erro');
+    } finally {
+        if (btnExportar) {
+            btnExportar.disabled = false;
+            btnExportar.innerHTML = textoOriginal || '<i class="fa-solid fa-file-excel"></i> Exportar Excel';
+        }
+    }
 };
