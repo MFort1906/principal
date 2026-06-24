@@ -2137,6 +2137,9 @@ let espiaoCache = [
     { id:4, name:'Comac',     url:'https://www.comac.it',          category:'Lavadoras de Piso',     emoji:'🇮🇹', color:'#27AE60', status:'pendente', alerts:0, mudancas:[], scanned_at: null },
     { id:5, name:'Fimap',     url:'https://www.fimap.com/br',      category:'Limpeza Sustentável',   emoji:'🇮🇹', color:'#8E44AD', status:'pendente', alerts:0, mudancas:[], scanned_at: null },
     { id:6, name:'IPC Group', url:'https://www.ipcworldwide.com',  category:'Equip. de Limpeza',     emoji:'🌍',  color:'#E74C3C', status:'pendente', alerts:0, mudancas:[], scanned_at: null },
+    { id:7, name:'Alabia',    url:'https://alabia.com.br',         category:'Robôs de Limpeza',      emoji:'🇧🇷', color:'#00BCD4', status:'pendente', alerts:0, mudancas:[], scanned_at: null },
+    { id:8, name:'PUDU',      url:'https://www.pudurobotics.com/en', category:'Robôs de Limpeza',    emoji:'🇨🇳', color:'#F39C12', status:'pendente', alerts:0, mudancas:[], scanned_at: null },
+    { id:9, name:'Kunber',    url:'https://kunber.com.br',         category:'Equip. de Limpeza',     emoji:'🇧🇷', color:'#16A085', status:'pendente', alerts:0, mudancas:[], scanned_at: null },
 ];
 
 const ESPIAO_ALERT_CFG = {
