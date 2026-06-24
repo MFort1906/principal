@@ -84,6 +84,9 @@
                 <button class="tool-btn tool-btn-auditoria" onclick="abrirAuditoria()" data-tooltip="Auditar site Tennant">
                     <i class="fa-solid fa-magnifying-glass-chart"></i><span>Auditoria</span>
                 </button>
+                <button class="tool-btn tool-btn-espiao" onclick="abrirVitorEspiao()" data-tooltip="Monitorar concorrentes">
+                    <i class="fa-solid fa-user-secret"></i><span>Espião</span>
+                </button>
             </div>
         </div>
 
@@ -718,6 +721,54 @@
                 </button>
                 <button class="modal-btn-cancel" onclick="fecharModal('modal-auditoria')">Fechar</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL: VITOR ESPIÃO ── -->
+<div id="modal-espiao" class="modal-overlay espiao-overlay" style="display:none" onclick="fecharModal('modal-espiao')">
+    <div class="modal-card espiao-card" onclick="event.stopPropagation()">
+        <div class="modal-header espiao-header">
+            <div class="modal-title">
+                <span class="espiao-icon-titulo">🕵️</span> Vitor Espião
+                <span class="espiao-versao-badge">v1.0</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+                <div id="espiao-badge-alertas" class="espiao-badge-alertas" style="display:none"></div>
+                <button class="espiao-scan-btn" id="espiao-scan-btn" onclick="espiaoScanearTudo()">
+                    <i class="fa-solid fa-satellite-dish"></i> Escanear tudo
+                </button>
+                <button class="modal-close" onclick="fecharModal('modal-espiao')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+        <div class="modal-body espiao-body">
+
+            <!-- Subtítulo animado -->
+            <div class="espiao-subtitulo" id="espiao-subtitulo">Missão em andamento... 🕵️</div>
+
+            <!-- Stats -->
+            <div class="espiao-stats-grid">
+                <div class="espiao-stat"><div class="espiao-stat-val" id="esp-stat-total">6</div><div class="espiao-stat-lbl">🏭 Monitorados</div></div>
+                <div class="espiao-stat"><div class="espiao-stat-val" id="esp-stat-alertas">4</div><div class="espiao-stat-lbl">🔔 Com alertas</div></div>
+                <div class="espiao-stat"><div class="espiao-stat-val" id="esp-stat-mudancas">7</div><div class="espiao-stat-lbl">📊 Mudanças</div></div>
+                <div class="espiao-stat"><div class="espiao-stat-val" id="esp-stat-online">5</div><div class="espiao-stat-lbl">🟢 Online</div></div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="espiao-filtros">
+                <button class="espiao-filtro-btn ativo" id="esp-btn-all" onclick="espiaoFiltrar('all', this)">Todos</button>
+                <button class="espiao-filtro-btn" id="esp-btn-alertas" onclick="espiaoFiltrar('alertas', this)">🚨 Com alertas</button>
+            </div>
+
+            <!-- Grid de concorrentes -->
+            <div class="espiao-grid" id="espiao-grid"></div>
+
+            <!-- Detalhe -->
+            <div id="espiao-detalhe" class="espiao-detalhe" style="display:none"></div>
+
+        </div>
+        <div class="modal-footer" style="justify-content:center;padding-top:10px">
+            <span style="font-size:11px;color:var(--as)">🔒 Alfa IA · Monitoramento de concorrentes Tennant · Dados simulados</span>
         </div>
     </div>
 </div>
