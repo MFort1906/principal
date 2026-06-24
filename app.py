@@ -1243,6 +1243,142 @@ def _enfileirar_notificacao(tipo: str, titulo: str, mensagem: str = ""):
     session["notificacoes"] = notifs
  
  
+# ─────────────────────────────────────────────────────────────
+# 🕵️  VITOR ESPIÃO — Monitoramento de concorrentes (web search)
+# ─────────────────────────────────────────────────────────────
+
+ESPIAO_CONCORRENTES = [
+    {"id": 1, "name": "Kärcher",   "url": "https://www.karcher.com/br",      "category": "Limpeza Industrial",    "emoji": "🇩🇪"},
+    {"id": 2, "name": "Nilfisk",   "url": "https://www.nilfisk.com/pt-br",   "category": "Limpeza Profissional",  "emoji": "🇩🇰"},
+    {"id": 3, "name": "Hako",      "url": "https://www.hako.com/br",         "category": "Máquinas Municipais",   "emoji": "🇩🇪"},
+    {"id": 4, "name": "Comac",     "url": "https://www.comac.it",            "category": "Lavadoras de Piso",     "emoji": "🇮🇹"},
+    {"id": 5, "name": "Fimap",     "url": "https://www.fimap.com/br",        "category": "Limpeza Sustentável",   "emoji": "🇮🇹"},
+    {"id": 6, "name": "IPC Group", "url": "https://www.ipcworldwide.com",    "category": "Equip. de Limpeza",     "emoji": "🌍"},
+]
+
+@app.route("/espiao-escanear", methods=["POST"])
+def espiao_escanear():
+    """
+    Usa OpenAI (gpt-4o-mini) com web_search_preview para
+    buscar novos produtos e promoções/preços dos concorrentes.
+    Body: { "ids": [1, 2, ...] }  — lista de IDs a escanear (opcional; sem body = todos)
+    """
+    if not session.get("logado"):
+        return jsonify({"erro": "Não autorizado"}), 401
+
+    try:
+        import requests as req_lib
+
+        data   = request.get_json() or {}
+        ids    = data.get("ids", None)   # None = escanear todos
+
+        api_key = os.getenv("OPENAI_API_KEY", "").strip()
+        if not api_key:
+            return jsonify({"erro": "OPENAI_API_KEY não configurada no servidor."}), 500
+
+        alvos = ESPIAO_CONCORRENTES
+        if ids:
+            alvos = [c for c in ESPIAO_CONCORRENTES if c["id"] in ids]
+
+        def chamar_openai_responses(prompt_text):
+            resp = req_lib.post(
+                "https://api.openai.com/v1/responses",
+                headers={
+                    "Content-Type":  "application/json",
+                    "Authorization": f"Bearer {api_key}",
+                },
+                json={
+                    "model": "gpt-4o",
+                    "tools": [{"type": "web_search_preview"}],
+                    "input": prompt_text,
+                    "max_output_tokens": 1500,
+                },
+                timeout=60,
+            )
+            if not resp.ok:
+                raise Exception(f"OpenAI error {resp.status_code}: {resp.text[:300]}")
+            result = resp.json()
+            texto = ""
+            for item in result.get("output", []):
+                if item.get("type") == "message":
+                    for c in item.get("content", []):
+                        if c.get("type") == "output_text":
+                            texto += c.get("text", "")
+            return texto
+
+        def extrair_json_seguro(texto):
+            import re
+            texto = texto.strip()
+            try:
+                return json.loads(texto)
+            except Exception:
+                pass
+            texto2 = re.sub(r'```json\s*', '', texto)
+            texto2 = re.sub(r'```\s*', '', texto2).strip()
+            try:
+                return json.loads(texto2)
+            except Exception:
+                pass
+            match = re.search(r'\{[\s\S]*\}', texto)
+            if match:
+                try:
+                    return json.loads(match.group(0))
+                except Exception:
+                    pass
+            return None
+
+        resultados = []
+
+        for concorrente in alvos:
+            nome = concorrente["name"]
+            url  = concorrente["url"]
+
+            prompt = f"""Você é um analista de inteligência competitiva da Tennant Company Brasil.
+
+Pesquise agora no site {url} e na web informações RECENTES (últimas semanas) sobre a empresa {nome} no mercado brasileiro de limpeza profissional.
+
+Busque especificamente:
+1. NOVOS PRODUTOS lançados recentemente (máquinas, equipamentos, acessórios)
+2. PROMOÇÕES, descontos, campanhas de preço ou condições especiais de pagamento
+
+Para cada item encontrado, classifique como:
+- tipo: "produto" (novo lançamento) ou "preco" (promoção/preço/desconto)
+- texto: descrição curta e objetiva em português (máx. 100 chars)
+- relevancia: "alta", "media" ou "baixa" (impacto para a Tennant)
+
+Responda APENAS com JSON válido, sem texto antes ou depois:
+{{"mudancas": [{{"tipo": "produto", "texto": "...", "relevancia": "alta"}}, {{"tipo": "preco", "texto": "...", "relevancia": "media"}}]}}
+
+Se não encontrar nada relevante nas últimas semanas, retorne:
+{{"mudancas": []}}"""
+
+            try:
+                texto_resp = chamar_openai_responses(prompt)
+                parsed     = extrair_json_seguro(texto_resp)
+                mudancas   = parsed.get("mudancas", []) if parsed else []
+            except Exception as e:
+                print(f"❌ Espião erro em {nome}: {e}")
+                mudancas = []
+
+            resultados.append({
+                "id":        concorrente["id"],
+                "name":      nome,
+                "url":       url,
+                "category":  concorrente["category"],
+                "emoji":     concorrente["emoji"],
+                "mudancas":  mudancas,
+                "alerts":    len(mudancas),
+                "status":    "online",
+                "scanned_at": datetime.now().strftime("%d/%m/%Y %H:%M"),
+            })
+
+        return jsonify({"sucesso": True, "resultados": resultados})
+
+    except Exception as e:
+        print("❌ Erro no /espiao-escanear:", str(e))
+        return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
+
+
 # 🚪 Logout
 @app.route("/logout")
 def logout():
