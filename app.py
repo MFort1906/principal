@@ -1254,6 +1254,9 @@ ESPIAO_CONCORRENTES = [
     {"id": 4, "name": "Comac",     "url": "https://www.comac.it",            "category": "Lavadoras de Piso",     "emoji": "🇮🇹"},
     {"id": 5, "name": "Fimap",     "url": "https://www.fimap.com/br",        "category": "Limpeza Sustentável",   "emoji": "🇮🇹"},
     {"id": 6, "name": "IPC Group", "url": "https://www.ipcworldwide.com",    "category": "Equip. de Limpeza",     "emoji": "🌍"},
+    {"id": 7, "name": "Alabia",    "url": "https://alabia.com.br",          "category": "Robôs de Limpeza",      "emoji": "🇧🇷"},
+    {"id": 8, "name": "PUDU",      "url": "https://www.pudurobotics.com/en", "category": "Robôs de Limpeza",     "emoji": "🇨🇳"},
+    {"id": 9, "name": "Kunber",    "url": "https://kunber.com.br",          "category": "Equip. de Limpeza",     "emoji": "🇧🇷"},
 ]
 
 @app.route("/espiao-escanear", methods=["POST"])
