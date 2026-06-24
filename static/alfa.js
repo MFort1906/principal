@@ -2123,3 +2123,263 @@ window.exportarRelatorioAuditoria = async function() {
         }
     }
 };
+
+
+// ════════════════════════════════════════════════════
+//  VITOR ESPIÃO — Monitoramento de Concorrentes (REAL)
+// ════════════════════════════════════════════════════
+
+// Estado persistente na sessão (sobrevive a re-renders, reseta ao recarregar)
+let espiaoCache = [
+    { id:1, name:'Kärcher',   url:'https://www.karcher.com/br',    category:'Limpeza Industrial',    emoji:'🇩🇪', color:'#FFD700', status:'pendente', alerts:0, mudancas:[], scanned_at: null },
+    { id:2, name:'Nilfisk',   url:'https://www.nilfisk.com/pt-br', category:'Limpeza Profissional',  emoji:'🇩🇰', color:'#1E90FF', status:'pendente', alerts:0, mudancas:[], scanned_at: null },
+    { id:3, name:'Hako',      url:'https://www.hako.com/br',       category:'Máquinas Municipais',   emoji:'🇩🇪', color:'#FF6B35', status:'pendente', alerts:0, mudancas:[], scanned_at: null },
+    { id:4, name:'Comac',     url:'https://www.comac.it',          category:'Lavadoras de Piso',     emoji:'🇮🇹', color:'#27AE60', status:'pendente', alerts:0, mudancas:[], scanned_at: null },
+    { id:5, name:'Fimap',     url:'https://www.fimap.com/br',      category:'Limpeza Sustentável',   emoji:'🇮🇹', color:'#8E44AD', status:'pendente', alerts:0, mudancas:[], scanned_at: null },
+    { id:6, name:'IPC Group', url:'https://www.ipcworldwide.com',  category:'Equip. de Limpeza',     emoji:'🌍',  color:'#E74C3C', status:'pendente', alerts:0, mudancas:[], scanned_at: null },
+];
+
+const ESPIAO_ALERT_CFG = {
+    produto: { label:'Produto',    bg:'#D1ECF1', color:'#0C5460', icon:'📦' },
+    preco:   { label:'Preço',      bg:'#FFF3CD', color:'#856404', icon:'💰' },
+    promo:   { label:'Promoção',   bg:'#FFF3CD', color:'#856404', icon:'🏷️' },
+};
+
+const ESPIAO_MSGS = [
+    'Missão em andamento... 🕵️',
+    'Escaneando o inimigo... 👁️',
+    'Interceptando dados... 📡',
+    'Nenhum movimento passa despercebido... 🦅',
+    'Tennant sempre na frente! 💪',
+    'Agente ativo. Situação sob controle. 🎯',
+];
+
+const ESPIAO_CORES_RELEVANCIA = {
+    alta:  { bg:'#FDECEA', color:'#721C24', icon:'🔴' },
+    media: { bg:'#FFF3CD', color:'#856404', icon:'🟡' },
+    baixa: { bg:'#E8F5EE', color:'#1B5C38', icon:'🟢' },
+};
+
+let espiaoMsgIdx      = 0;
+let espiaoMsgTimer    = null;
+let espiaoFiltroAtual = 'all';
+let espiaoSelecionado = null;
+let espiaoScanning    = false;
+
+window.abrirVitorEspiao = function() {
+    document.getElementById('modal-espiao').style.display = 'flex';
+    espiaoRenderGrid();
+    espiaoAtualizarStats();
+    espiaoAtualizarBadge();
+    if (!espiaoMsgTimer) {
+        espiaoMsgTimer = setInterval(() => {
+            espiaoMsgIdx = (espiaoMsgIdx + 1) % ESPIAO_MSGS.length;
+            const el = document.getElementById('espiao-subtitulo');
+            if (el) el.textContent = ESPIAO_MSGS[espiaoMsgIdx];
+        }, 3500);
+    }
+};
+
+// Intercepta fecharModal para limpar timer
+const _fecharModalOriginalEspiao = window.fecharModal;
+window.fecharModal = function(id) {
+    if (id === 'modal-espiao' && espiaoMsgTimer) {
+        clearInterval(espiaoMsgTimer);
+        espiaoMsgTimer = null;
+    }
+    _fecharModalOriginalEspiao(id);
+};
+
+function espiaoAtualizarStats() {
+    const total    = espiaoCache.length;
+    const alertas  = espiaoCache.filter(c => c.alerts > 0).length;
+    const mudancas = espiaoCache.reduce((s, c) => s + (c.mudancas || []).length, 0);
+    const online   = espiaoCache.filter(c => c.status === 'online').length;
+    document.getElementById('esp-stat-total').textContent    = total;
+    document.getElementById('esp-stat-alertas').textContent  = alertas;
+    document.getElementById('esp-stat-mudancas').textContent = mudancas;
+    document.getElementById('esp-stat-online').textContent   = online;
+}
+
+function espiaoAtualizarBadge() {
+    const total = espiaoCache.reduce((s, c) => s + (c.alerts || 0), 0);
+    const badge = document.getElementById('espiao-badge-alertas');
+    if (!badge) return;
+    if (total > 0) {
+        badge.textContent = '🚨 ' + total + ' alerta' + (total > 1 ? 's' : '');
+        badge.style.display = 'inline-flex';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+function espiaoRenderGrid() {
+    const grid = document.getElementById('espiao-grid');
+    if (!grid) return;
+
+    const lista = espiaoFiltroAtual === 'alertas'
+        ? espiaoCache.filter(c => c.alerts > 0)
+        : espiaoCache;
+
+    if (lista.length === 0 && espiaoFiltroAtual === 'alertas') {
+        grid.innerHTML = '<div class="espiao-empty-state" style="grid-column:1/-1">✅ Nenhum alerta ativo. Tudo calmo por enquanto!</div>';
+        return;
+    }
+
+    grid.innerHTML = lista.map(c => {
+        const isPendente = c.status === 'pendente';
+        const checkedLabel = c.scanned_at ? `🕐 ${c.scanned_at}` : '⏳ Não escaneado';
+        return `
+        <div class="espiao-comp-card ${espiaoSelecionado === c.id ? 'selecionado' : ''}"
+             style="border-color:${espiaoSelecionado === c.id ? c.color : ''}"
+             onclick="espiaoSelecionar(${c.id})">
+            ${c.alerts > 0 ? `<div class="espiao-alerta-pill">${c.alerts} 🔔</div>` : ''}
+            ${isPendente && !espiaoScanning ? `<div class="espiao-pending-pill">aguardando scan</div>` : ''}
+            <div class="espiao-comp-header">
+                <span class="espiao-comp-emoji">${c.emoji}</span>
+                <div>
+                    <div class="espiao-comp-name">${c.name}</div>
+                    <div class="espiao-comp-cat">${c.category}</div>
+                </div>
+            </div>
+            <div class="espiao-comp-footer" style="margin-top:10px">
+                <span class="espiao-status-${c.status}">
+                    ${c.status === 'online' ? '🟢 online' : c.status === 'pendente' ? '⏳ pendente' : '🟡 ' + c.status}
+                </span>
+                <span class="espiao-comp-time">${checkedLabel}</span>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+window.espiaoFiltrar = function(modo, btn) {
+    espiaoFiltroAtual = modo;
+    document.querySelectorAll('.espiao-filtro-btn').forEach(b => b.classList.remove('ativo'));
+    btn.classList.add('ativo');
+    espiaoSelecionado = null;
+    document.getElementById('espiao-detalhe').style.display = 'none';
+    espiaoRenderGrid();
+};
+
+window.espiaoSelecionar = function(id) {
+    espiaoSelecionado = espiaoSelecionado === id ? null : id;
+    espiaoRenderGrid();
+    const painel = document.getElementById('espiao-detalhe');
+    if (!espiaoSelecionado) { painel.style.display = 'none'; return; }
+
+    const c = espiaoCache.find(x => x.id === espiaoSelecionado);
+    const mudancas = c.mudancas || [];
+
+    let changesHtml;
+    if (c.status === 'pendente') {
+        changesHtml = `<div class="espiao-empty-state">⏳ Este concorrente ainda não foi escaneado. Clique em <strong>Escanear tudo</strong>.</div>`;
+    } else if (mudancas.length === 0) {
+        changesHtml = `<div class="espiao-empty-state">😴 Nenhuma novidade detectada. Estão quietinhos por enquanto.</div>`;
+    } else {
+        changesHtml = `
+            <div class="espiao-changes-label">📋 ${mudancas.length} novidade(s) detectada(s)</div>
+            <div class="espiao-changes-list">
+                ${mudancas.map(m => {
+                    const tipoCfg  = ESPIAO_ALERT_CFG[m.tipo] || ESPIAO_ALERT_CFG.produto;
+                    const relCfg   = ESPIAO_CORES_RELEVANCIA[m.relevancia] || ESPIAO_CORES_RELEVANCIA.media;
+                    return `<div class="espiao-change-item" style="background:${tipoCfg.bg}">
+                        <span class="espiao-change-icon">${tipoCfg.icon}</span>
+                        <div class="espiao-change-body">
+                            <span class="espiao-change-badge" style="color:${tipoCfg.color};border-color:${tipoCfg.color};background:${tipoCfg.bg}">${tipoCfg.label}</span>
+                            <span class="espiao-rel-badge" style="color:${relCfg.color}">${relCfg.icon} ${m.relevancia}</span>
+                            <span class="espiao-change-text" style="color:#1C1C1C;display:block;margin-top:4px">${m.texto}</span>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>`;
+    }
+
+    painel.innerHTML = `
+        <div class="espiao-detalhe-inner" style="border-color:${c.color}">
+            <div class="espiao-det-header">
+                <span style="font-size:32px">${c.emoji}</span>
+                <div>
+                    <div class="espiao-det-name">${c.name}</div>
+                    <a class="espiao-det-url" href="${c.url}" target="_blank">${c.url} ↗</a>
+                    ${c.scanned_at ? `<div style="font-size:11px;color:#8B949E;margin-top:3px">🕐 Último scan: ${c.scanned_at}</div>` : ''}
+                </div>
+            </div>
+            ${changesHtml}
+        </div>`;
+    painel.style.display = 'block';
+};
+
+// ── Scan real via backend ────────────────────────────────────
+window.espiaoScanearTudo = async function() {
+    const btn = document.getElementById('espiao-scan-btn');
+    if (!btn || btn.disabled || espiaoScanning) return;
+
+    espiaoScanning = true;
+    btn.disabled   = true;
+    btn.innerHTML  = '<i class="fa-solid fa-spinner fa-spin"></i> Escaneando...';
+
+    // Mostra todos como "escaneando" visualmente
+    espiaoCache.forEach(c => { c.status = 'escaneando'; });
+    espiaoRenderGrid();
+
+    try {
+        const resp = await fetch('/espiao-escanear', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({}),
+        });
+
+        if (resp.status === 401) { window.location.href = '/'; return; }
+        if (!resp.ok) throw new Error(`Erro HTTP ${resp.status}`);
+
+        const data = await resp.json();
+
+        if (!data.sucesso) throw new Error(data.erro || 'Erro desconhecido');
+
+        // Atualiza cache com resultados reais
+        data.resultados.forEach(r => {
+            const idx = espiaoCache.findIndex(c => c.id === r.id);
+            if (idx !== -1) {
+                espiaoCache[idx] = {
+                    ...espiaoCache[idx],
+                    status:     'online',
+                    alerts:     r.alerts || 0,
+                    mudancas:   r.mudancas || [],
+                    scanned_at: r.scanned_at,
+                };
+            }
+        });
+
+        const totalAlertas = espiaoCache.reduce((s, c) => s + c.alerts, 0);
+        espiaoAtualizarStats();
+        espiaoAtualizarBadge();
+        espiaoRenderGrid();
+
+        // Atualiza painel de detalhe se algum estiver aberto
+        if (espiaoSelecionado) espiaoSelecionar(espiaoSelecionado);
+
+        btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Concluído!';
+        toast(
+            'Varredura concluída! 🕵️',
+            totalAlertas > 0
+                ? `${totalAlertas} novidade(s) detectada(s) nos concorrentes.`
+                : 'Nenhuma novidade detectada nos concorrentes.',
+            totalAlertas > 0 ? 'aviso' : 'sucesso'
+        );
+
+    } catch (err) {
+        console.error('Espião scan erro:', err);
+        espiaoCache.forEach(c => { if (c.status === 'escaneando') c.status = 'pendente'; });
+        espiaoRenderGrid();
+        toast('Erro no scan 🕵️', err.message, 'erro');
+        btn.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Escanear tudo';
+    } finally {
+        espiaoScanning = false;
+        btn.disabled   = false;
+        setTimeout(() => {
+            if (btn.innerHTML.includes('Concluído'))
+                btn.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Escanear tudo';
+        }, 3000);
+    }
+};

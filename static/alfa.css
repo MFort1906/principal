@@ -3213,3 +3213,257 @@ html[data-theme="dark"] body.tema-halloween .alfa-chat {
   margin-top: 4px;
 }
 .aud-aviso-tempo i { color: #b7770d; }
+
+
+/* ════════════════════════════════════════
+   VITOR ESPIÃO — Estilos
+════════════════════════════════════════ */
+
+/* Botão na toolbar */
+.tool-btn-espiao {
+  background: rgba(99, 179, 237, 0.15) !important;
+  border: 1px solid rgba(99, 179, 237, 0.35) !important;
+  color: #63b3ed !important;
+}
+.tool-btn-espiao:hover {
+  background: rgba(99, 179, 237, 0.28) !important;
+  color: #90cdf4 !important;
+}
+
+/* Overlay e card */
+.espiao-overlay { align-items: center; }
+.espiao-card {
+  max-width: 860px !important;
+  width: 96vw;
+  max-height: 90vh;
+  background: #0D1117 !important;
+  border: 1px solid #30363D !important;
+  border-radius: 20px !important;
+  color: #E6EDF3;
+}
+
+/* Header */
+.espiao-header {
+  background: #0D1117 !important;
+  border-bottom: 1px solid #21262D !important;
+  border-radius: 20px 20px 0 0 !important;
+  padding: 16px 20px !important;
+}
+.espiao-header .modal-title {
+  color: #00FF88 !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.espiao-icon-titulo { font-size: 26px; animation: espiaoWiggle 2s infinite; }
+.espiao-versao-badge {
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(0,255,136,.15);
+  color: #00FF88;
+  border: 1px solid rgba(0,255,136,.3);
+  border-radius: 20px;
+  padding: 2px 8px;
+  letter-spacing: 0;
+}
+
+/* Badge alertas */
+.espiao-badge-alertas {
+  background: #FF4D4F;
+  color: #fff;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Scan button */
+.espiao-scan-btn {
+  background: #00FF88;
+  color: #0D1117;
+  border: none;
+  border-radius: 10px;
+  padding: 7px 15px;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.espiao-scan-btn:disabled { background: #1F2937; color: #00FF88; cursor: not-allowed; }
+.espiao-scan-btn:not(:disabled):hover { opacity: .88; }
+
+/* Body */
+.espiao-body {
+  background: #0D1117 !important;
+  padding: 16px 20px !important;
+  border-radius: 0 0 20px 20px;
+  overflow-y: auto;
+  max-height: 70vh;
+}
+
+/* Subtítulo animado */
+.espiao-subtitulo {
+  font-size: 12px;
+  color: #8B949E;
+  margin-bottom: 16px;
+  min-height: 18px;
+}
+
+/* Stats */
+.espiao-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.espiao-stat {
+  background: #161B22;
+  border: 1px solid #30363D;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+}
+.espiao-stat-val { font-size: 22px; font-weight: 800; color: #00FF88; }
+.espiao-stat-lbl { font-size: 11px; color: #8B949E; margin-top: 2px; }
+
+/* Filtros */
+.espiao-filtros { display: flex; gap: 8px; margin-bottom: 14px; }
+.espiao-filtro-btn {
+  background: #161B22;
+  color: #8B949E;
+  border: 1px solid #30363D;
+  border-radius: 8px;
+  padding: 5px 13px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: 'DM Sans', sans-serif;
+}
+.espiao-filtro-btn.ativo { background: #00FF88; color: #0D1117; border-color: #00FF88; }
+
+/* Grid */
+.espiao-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.espiao-comp-card {
+  background: #161B22;
+  border: 1.5px solid #30363D;
+  border-radius: 14px;
+  padding: 14px 15px;
+  cursor: pointer;
+  transition: border-color .2s, transform .1s;
+  position: relative;
+}
+.espiao-comp-card:hover { border-color: #58A6FF; transform: translateY(-1px); }
+.espiao-comp-card.selecionado { transform: scale(1.01); }
+.espiao-alerta-pill {
+  position: absolute;
+  top: 9px; right: 9px;
+  background: #FF4D4F;
+  color: #fff;
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.espiao-comp-header { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+.espiao-comp-emoji { font-size: 24px; }
+.espiao-comp-name { font-weight: 700; color: #E6EDF3; font-size: 14px; }
+.espiao-comp-cat  { font-size: 11px; color: #8B949E; }
+.espiao-comp-desc { color: #8B949E; font-size: 12px; margin-bottom: 10px; line-height: 1.4; }
+.espiao-comp-footer { display: flex; justify-content: space-between; align-items: center; }
+.espiao-status-online { font-size: 11px; color: #3FB950; }
+.espiao-status-slow   { font-size: 11px; color: #D29922; }
+.espiao-comp-time     { font-size: 11px; color: #8B949E; }
+
+/* Detalhe */
+.espiao-detalhe { margin-top: 4px; }
+.espiao-detalhe-inner {
+  background: #161B22;
+  border: 2px solid #30363D;
+  border-radius: 14px;
+  padding: 18px;
+  animation: espiaoFadeIn .2s ease;
+}
+.espiao-det-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.espiao-det-name { color: #E6EDF3; font-size: 17px; font-weight: 700; margin-bottom: 3px; }
+.espiao-det-url  { color: #58A6FF; font-size: 12px; text-decoration: none; }
+.espiao-det-url:hover { text-decoration: underline; }
+.espiao-changes-label { color: #8B949E; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.espiao-changes-list  { display: flex; flex-direction: column; gap: 8px; }
+.espiao-change-item {
+  border-radius: 10px;
+  padding: 9px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+.espiao-change-icon { font-size: 17px; flex-shrink: 0; }
+.espiao-change-body { flex: 1; }
+.espiao-change-badge {
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 1px 6px;
+  border: 1px solid;
+  margin-right: 5px;
+}
+.espiao-change-text { font-size: 13px; }
+.espiao-change-time { font-size: 11px; color: #6C757D; white-space: nowrap; flex-shrink: 0; }
+.espiao-empty-state { text-align: center; padding: 24px; color: #8B949E; font-size: 14px; }
+
+/* Footer do modal */
+.espiao-card .modal-footer {
+  background: #0D1117 !important;
+  border-top: 1px solid #21262D !important;
+  border-radius: 0 0 20px 20px !important;
+}
+
+/* Animações */
+@keyframes espiaoWiggle {
+  0%,100% { transform: rotate(-6deg); }
+  50%      { transform: rotate(6deg); }
+}
+@keyframes espiaoFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsivo */
+@media (max-width: 600px) {
+  .espiao-stats-grid { grid-template-columns: repeat(2,1fr); }
+  .espiao-grid { grid-template-columns: 1fr; }
+}
+
+/* Espião — estados adicionais */
+.espiao-pending-pill {
+  position: absolute;
+  top: 9px; right: 9px;
+  background: rgba(255,255,255,.10);
+  color: #8B949E;
+  border: 1px solid #30363D;
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.espiao-status-escaneando { font-size: 11px; color: #58A6FF; animation: espiaoWiggle .6s infinite; }
+.espiao-status-pendente   { font-size: 11px; color: #8B949E; }
+.espiao-rel-badge {
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 6px;
+  text-transform: uppercase;
+}
