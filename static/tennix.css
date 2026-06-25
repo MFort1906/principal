@@ -9,8 +9,8 @@
   --ag:    #004990;   /* Tennant blue */
   --ag2:   #0065BD;   /* Tennant blue light */
   --ag3:   #e6eef7;   /* Tennant blue pale */
-  --ay:    #FFD100;   /* Tennant yellow */
-  --ay2:   #fff9d6;   /* Tennant yellow pale */
+  --ay:    #f47b29;   /* Tennant orange */
+  --ay2:   #fde8d4;   /* Tennant orange pale */
   --at:    #3a3a3a;   /* Primary text */
   --as:    #5a6a82;   /* Secondary text */
   --ab:    #f4f5f4;   /* Background */
@@ -1364,7 +1364,7 @@ body {
   margin-top: 6px;
 }
 .badge-produto   { background: #e6eef7; color: var(--ag); }
-.badge-dica      { background: #fdf3c0; color: #a16207; }
+.badge-dica      { background: #fde8d4; color: #c45e18; }
 .badge-case      { background: #ede9fe; color: #7c3aed; }
 .badge-feriado   { background: #fee2e2; color: #dc2626; }
 .badge-conteudo  { background: #ffedd5; color: #c2410c; }
@@ -2048,7 +2048,7 @@ body {
   font-family: 'DM Sans', sans-serif;
 }
 .admin-tema-badge {
-  color: var(--tema-accent, #FFD100);
+  color: var(--tema-accent, #f47b29);
   font-size: 10px;
   margin-left: 2px;
   animation: pulse-badge 2s infinite;
@@ -2195,8 +2195,8 @@ body.tema-natal {
   --ag:   #8B0000;
   --ag2:  #c0392b;
   --ag3:  #fff3f3;
-  --ay:   #FFD700;
-  --ay2:  #fff8dc;
+  --ay:   #f47b29;
+  --ay2:  #fde8d4;
   --abrd: #f5c6c6;
   --ab:   #fff9f9;
   --ashad: 0 2px 12px rgba(139,0,0,.1);
@@ -2211,8 +2211,8 @@ body.tema-ano_novo {
   --ag:   #0d0d2b;
   --ag2:  #1a1a4e;
   --ag3:  #1a1a3e;
-  --ay:   #FFD700;
-  --ay2:  #ffd70020;
+  --ay:   #f47b29;
+  --ay2:  #f47b2920;
   --abrd: #2a2a5a;
   --ab:   #0f0f1e;
   --at:   #e8e8ff;
@@ -2244,8 +2244,8 @@ body.tema-pascoa {
   --ag:   #6d28d9;
   --ag2:  #8b5cf6;
   --ag3:  #f5f0ff;
-  --ay:   #f59e0b;
-  --ay2:  #fef3c7;
+  --ay:   #f47b29;
+  --ay2:  #fde8d4;
   --abrd: #ddd6fe;
   --ab:   #faf8ff;
   --ashad: 0 2px 12px rgba(109,40,217,.1);
@@ -2256,8 +2256,8 @@ body.tema-carnaval {
   --ag:   #7c1f7c;
   --ag2:  #a855f7;
   --ag3:  #fdf0ff;
-  --ay:   #f59e0b;
-  --ay2:  #fef9c3;
+  --ay:   #f47b29;
+  --ay2:  #fde8d4;
   --abrd: #e9d5ff;
   --ab:   #fffdf5;
   --ashad: 0 2px 12px rgba(124,31,124,.1);
@@ -2302,8 +2302,8 @@ body.tema-dia_das_maes {
   --ag:   #be185d;
   --ag2:  #ec4899;
   --ag3:  #fff0f7;
-  --ay:   #f59e0b;
-  --ay2:  #fdf0ff;
+  --ay:   #f47b29;
+  --ay2:  #fde8d4;
   --abrd: #fbcfe8;
   --ab:   #fff5fa;
   --ashad: 0 2px 12px rgba(190,24,93,.1);
@@ -2369,8 +2369,8 @@ html[data-theme="dark"] {
   --ag:    #0065BD;
   --ag2:   #0065BD;
   --ag3:   #0a1e38;
-  --ay:    #FFD100;
-  --ay2:   #3a300a;
+  --ay:    #f47b29;
+  --ay2:   #3a2010;
   --at:    #e8eae8;
   --as:    #8a9490;
   --ab:    #020c1a;
@@ -2383,8 +2383,8 @@ html[data-theme="dark"] body {
   --ag:    #0065BD !important;
   --ag2:   #0065BD !important;
   --ag3:   #0a1e38 !important;
-  --ay:    #FFD100 !important;
-  --ay2:   #3a300a !important;
+  --ay:    #f47b29 !important;
+  --ay2:   #3a2010 !important;
   --at:    #e8eae8 !important;
   --as:    #8a9490 !important;
   --ab:    #020c1a !important;
@@ -2875,7 +2875,7 @@ html[data-theme="dark"] body.tema-dia_dos_pais {
   --ag:    #0065BD !important;
   --ag2:   #0065BD !important;
   --ag3:   #0a1e38 !important;
-  --ay:    #FFD100 !important;
+  --ay:    #f47b29 !important;
   --at:    #e8eae8 !important;
   --as:    #8a9490 !important;
   --ab:    #020c1a !important;
