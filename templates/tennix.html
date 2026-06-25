@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TENNIX — Assistente Inteligente</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='tennix.css') }}">
+</head>
+<body>
+
+<div class="tennix-shell" id="tennix-shell">
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="tennix-sidebar">
+        <div class="sidebar-logo">
+            <img src="{{ url_for('static', filename='../assets/tennix_logo.png') }}" alt="TENNIX" class="logo-img">
+            <div class="logo-line"></div>
+        </div>
+
+        <!-- País + Carregar -->
+        <div class="sidebar-section">
+            <span class="sidebar-label"><i class="fa-solid fa-earth-americas"></i> País de origem</span>
+            <div class="select-wrap">
+                <select id="pais-tennix"></select>
+                <i class="fa-solid fa-chevron-down select-icon"></i>
+            </div>
+            <button id="btn-carregar" class="load-btn">
+                <i class="fa-solid fa-rotate"></i> Carregar artigos
+            </button>
+            <div id="artigos-status" class="artigos-status" style="display:none"></div>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <!-- Métricas rápidas -->
+        <div class="sidebar-section">
+            <span class="sidebar-label"><i class="fa-solid fa-chart-simple"></i> Sessão atual</span>
+            <div class="metricas-grid">
+                <div class="metrica-card" data-tooltip="Total de artigos carregados">
+                    <div class="metrica-valor" id="metrica-total">0</div>
+                    <div class="metrica-label">Artigos</div>
+                </div>
+                <div class="metrica-card" data-tooltip="Artigos selecionados">
+                    <div class="metrica-valor" id="metrica-selecionados">0</div>
+                    <div class="metrica-label">Selecionados</div>
+                </div>
+                <div class="metrica-card" data-tooltip="Buscas feitas nesta sessão">
+                    <div class="metrica-valor" id="metrica-buscas">0</div>
+                    <div class="metrica-label">Buscas</div>
+                </div>
+                <div class="metrica-card" data-tooltip="Traduções realizadas">
+                    <div class="metrica-valor" id="metrica-traducoes">0</div>
+                    <div class="metrica-label">Traduções</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <!-- Ferramentas -->
+        <div class="sidebar-section">
+            <span class="sidebar-label"><i class="fa-solid fa-wand-magic-sparkles"></i> Ferramentas</span>
+            <div class="tools-grid">
+                <button class="tool-btn" onclick="usarSugestao('Mostre artigos sobre limpeza industrial')" data-tooltip="Filtrar por tema">
+                    <i class="fa-solid fa-filter"></i><span>Filtrar</span>
+                </button>
+                <button class="tool-btn" onclick="abrirModalBriefing()" data-tooltip="Gerar briefing de pauta">
+                    <i class="fa-solid fa-file-pen"></i><span>Briefing</span>
+                </button>
+                <button class="tool-btn" onclick="abrirComparacao()" data-tooltip="Comparar dois países">
+                    <i class="fa-solid fa-code-compare"></i><span>Comparar</span>
+                </button>
+                <button class="tool-btn" onclick="abrirResumir()" data-tooltip="Resumir artigo">
+                    <i class="fa-solid fa-book-open"></i><span>Resumir</span>
+                </button>
+                <button class="tool-btn" onclick="exportarLista()" data-tooltip="Exportar CSV">
+                    <i class="fa-solid fa-table-list"></i><span>Exportar</span>
+                </button>
+                <button class="tool-btn" onclick="verHistorico()" data-tooltip="Histórico da sessão">
+                    <i class="fa-solid fa-clock-rotate-left"></i><span>Histórico</span>
+                </button>
+                <button class="tool-btn tool-btn-auditoria" onclick="abrirAuditoria()" data-tooltip="Auditar site Tennant">
+                    <i class="fa-solid fa-magnifying-glass-chart"></i><span>Auditoria</span>
+                </button>
+                <button class="tool-btn tool-btn-espiao" onclick="abrirVitorEspiao()" data-tooltip="Monitorar concorrentes">
+                    <i class="fa-solid fa-user-secret"></i><span>Espião</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <!-- Cronograma -->
+        <div class="sidebar-section">
+            <span class="sidebar-label"><i class="fa-solid fa-calendar-days"></i> Cronograma</span>
+            <button class="btn-cronograma-sidebar" onclick="abrirCronograma()">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>Ver cronograma de postagem</span>
+            </button>
+            <div class="proximo-post-pill" id="proximo-post-pill" style="display:none">
+                <div class="pill-label">Próxima postagem</div>
+                <div class="pill-data" id="proximo-post-data">—</div>
+                <div class="pill-tema" id="proximo-post-tema">—</div>
+            </div>
+            <!-- Progresso anual -->
+            <div class="progresso-anual" style="margin-top:10px">
+                <div class="progresso-anual-topo">
+                    <span class="progresso-anual-label">Progresso do ano</span>
+                    <span class="progresso-anual-pct" id="progresso-pct">0%</span>
+                </div>
+                <div class="progresso-track">
+                    <div class="progresso-fill" id="progresso-fill" style="width:0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <!-- Posts desta semana -->
+        <div class="sidebar-section">
+            <span class="sidebar-label"><i class="fa-solid fa-list-check"></i> Esta semana</span>
+            <div class="semana-posts" id="semana-posts">
+                <div style="font-size:11px;color:rgba(255,255,255,.3);padding:4px 0">
+                    Adicione posts no cronograma para ver aqui
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <!-- Sugestões rápidas -->
+        <div class="sidebar-section">
+            <span class="sidebar-label"><i class="fa-solid fa-lightbulb"></i> Sugestões rápidas</span>
+            <div class="chips-wrap">
+                <button class="chip" onclick="usarSugestao('Mostre artigos sobre limpeza industrial')">🧹 Limpeza industrial</button>
+                <button class="chip" onclick="usarSugestao('Quero artigos sobre sustentabilidade')">♻️ Sustentabilidade</button>
+                <button class="chip" onclick="usarSugestao('Artigos sobre produtos e equipamentos')">🔧 Produtos</button>
+                <button class="chip" onclick="usarSugestao('Dicas de manutenção preventiva')">⚙️ Manutenção</button>
+                <button class="chip" onclick="usarSugestao('Mostre todos os artigos disponíveis')">📋 Ver todos</button>
+            </div>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-section">
+            <span class="sidebar-label"><i class="fa-regular fa-circle-question"></i> Sobre a TENNIX</span>
+            <p class="sidebar-about">Assistente com IA para o time de marketing Tennant. Encontra, resume, compara e gera briefings de artigos em qualquer idioma.</p>
+        </div>
+
+        <div class="sidebar-footer">
+            <a href="{{ url_for('pesquisar') }}" class="sidebar-link">
+                <i class="fa-solid fa-magnifying-glass"></i> Modo manual
+            </a>
+            <a href="{{ url_for('home') }}" class="sidebar-link">
+                <i class="fa-solid fa-house"></i> Início
+            </a>
+            <button class="sidebar-link admin-tema-btn" onclick="abrirAdminTema()" id="btn-admin-tema" data-tooltip="Painel de temas comemorativos">
+                <i class="fa-solid fa-wand-sparkles"></i> Temas
+                <span class="admin-tema-badge" id="admin-tema-badge" style="display:none">●</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- ── CHAT MAIN ── -->
+    <main class="tennix-chat">
+
+        <!-- Top bar -->
+        <div class="chat-topbar">
+            <div class="topbar-identity">
+                <div class="topbar-avatar">
+                    <span>T</span>
+                    <div class="avatar-online"></div>
+                </div>
+                <div>
+                    <div class="topbar-name">TENNIX</div>
+                    <div class="topbar-sub">by Tennant Company · Assistente IA</div>
+                </div>
+            </div>
+            <div class="topbar-actions">
+                <div id="selecao-badge" class="selecao-badge" style="display:none">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span id="selecao-count">0</span> selecionados
+                </div>
+                <button id="btn-traduzir" class="traduzir-btn" style="display:none" onclick="traduzirSelecionados()">
+                    <i class="fa-solid fa-language"></i> Traduzir selecionados
+                </button>
+                <button class="btn-tema-toggle" onclick="toggleTemaUsuario()" id="btn-tema-toggle" data-tooltip="Alternar tema escuro/claro" aria-label="Alternar tema">
+                    <i class="fa-solid fa-moon" id="tema-icon"></i>
+                </button>
+                <button class="btn-modo-foco" onclick="toggleModoFoco()" id="btn-foco" data-tooltip="Modo foco">
+                    <i class="fa-solid fa-expand"></i>
+                </button>
+                <button class="topbar-clear-btn" onclick="limparChat()" data-tooltip="Limpar conversa">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Chip filtros de tipo -->
+        <div class="filtros-wrap" id="filtros-wrap">
+            <button class="filtro-chip ativo" onclick="toggleFiltro(this, 'todos')">
+                <i class="fa-solid fa-border-all"></i> Todos
+            </button>
+            <button class="filtro-chip" onclick="toggleFiltro(this, 'limpeza')">
+                <i class="fa-solid fa-broom"></i> Limpeza
+            </button>
+            <button class="filtro-chip" onclick="toggleFiltro(this, 'produto')">
+                <i class="fa-solid fa-box"></i> Produtos
+            </button>
+            <button class="filtro-chip" onclick="toggleFiltro(this, 'sustentabilidade')">
+                <i class="fa-solid fa-leaf"></i> Sustentabilidade
+            </button>
+            <button class="filtro-chip" onclick="toggleFiltro(this, 'robotica')">
+                <i class="fa-solid fa-robot"></i> Robótica
+            </button>
+            <button class="filtro-chip" onclick="toggleFiltro(this, 'manutencao')">
+                <i class="fa-solid fa-wrench"></i> Manutenção
+            </button>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages" id="chat-messages"></div>
+
+        <!-- Input -->
+        <div class="chat-input-area">
+            <div class="input-wrap">
+                <textarea
+                    id="chat-input"
+                    placeholder="Pergunte à TENNIX... ex: 'Quero artigos sobre limpeza industrial'"
+                    rows="1"
+                    autocomplete="off"
+                ></textarea>
+                <button id="btn-send" class="send-btn" onclick="enviarMensagem()">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+            <div class="input-hint">Pressione <kbd>Enter</kbd> para enviar · <kbd>Shift+Enter</kbd> para nova linha</div>
+        </div>
+    </main>
+</div>
+
+<!-- ── MODAL: BRIEFING ── -->
+<div id="modal-briefing" class="modal-overlay" style="display:none" onclick="fecharModal('modal-briefing')">
+    <div class="modal-card" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-file-pen"></i> Gerar Briefing de Pauta</div>
+            <button class="modal-close" onclick="fecharModal('modal-briefing')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-desc">A TENNIX vai analisar os artigos carregados e gerar um briefing de pauta completo em português, pronto para o time de conteúdo.</p>
+            <div class="modal-field">
+                <label>Tema do briefing</label>
+                <input type="text" id="briefing-tema" placeholder="Ex: limpeza industrial, sustentabilidade, robótica..." />
+            </div>
+            <div class="modal-field">
+                <label>Tom desejado</label>
+                <div class="radio-group">
+                    <label class="radio-opt"><input type="radio" name="briefing-tom" value="profissional" checked> Profissional</label>
+                    <label class="radio-opt"><input type="radio" name="briefing-tom" value="descontraido"> Descontraído</label>
+                    <label class="radio-opt"><input type="radio" name="briefing-tom" value="tecnico"> Técnico</label>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn-cancel" onclick="fecharModal('modal-briefing')">Cancelar</button>
+            <button class="modal-btn-confirm" onclick="gerarBriefing()"><i class="fa-solid fa-wand-magic-sparkles"></i> Gerar briefing</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL: COMPARAR PAÍSES ── -->
+<div id="modal-comparar" class="modal-overlay" style="display:none" onclick="fecharModal('modal-comparar')">
+    <div class="modal-card" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-code-compare"></i> Comparar Países</div>
+            <button class="modal-close" onclick="fecharModal('modal-comparar')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-desc">Compara os temas cobertos em dois países e identifica lacunas de conteúdo.</p>
+            <div class="modal-row">
+                <div class="modal-field">
+                    <label>País A (carregado)</label>
+                    <div class="modal-pais-atual" id="comparar-pais-a">—</div>
+                </div>
+                <div class="modal-vs">VS</div>
+                <div class="modal-field">
+                    <label>País B</label>
+                    <div class="select-wrap-light">
+                        <select id="comparar-pais-b"></select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn-cancel" onclick="fecharModal('modal-comparar')">Cancelar</button>
+            <button class="modal-btn-confirm" onclick="compararPaises()"><i class="fa-solid fa-arrows-left-right"></i> Comparar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL: RESUMIR ARTIGO ── -->
+<div id="modal-resumir" class="modal-overlay" style="display:none" onclick="fecharModal('modal-resumir')">
+    <div class="modal-card" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-book-open"></i> Resumir Artigo</div>
+            <button class="modal-close" onclick="fecharModal('modal-resumir')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-desc">Cole a URL de um artigo Tennant e a TENNIX gera um resumo em português.</p>
+            <div class="modal-field">
+                <label>URL do artigo</label>
+                <input type="url" id="resumir-url" placeholder="https://www.tennantco.com/en_us/blog/..." />
+            </div>
+            <div class="modal-field">
+                <label>Tamanho do resumo</label>
+                <div class="radio-group">
+                    <label class="radio-opt"><input type="radio" name="resumo-tamanho" value="curto"> Curto (3 pontos)</label>
+                    <label class="radio-opt"><input type="radio" name="resumo-tamanho" value="medio" checked> Médio</label>
+                    <label class="radio-opt"><input type="radio" name="resumo-tamanho" value="completo"> Completo</label>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn-cancel" onclick="fecharModal('modal-resumir')">Cancelar</button>
+            <button class="modal-btn-confirm" onclick="resumirArtigo()"><i class="fa-solid fa-book-open"></i> Resumir</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL: CRONOGRAMA ── -->
+<div id="modal-cronograma" class="modal-overlay" style="display:none" onclick="fecharModal('modal-cronograma')">
+    <div class="modal-card cronograma-modal" style="max-width:820px;width:95vw" onclick="event.stopPropagation()">
+        <div class="cronograma-header">
+            <h2><i class="fa-solid fa-calendar-days"></i> Cronograma de Postagem</h2>
+            <div style="display:flex;align-items:center;gap:12px">
+                <div class="cronograma-nav">
+                    <button class="cronograma-nav-btn" onclick="navegarMes(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                    <span class="cronograma-mes-label" id="cron-mes-label">—</span>
+                    <button class="cronograma-nav-btn" onclick="navegarMes(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+                <button class="modal-btn-confirm" onclick="abrirAdicionarPost()" style="padding:7px 14px;font-size:12px">
+                    <i class="fa-solid fa-plus"></i> Novo post
+                </button>
+                <button class="modal-close" onclick="fecharModal('modal-cronograma')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+        <div class="cronograma-body">
+            <div class="cronograma-calendario">
+                <div class="cal-grid-header">
+                    <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+                </div>
+                <div class="cal-grid" id="cal-grid"></div>
+            </div>
+            <div class="cronograma-lista">
+                <div class="cronograma-lista-titulo" id="cron-lista-titulo">Todos os posts do mês</div>
+                <div id="cron-lista-posts"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL: ADICIONAR POST ── -->
+<div id="modal-add-post" class="modal-overlay" style="display:none" onclick="fecharModal('modal-add-post')">
+    <div class="modal-card" style="max-width:540px" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-plus"></i> Novo Post no Cronograma</div>
+            <button class="modal-close" onclick="fecharModal('modal-add-post')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+            <div class="modal-field">
+                <label>Data de postagem</label>
+                <input type="date" id="post-data" style="width:100%;padding:10px 13px;border:1.5px solid var(--abrd);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;background:var(--ab)" />
+            </div>
+            <div class="modal-field">
+                <label>Tema / Título do post</label>
+                <input type="text" id="post-tema" placeholder="Ex: 5 dicas de limpeza industrial..." />
+            </div>
+            <div class="modal-field">
+                <label>Tipo de conteúdo</label>
+                <div class="radio-group" style="flex-wrap:wrap">
+                    <label class="radio-opt"><input type="radio" name="post-tipo" value="produto" checked> 🟢 Produto</label>
+                    <label class="radio-opt"><input type="radio" name="post-tipo" value="dica"> 🟡 Dica</label>
+                    <label class="radio-opt"><input type="radio" name="post-tipo" value="case"> 🟣 Case</label>
+                    <label class="radio-opt"><input type="radio" name="post-tipo" value="conteudo"> 🟠 Conteúdo</label>
+                    <label class="radio-opt"><input type="radio" name="post-tipo" value="outro"> ⚪ Outro</label>
+                </div>
+            </div>
+            <div class="modal-field">
+                <label>Canal / Rede social</label>
+                <div class="radio-group">
+                    <label class="radio-opt"><input type="radio" name="post-canal" value="Instagram" checked> 📸 Instagram</label>
+                    <label class="radio-opt"><input type="radio" name="post-canal" value="LinkedIn"> 💼 LinkedIn</label>
+                    <label class="radio-opt"><input type="radio" name="post-canal" value="Facebook"> 📘 Facebook</label>
+                    <label class="radio-opt"><input type="radio" name="post-canal" value="Blog"> 📝 Blog</label>
+                </div>
+            </div>
+            <div class="modal-field">
+                <label>Imagem do post <span style="font-weight:400;text-transform:none;color:var(--as)">(opcional — ajuda a IA gerar texto melhor)</span></label>
+                <div class="upload-img-area" id="upload-img-area" onclick="document.getElementById('post-img-input').click()">
+                    <input type="file" id="post-img-input" accept="image/*" style="display:none" onchange="previewImagem(this)">
+                    <div id="upload-img-placeholder">
+                        <i class="fa-solid fa-image"></i>
+                        <span>Clique para adicionar imagem</span>
+                        <small>JPG, PNG, WEBP — máx. 5MB</small>
+                    </div>
+                    <img id="upload-img-preview" src="" alt="" style="display:none;max-width:100%;border-radius:8px;max-height:180px;object-fit:cover">
+                    <button id="upload-img-remove" onclick="removerImagem(event)" style="display:none;position:absolute;top:8px;right:8px;background:#fff;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);font-size:11px;display:none;align-items:center;justify-content:center">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-field">
+                <label>Contexto adicional <span style="font-weight:400;text-transform:none;color:var(--as)">(opcional)</span></label>
+                <textarea id="post-obs" placeholder="Ex: foco em clientes industriais, mencionar produto X, usar tom descontraído..." style="width:100%;padding:10px 13px;border:1.5px solid var(--abrd);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;resize:vertical;min-height:64px;background:var(--ab);color:var(--at)"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn-cancel" onclick="fecharModal('modal-add-post')">Cancelar</button>
+            <button class="modal-btn-confirm" onclick="salvarPost()"><i class="fa-solid fa-check"></i> Salvar post</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL: TEXTO GERADO ── -->
+<div id="modal-texto-gerado" class="modal-overlay" style="display:none" onclick="fecharModal('modal-texto-gerado')">
+    <div class="modal-card" style="max-width:580px" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Texto gerado para o post</div>
+            <button class="modal-close" onclick="fecharModal('modal-texto-gerado')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <div id="texto-gerado-meta" style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap"></div>
+            <div id="texto-gerado-img-wrap" style="display:none;margin-bottom:14px">
+                <img id="texto-gerado-img" src="" style="max-width:100%;border-radius:10px;max-height:200px;object-fit:cover">
+            </div>
+            <div id="texto-gerado-content" style="background:var(--ab);border:1.5px solid var(--abrd);border-radius:12px;padding:16px;font-size:14px;line-height:1.7;color:var(--at);white-space:pre-wrap;min-height:80px">
+                <div class="skeleton skeleton-linha larga" style="margin-bottom:10px"></div>
+                <div class="skeleton skeleton-linha media" style="margin-bottom:8px"></div>
+                <div class="skeleton skeleton-linha larga" style="margin-bottom:8px"></div>
+                <div class="skeleton skeleton-linha curta"></div>
+            </div>
+        </div>
+        <div class="modal-footer" style="justify-content:space-between">
+            <button class="modal-btn-cancel" id="btn-regenerar" onclick="regenerarTexto()">
+                <i class="fa-solid fa-rotate"></i> Regenerar
+            </button>
+            <div style="display:flex;gap:8px">
+                <button class="modal-btn-cancel" onclick="fecharModal('modal-texto-gerado')">Fechar</button>
+                <button class="modal-btn-confirm" onclick="copiarTextoGerado()">
+                    <i class="fa-regular fa-copy"></i> Copiar texto
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading overlay -->
+<div id="loading-overlay" class="loading-overlay" style="display:none">
+    <div class="loading-card">
+        <div class="loading-anim">
+            <div class="lang-pill from">EN</div>
+            <div class="arrow-spin"><i class="fa-solid fa-arrows-rotate fa-spin"></i></div>
+            <div class="lang-pill to">PT</div>
+        </div>
+        <div class="loading-text" id="loading-text">Traduzindo artigos selecionados...</div>
+    </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ── MODAL: ADMIN TEMAS COMEMORATIVOS ── -->
+<div id="modal-admin-tema" class="modal-overlay" style="display:none" onclick="fecharModal('modal-admin-tema')">
+    <div class="modal-card admin-tema-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-wand-sparkles"></i> Temas Comemorativos</div>
+            <button class="modal-close" onclick="fecharModal('modal-admin-tema')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <!-- Senha admin -->
+            <div class="modal-field admin-senha-wrap" id="admin-senha-wrap">
+                <label><i class="fa-solid fa-lock"></i> Senha de administrador</label>
+                <input type="password" id="admin-senha-input" placeholder="Digite a senha admin..." autocomplete="off"
+                    style="width:100%;padding:10px 13px;border:1.5px solid var(--abrd);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;background:var(--ab);color:var(--at)">
+                <p style="font-size:11px;color:var(--as);margin-top:6px"><i class="fa-solid fa-info-circle"></i> Acesso restrito ao administrador do sistema.</p>
+            </div>
+
+            <!-- Grade de temas -->
+            <div class="admin-temas-grid" id="admin-temas-grid">
+                <div class="admin-tema-card" data-tema="padrao">
+                    <div class="tema-preview tema-padrao-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">🟢</span>
+                        <span class="tema-nome">Padrão</span>
+                    </div>
+                </div>
+                <div class="admin-tema-card" data-tema="natal">
+                    <div class="tema-preview tema-natal-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">🎄</span>
+                        <span class="tema-nome">Natal</span>
+                    </div>
+                </div>
+                <div class="admin-tema-card" data-tema="ano_novo">
+                    <div class="tema-preview tema-anonovo-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">🎆</span>
+                        <span class="tema-nome">Ano Novo</span>
+                    </div>
+                </div>
+                <div class="admin-tema-card" data-tema="pascoa">
+                    <div class="tema-preview tema-pascoa-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">🐣</span>
+                        <span class="tema-nome">Páscoa</span>
+                    </div>
+                </div>
+                <div class="admin-tema-card" data-tema="carnaval">
+                    <div class="tema-preview tema-carnaval-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">🎭</span>
+                        <span class="tema-nome">Carnaval</span>
+                    </div>
+                </div>
+                <div class="admin-tema-card" data-tema="halloween">
+                    <div class="tema-preview tema-halloween-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">🎃</span>
+                        <span class="tema-nome">Halloween</span>
+                    </div>
+                </div>
+                <div class="admin-tema-card" data-tema="junina">
+                    <div class="tema-preview tema-junina-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">🎡</span>
+                        <span class="tema-nome">Festa Junina</span>
+                    </div>
+                </div>
+                <div class="admin-tema-card" data-tema="dia_das_maes">
+                    <div class="tema-preview tema-maes-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">💐</span>
+                        <span class="tema-nome">Dia das Mães</span>
+                    </div>
+                </div>
+                <div class="admin-tema-card" data-tema="dia_dos_pais">
+                    <div class="tema-preview tema-pais-prev">
+                        <div class="tema-prev-sidebar"></div>
+                        <div class="tema-prev-chat">
+                            <div class="tema-prev-bubble"></div>
+                            <div class="tema-prev-bubble short"></div>
+                        </div>
+                    </div>
+                    <div class="tema-info">
+                        <span class="tema-emoji">👔</span>
+                        <span class="tema-nome">Dia dos Pais</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status atual -->
+            <div class="admin-tema-status" id="admin-tema-status">
+                <i class="fa-solid fa-circle-info"></i>
+                <span id="admin-tema-status-txt">Tema atual: <strong>Padrão</strong></span>
+            </div>
+        </div>
+        <div class="modal-footer" style="justify-content:space-between">
+            <button class="modal-btn-cancel" onclick="desativarTema()">
+                <i class="fa-solid fa-rotate-left"></i> Restaurar padrão
+            </button>
+            <div style="display:flex;gap:8px">
+                <button class="modal-btn-cancel" onclick="fecharModal('modal-admin-tema')">Fechar</button>
+                <button class="modal-btn-confirm" id="btn-aplicar-tema" onclick="aplicarTemaSelecionado()">
+                    <i class="fa-solid fa-check"></i> Aplicar tema
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Partículas decorativas de tema (injetadas por JS) -->
+<div id="tema-particles" class="tema-particles" aria-hidden="true"></div>
+
+<!-- ── MODAL: AUDITORIA TENNANT ── -->
+<div id="modal-auditoria" class="modal-overlay auditoria-overlay" style="display:none" onclick="fecharModal('modal-auditoria')">
+    <div class="modal-card auditoria-card" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-magnifying-glass-chart"></i> Auditoria do Site Tennant</div>
+            <button class="modal-close" onclick="fecharModal('modal-auditoria')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body auditoria-body">
+
+            <!-- Painel de configuração -->
+            <div class="auditoria-config" id="auditoria-config">
+                <div class="auditoria-intro">
+                    <div class="auditoria-intro-icon"><i class="fa-solid fa-robot"></i></div>
+                    <div>
+                        <div class="auditoria-intro-title">Verificação automática de documentos — tennantco.com/pt_br</div>
+                        <div class="auditoria-intro-desc">A TENNIX vai pesquisar cada máquina do catálogo brasileiro da Tennant e verificar se possui os 5 documentos obrigatórios: <strong>Folheto</strong>, <strong>Guia de peças de reposição</strong>, <strong>Manual de peças</strong>, <strong>Manual do operador</strong> e <strong>Tabela de parede</strong>.<br><br><span style="color:var(--ag);font-weight:600"><i class="fa-solid fa-circle-info"></i> O site usa carregamento dinâmico de documentos — a TENNIX usa busca inteligente para localizá-los.</span></div>
+                    </div>
+                </div>
+
+                <div class="auditoria-campos">
+                    <div class="modal-field">
+                        <label><i class="fa-solid fa-sliders"></i> Documentos obrigatórios a verificar</label>
+                        <div class="auditoria-checks-grid">
+                            <label class="auditoria-check-opt"><input type="checkbox" class="doc-check" value="folheto" checked> <i class="fa-regular fa-file-pdf"></i> Folheto</label>
+                            <label class="auditoria-check-opt"><input type="checkbox" class="doc-check" value="guia" checked> <i class="fa-regular fa-file-pdf"></i> Guia de peças de reposição</label>
+                            <label class="auditoria-check-opt"><input type="checkbox" class="doc-check" value="manual_pecas" checked> <i class="fa-regular fa-file-pdf"></i> Manual de peças</label>
+                            <label class="auditoria-check-opt"><input type="checkbox" class="doc-check" value="manual_operador" checked> <i class="fa-regular fa-file-pdf"></i> Manual do operador</label>
+                            <label class="auditoria-check-opt"><input type="checkbox" class="doc-check" value="tabela_parede" checked> <i class="fa-regular fa-file-pdf"></i> Tabela de parede</label>
+                        </div>
+                    </div>
+                    <div class="aud-aviso-tempo">
+                        <i class="fa-solid fa-clock"></i> A auditoria pode levar alguns minutos dependendo do número de máquinas encontradas.
+                    </div>
+                </div>
+
+                <div class="auditoria-footer-cfg">
+                    <button class="modal-btn-confirm auditoria-btn-iniciar" onclick="iniciarAuditoria()">
+                        <i class="fa-solid fa-magnifying-glass"></i> Iniciar auditoria
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progresso -->
+            <div class="auditoria-progresso" id="auditoria-progresso" style="display:none">
+                <div class="aud-prog-header">
+                    <div class="aud-prog-spinner"><i class="fa-solid fa-gear fa-spin"></i></div>
+                    <div>
+                        <div class="aud-prog-titulo">Auditoria em andamento...</div>
+                        <div class="aud-prog-sub" id="aud-prog-sub">Iniciando análise do site</div>
+                    </div>
+                </div>
+                <div class="aud-prog-bar-wrap">
+                    <div class="aud-prog-bar" id="aud-prog-bar" style="width:0%"></div>
+                </div>
+                <div class="aud-prog-stats">
+                    <span><i class="fa-solid fa-check-circle" style="color:var(--ag2)"></i> <span id="aud-ok-count">0</span> completas</span>
+                    <span><i class="fa-solid fa-triangle-exclamation" style="color:#e67e22"></i> <span id="aud-warn-count">0</span> com pendências</span>
+                    <span><i class="fa-solid fa-circle-xmark" style="color:#e74c3c"></i> <span id="aud-err-count">0</span> sem documentos</span>
+                </div>
+                <div class="aud-prog-log" id="aud-prog-log"></div>
+            </div>
+
+            <!-- Resultado -->
+            <div class="auditoria-resultado" id="auditoria-resultado" style="display:none">
+                <!-- Sumário -->
+                <div class="aud-sumario" id="aud-sumario"></div>
+
+                <!-- Filtros resultado -->
+                <div class="aud-filtros">
+                    <button class="aud-filtro-btn ativo" onclick="filtrarResultados(this,'todos')">Todos</button>
+                    <button class="aud-filtro-btn" onclick="filtrarResultados(this,'completo')"><i class="fa-solid fa-check-circle"></i> Completos</button>
+                    <button class="aud-filtro-btn" onclick="filtrarResultados(this,'pendente')"><i class="fa-solid fa-triangle-exclamation"></i> Com pendências</button>
+                    <button class="aud-filtro-btn" onclick="filtrarResultados(this,'vazio')"><i class="fa-solid fa-circle-xmark"></i> Sem documentos</button>
+                </div>
+
+                <!-- Tabela de máquinas -->
+                <div class="aud-tabela-wrap" id="aud-tabela-wrap"></div>
+            </div>
+
+        </div>
+        <div class="modal-footer auditoria-modal-footer" id="auditoria-modal-footer" style="justify-content:space-between">
+            <button class="modal-btn-cancel" id="btn-aud-nova" style="display:none" onclick="novaAuditoria()">
+                <i class="fa-solid fa-rotate-left"></i> Nova auditoria
+            </button>
+            <div style="display:flex;gap:8px">
+                <button class="modal-btn-confirm" id="btn-aud-exportar" style="display:none" onclick="exportarRelatorioAuditoria()">
+                    <i class="fa-solid fa-file-arrow-down"></i> Exportar relatório CSV
+                </button>
+                <button class="modal-btn-cancel" onclick="fecharModal('modal-auditoria')">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL: VITOR ESPIÃO ── -->
+<div id="modal-espiao" class="modal-overlay espiao-overlay" style="display:none" onclick="fecharModal('modal-espiao')">
+    <div class="modal-card espiao-card" onclick="event.stopPropagation()">
+        <div class="modal-header espiao-header">
+            <div class="modal-title">
+                <span class="espiao-icon-titulo">🕵️</span> Vitor Espião
+                <span class="espiao-versao-badge">v1.0</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+                <div id="espiao-badge-alertas" class="espiao-badge-alertas" style="display:none"></div>
+                <button class="espiao-scan-btn" id="espiao-scan-btn" onclick="espiaoScanearTudo()">
+                    <i class="fa-solid fa-satellite-dish"></i> Escanear tudo
+                </button>
+                <button class="modal-close" onclick="fecharModal('modal-espiao')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+        <div class="modal-body espiao-body">
+
+            <!-- Subtítulo animado -->
+            <div class="espiao-subtitulo" id="espiao-subtitulo">Missão em andamento... 🕵️</div>
+
+            <!-- Stats -->
+            <div class="espiao-stats-grid">
+                <div class="espiao-stat"><div class="espiao-stat-val" id="esp-stat-total">9</div><div class="espiao-stat-lbl">🏭 Monitorados</div></div>
+                <div class="espiao-stat"><div class="espiao-stat-val" id="esp-stat-alertas">4</div><div class="espiao-stat-lbl">🔔 Com alertas</div></div>
+                <div class="espiao-stat"><div class="espiao-stat-val" id="esp-stat-mudancas">7</div><div class="espiao-stat-lbl">📊 Mudanças</div></div>
+                <div class="espiao-stat"><div class="espiao-stat-val" id="esp-stat-online">5</div><div class="espiao-stat-lbl">🟢 Online</div></div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="espiao-filtros">
+                <button class="espiao-filtro-btn ativo" id="esp-btn-all" onclick="espiaoFiltrar('all', this)">Todos</button>
+                <button class="espiao-filtro-btn" id="esp-btn-alertas" onclick="espiaoFiltrar('alertas', this)">🚨 Com alertas</button>
+            </div>
+
+            <!-- Grid de concorrentes -->
+            <div class="espiao-grid" id="espiao-grid"></div>
+
+            <!-- Detalhe -->
+            <div id="espiao-detalhe" class="espiao-detalhe" style="display:none"></div>
+
+        </div>
+        <div class="modal-footer" style="justify-content:center;padding-top:10px">
+            <span style="font-size:11px;color:var(--as)">🔒 TENNIX IA · Monitoramento de concorrentes Tennant · Dados simulados</span>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='tennix.js') }}"></script>
+</body>
+</html>
