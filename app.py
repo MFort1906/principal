@@ -255,17 +255,17 @@ def traduzir_selecionados():
         return jsonify({"sucesso": False, "erro": str(e)}), 500
  
  
-# 🤖 Alfa — Assistente Inteligente
-@app.route("/alfa")
-def alfa():
+# 🤖 TENNIX — Assistente Inteligente
+@app.route("/tennix")
+def tennix():
     if not session.get("logado"):
         return redirect(url_for("login"))
-    return render_template("alfa.html")
+    return render_template("tennix.html")
  
  
-# 🤖 Alfa — Chat endpoint com IA (Gemini)
-@app.route("/alfa-chat", methods=["POST"])
-def alfa_chat():
+# 🤖 TENNIX — Chat endpoint com IA (Gemini)
+@app.route("/tennix-chat", methods=["POST"])
+def tennix_chat():
     if not session.get("logado"):
         return jsonify({"erro": "Não autorizado"}), 401
  
@@ -284,7 +284,7 @@ def alfa_chat():
         if not mensagem:
             return jsonify({"erro": "Mensagem vazia"}), 400
  
-        # ── System prompt da Alfa ──
+        # ── System prompt da TENNIX ──
         artigos_str = ""
         if artigos:
             linhas = [f"{i+1}. [{a.get('title','s/título')}] ({a.get('href','')})"
@@ -293,7 +293,7 @@ def alfa_chat():
         else:
             artigos_str = "(nenhum artigo carregado ainda)"
  
-        system_prompt = f"""Você é Alfa, assistente inteligente da Alfa by Tennant Company.
+        system_prompt = f"""Você é TENNIX, assistente inteligente da TENNIX by Tennant Company.
 Você ajuda a encontrar artigos dos blogs globais Tennant com base em temas, independente do idioma dos títulos.
  
 PAÍS ATUAL: {pais_nome or 'não selecionado'} ({pais or '-'})
@@ -353,7 +353,7 @@ Campos obrigatórios:
  
         if not api_key:
             return jsonify({
-                "texto": "⚠️ Chave de API da Alfa não configurada. Configure a variável OPENAI_API_KEY no Render.",
+                "texto": "⚠️ Chave de API da TENNIX não configurada. Configure a variável OPENAI_API_KEY no Render.",
                 "artigos_filtrados": [],
                 "acao": None
             })
@@ -436,15 +436,15 @@ Campos obrigatórios:
         })
  
     except Exception as e:
-        print("❌ Erro no /alfa-chat:", str(e))
+        print("❌ Erro no /tennix-chat:", str(e))
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
 
 
 # ─────────────────────────────────────────────────────────────
 # 🔍 AUDITORIA — OpenAI GPT-4o com web search
 # ─────────────────────────────────────────────────────────────
-@app.route("/alfa-auditoria", methods=["POST"])
-def alfa_auditoria():
+@app.route("/tennix-auditoria", methods=["POST"])
+def tennix_auditoria():
     """
     Endpoint de auditoria que usa OpenAI Responses API (gpt-4o)
     com a ferramenta web_search_preview para buscar documentos
@@ -651,7 +651,7 @@ Exemplo de resposta:
             return jsonify({"erro": f"Tipo de auditoria desconhecido: {tipo}"}), 400
 
     except Exception as e:
-        print("❌ Erro no /alfa-auditoria:", str(e))
+        print("❌ Erro no /tennix-auditoria:", str(e))
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
 
 
