@@ -236,5 +236,17 @@
             });
         });
     </script>
+
+    <!-- 🤖 TENNIX Chatbot Widget (canto da tela) -->
+    <script>
+        window.TennixChatbotConfig = {
+            endpoint: "/api/chatbot",           // mesmo domínio → usa o login da sessão
+            title:    "TENNIX",
+            subtitle: "Assistente Tennant",
+            welcome:  "Olá! 👋 Sou a TENNIX, assistente da Tennant Company. Posso ajudar com dúvidas sobre a plataforma, equipamentos ou a Tennant. Como posso ajudar?",
+            accent:   "#009ac7"
+        };
+    </script>
+    <script src="{{ url_for('static', filename='chatbot-widget.js') }}"></script>
 </body>
 </html>
