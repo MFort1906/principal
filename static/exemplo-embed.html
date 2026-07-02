@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exemplo — Chatbot Tennant em site externo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; background: #fafafa; color: #222; }
+    .hero { padding: 80px 24px; text-align: center; background: linear-gradient(135deg,#009ac7,#015570); color:#fff; }
+    .hero h1 { font-size: 34px; margin: 0 0 10px; }
+    .box { max-width: 720px; margin: 40px auto; padding: 0 24px; line-height: 1.6; }
+    code { background:#eef1f3; padding:2px 6px; border-radius:5px; font-size:.9em; }
+    pre { background:#0f1720; color:#d6e4ee; padding:18px; border-radius:12px; overflow:auto; }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <h1>Site de exemplo (externo)</h1>
+    <p>Esta página simula um site QUALQUER da Tennant. O chatbot aparece no canto ↘</p>
+  </div>
+
+  <div class="box">
+    <h2>Como este chatbot foi embutido</h2>
+    <p>Só foi preciso colar estas duas tags antes de <code>&lt;/body&gt;</code>:</p>
+    <pre>&lt;script&gt;
+  window.TennixChatbotConfig = {
+    endpoint: "https://SEU-APP.onrender.com/api/chatbot",
+    token:    "SEU_TOKEN_PUBLICO"
+  };
+&lt;/script&gt;
+&lt;script src="https://SEU-APP.onrender.com/chatbot-widget.js"&gt;&lt;/script&gt;</pre>
+    <p>Troque <code>SEU-APP.onrender.com</code> pelo domínio real do seu app no Render
+       e <code>SEU_TOKEN_PUBLICO</code> pelo valor da variável <code>WIDGET_PUBLIC_TOKEN</code>.</p>
+  </div>
+
+  <!-- ↓↓↓ INTEGRAÇÃO DO CHATBOT (exemplo local) ↓↓↓ -->
+  <script>
+    window.TennixChatbotConfig = {
+      endpoint: "/api/chatbot",   // troque pela URL absoluta do seu app em produção
+      token:    "COLOQUE_SEU_TOKEN_AQUI",
+      title:    "TENNIX",
+      subtitle: "Assistente Tennant",
+      welcome:  "Olá! 👋 Bem-vindo. Como posso ajudar com os equipamentos Tennant?"
+    };
+  </script>
+  <script src="/static/chatbot-widget.js"></script>
+</body>
+</html>
