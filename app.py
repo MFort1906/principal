@@ -1382,6 +1382,137 @@ Se não encontrar nada relevante nas últimas semanas, retorne:
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
 
 
+# ─────────────────────────────────────────────────────────────
+# 🤖 CHATBOT WIDGET (estilo Botpress) — API + script embutível
+# ─────────────────────────────────────────────────────────────
+
+# Personalidade / conhecimento do chatbot. Edite este texto para
+# ajustar o tom e o que o assistente sabe sobre a Tennant.
+CHATBOT_SYSTEM_PROMPT = """Você é a TENNIX, assistente virtual oficial da Tennant Company no Brasil.
+
+SOBRE A TENNANT:
+A Tennant Company é uma multinacional americana líder em máquinas e soluções
+de limpeza profissional: lavadoras de piso (scrubbers), varredeiras (sweepers),
+enceradeiras, extratoras e equipamentos industriais e comerciais de limpeza.
+Atende os setores industrial, comercial, logística, varejo, saúde e educação.
+
+SEU PAPEL:
+- Responder dúvidas sobre a Tennant, seus equipamentos, aplicações de limpeza,
+  manutenção básica, e orientar o visitante sobre feiras, eventos e novidades.
+- Ajudar a direcionar o usuário para o time comercial quando houver intenção
+  de compra, orçamento, demonstração ou visita técnica.
+
+REGRAS:
+- Responda SEMPRE em português brasileiro (a menos que o usuário escreva em
+  outro idioma — aí responda no idioma dele; você também atende em espanhol e inglês).
+- Seja cordial, objetivo e profissional. Respostas curtas e claras.
+- Se não souber um dado específico (preço, disponibilidade, ficha técnica exata),
+  seja honesto e sugira falar com um consultor Tennant em vez de inventar.
+- Nunca invente especificações técnicas ou números.
+- Não peça nem armazene dados sensíveis (cartão, senha, documentos).
+"""
+
+
+def _cors(resp):
+    """Adiciona cabeçalhos CORS (necessário para embutir em sites externos)."""
+    origin = os.getenv("WIDGET_ALLOWED_ORIGIN", "*")
+    resp.headers["Access-Control-Allow-Origin"] = origin
+    resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+    resp.headers["Access-Control-Allow-Headers"] = "Content-Type, X-Widget-Token"
+    resp.headers["Access-Control-Max-Age"] = "86400"
+    return resp
+
+
+def _chatbot_autorizado():
+    """Libera o chat se: (a) usuário logado na sessão interna, OU
+    (b) apresentou o token público válido (para sites externos)."""
+    if session.get("logado"):
+        return True
+    token_cfg = os.getenv("WIDGET_PUBLIC_TOKEN", "").strip()
+    if token_cfg:
+        token_req = (request.headers.get("X-Widget-Token") or "").strip()
+        if token_req and token_req == token_cfg:
+            return True
+    return False
+
+
+# 📜 Serve o script do widget (permite carregar de outros domínios)
+@app.route("/chatbot-widget.js")
+def chatbot_widget_js():
+    resp = send_file(os.path.join("static", "chatbot-widget.js"),
+                     mimetype="application/javascript")
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["Cache-Control"] = "public, max-age=300"
+    return resp
+
+
+# 💬 Endpoint de conversa do chatbot
+@app.route("/api/chatbot", methods=["POST", "OPTIONS"])
+def api_chatbot():
+    if request.method == "OPTIONS":
+        return _cors(jsonify({}))
+
+    if not _chatbot_autorizado():
+        return _cors(jsonify({"erro": "Não autorizado"})), 401
+
+    try:
+        import requests as req_lib
+
+        data      = request.get_json(force=True) or {}
+        mensagem  = (data.get("mensagem") or "").strip()
+        historico = data.get("historico", [])
+
+        if not mensagem:
+            return _cors(jsonify({"erro": "Mensagem vazia"})), 400
+
+        api_key = os.getenv("OPENAI_API_KEY", "").strip()
+        if not api_key:
+            return _cors(jsonify({
+                "texto": "⚠️ Chave de API não configurada no servidor (OPENAI_API_KEY)."
+            }))
+
+        # Monta as mensagens (system + histórico recente + mensagem atual)
+        messages = [{"role": "system", "content": CHATBOT_SYSTEM_PROMPT}]
+        for h in historico[-10:]:
+            role = h.get("role", "")
+            content_h = (h.get("content") or "").strip()
+            if content_h and role in ("user", "assistant"):
+                messages.append({"role": role, "content": content_h})
+        messages.append({"role": "user", "content": mensagem})
+
+        resp = req_lib.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            },
+            json={
+                "model": "gpt-4o-mini",
+                "max_tokens": 700,
+                "temperature": 0.5,
+                "messages": messages
+            },
+            timeout=30
+        )
+        if not resp.ok:
+            print("❌ OpenAI error (chatbot):", resp.status_code, resp.text[:300])
+        resp.raise_for_status()
+        result = resp.json()
+
+        texto = ""
+        try:
+            texto = result["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            print("❌ Erro ao extrair resposta do chatbot:", e)
+            texto = "Desculpe, tive um problema ao gerar a resposta. Pode tentar de novo?"
+
+        return _cors(jsonify({"texto": texto}))
+
+    except Exception as e:
+        print("❌ Erro no /api/chatbot:", str(e))
+        return _cors(jsonify({"erro": f"Erro interno: {str(e)}"})), 500
+
+
 # 🚪 Logout
 @app.route("/logout")
 def logout():
