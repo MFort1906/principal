@@ -15,7 +15,10 @@
     <!-- ── SIDEBAR ── -->
     <aside class="tennix-sidebar">
         <div class="sidebar-logo">
-            <img src="{{ url_for('static', filename='../assets/tennix_logo.png') }}" alt="TENNIX" class="logo-img">
+            <div class="tennix-wordmark" aria-label="TENNIX">
+                <span class="tennix-wordmark-mark">T</span>
+                <span><strong>TENNIX</strong><small>Marketing Intelligence</small></span>
+            </div>
             <div class="logo-line"></div>
         </div>
 
@@ -169,6 +172,7 @@
         <!-- Top bar -->
         <div class="chat-topbar">
             <div class="topbar-identity">
+                <button class="mobile-menu-btn" id="mobile-menu-btn" type="button" onclick="toggleMobileMenu()" aria-label="Abrir menu" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
                 <div class="topbar-avatar">
                     <span>T</span>
                     <div class="avatar-online"></div>
@@ -240,6 +244,7 @@
         </div>
     </main>
 </div>
+<button class="mobile-sidebar-backdrop" id="mobile-sidebar-backdrop" type="button" onclick="fecharMobileMenu()" aria-label="Fechar menu"></button>
 
 <!-- ── MODAL: BRIEFING ── -->
 <div id="modal-briefing" class="modal-overlay" style="display:none" onclick="fecharModal('modal-briefing')">
