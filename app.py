@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, jsonify, send_file, session, 
 import os
 import asyncio
 import json
+import secrets
+import hmac
 from datetime import datetime, date
 from dotenv import load_dotenv
 from pipeline import executar_pipeline, executar_pipeline_selecionados
@@ -38,10 +40,15 @@ def get_password():
  
 # 🔐 Variáveis do sistema
 APP_PASSWORD = get_password()
-FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "chave_super_secreta_padrao")
+FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY") or secrets.token_hex(32)
  
 app = Flask(__name__)
 app.secret_key = FLASK_SECRET_KEY
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.getenv("RENDER") is not None,
+)
  
 # 🌍 Mapa de países
 MAPA_PAISES = {
@@ -75,7 +82,7 @@ def login():
             erro = "Erro interno no servidor"
             return render_template("login.html", erro=erro)
  
-        if senha and senha.strip() == APP_PASSWORD.strip():
+        if senha and hmac.compare_digest(senha.strip(), APP_PASSWORD.strip()):
             print("✅ LOGIN OK")
             session["logado"] = True
             return redirect(url_for("home"))
