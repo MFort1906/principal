@@ -23,6 +23,29 @@ let modoFoco           = false;
 let contadorBuscas     = 0;
 let contadorTraducoes  = 0;
 
+window.toggleMobileMenu = function() {
+    const aberto = document.body.classList.toggle('mobile-menu-open');
+    const btn = document.getElementById('mobile-menu-btn');
+    if (btn) {
+        btn.setAttribute('aria-expanded', String(aberto));
+        btn.setAttribute('aria-label', aberto ? 'Fechar menu' : 'Abrir menu');
+        btn.innerHTML = aberto ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-solid fa-bars"></i>';
+    }
+};
+
+window.fecharMobileMenu = function() {
+    document.body.classList.remove('mobile-menu-open');
+    const btn = document.getElementById('mobile-menu-btn');
+    if (btn) {
+        btn.setAttribute('aria-expanded', 'false');
+        btn.setAttribute('aria-label', 'Abrir menu');
+        btn.innerHTML = '<i class="fa-solid fa-bars"></i>';
+    }
+};
+
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape') fecharMobileMenu(); });
+window.addEventListener('resize', () => { if (window.innerWidth > 700) fecharMobileMenu(); });
+
 // Cronograma — persiste em localStorage
 let cronogramaPosts = JSON.parse(localStorage.getItem('tennix_cronograma') || '[]');
 let cronogramaAno   = new Date().getFullYear();
